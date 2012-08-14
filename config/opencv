@@ -1,0 +1,36 @@
+# CHANGELOG:
+# 2012-08-03 (frieder):
+# - change to common library import
+#
+# TODO:
+# - drop support for pre-2.0 versions and use <opencv/...h> style includes in all of Ubitrack
+# - remove OPENCVVERSION hack and use CV_VERSION, defined in cvver.h
+# - remove opencv_have_highgui variable
+
+# add configuration options
+Import( '*' )
+
+SConscript ( '#/config/libraryConfig.py' )
+Import('standardLibFinder', 'standardLibConfig')
+
+opts.Add( 'OPENCV_PATH', 'Path to the qhull sdk directory' )
+opts.Add( 'OPENCV_INCLUDE', 'Path to the qhull header files' )
+opts.Add( 'OPENCV_LIBS', 'Path to the qhull library files' )
+
+libName = "OPENCV"
+
+compileSettings =  [{} , "", "opencv/cv.h", "C++", "cvSobel( 0, 0, 1, 1 );"]
+libFinder = standardLibFinder(libName,compileSettings)
+
+configHelper = standardLibConfig(libName, libFinder)
+
+opencv_options = configHelper.getLibraryOptions()
+have_opencv = configHelper.haveLib()
+
+
+# opencv without highgui is not supported anymore
+opencv_have_highgui = have_opencv 
+
+# export results
+Export( [ 'have_opencv', 'opencv_options', 'opencv_have_highgui' ] )
+
