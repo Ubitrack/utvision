@@ -35,7 +35,7 @@ else:
 	for dir in subdirs:		
 		headers += globSourceFiles( dir + '/*.h' )
 		sources += globSourceFiles( dir + '/*.cpp' )
-	utvision_options = mergeOptions( boost_options, opencv_options, tinyxml_options, utcore_options, log4cpp_options )
+	utvision_options = mergeOptions( boost_options, opencv_options, tinyxml_options, utcore_options, log4cpp_options, tbb_options )
 	utvision_options['CPPPATH'] += [ getCurrentPath() ]
 	
 	env = masterEnv.Clone()

@@ -65,10 +65,119 @@ static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.V
 #include <utVision/EdgeMeasurement.h>
 #include <utCalibration/Function/ProjectivePoseNormalize.h>
 
+#ifdef HAVE_TBB
+#undef HAVE_TBB
+#endif
+
+#ifdef HAVE_TBB
+#include <algorithm>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+using namespace tbb;
+#endif
+
+//#define DO_TIMING
+
+#ifdef DO_TIMING
+#include <utUtil/BlockTimer.h>
+
+static Ubitrack::Util::BlockTimer g_blockTimer1( "Vision1", "Ubitrack.Vision.MarkerDetection.Timing" );
+static Ubitrack::Util::BlockTimer g_blockTimer2( "Vision2", "Ubitrack.Vision.MarkerDetection.Timing" );
+static Ubitrack::Util::BlockTimer g_blockTimer3( "Marker1", "Ubitrack.Vision.MarkerDetection.Timing" );
+static Ubitrack::Util::BlockTimer g_blockTimer4( "Marker2", "Ubitrack.Vision.MarkerDetection.Timing" );
+//static Ubitrack::Util::BlockTimer g_blockTimer( "MarkerDetection", "Ubitrack.Vision.MarkerDetection.Timing" );
+//static Ubitrack::Util::BlockTimer g_blockTimer( "MarkerDetection", "Ubitrack.Vision.MarkerDetection.Timing" );
+
+#endif
 
 namespace ublas = boost::numeric::ublas;
 
+
 namespace Ubitrack { namespace Vision { namespace Markers {
+
+#ifdef HAVE_TBB
+void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
+	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
+void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
+	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
+
+class TBBMarkerCalculations {
+public:
+ void operator() ( const blocked_range<size_t>& r ) const {	 	 
+	 for ( size_t i = r.begin(); i != r.end(); ++i ){
+		CornerList cl(markerList->at(i)); 
+		markerCalculations(cl, *img, pDebugImg, *markerInfos, *K, *invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
+		 
+	 }	 
+}
+
+ TBBMarkerCalculations(MarkerList *_markerList, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
+	const Math::Matrix< 3, 3, float >* _K,const Math::Matrix< 3, 3, float >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
+	markerList(_markerList)
+	, img(_img)
+	, pDebugImg(_pDebugImg)
+	, markerInfos(_markerInfos)
+	, K(_K)
+	, invK(_invK)
+	, iCodeSize(_iCodeSize)
+	, iMarkerSize(_iMarkerSize)
+	, uiMask(_uiMask)
+	, useInnerEdgels(useInnerEdgels)
+	{}
+private:
+	MarkerList* markerList;
+	const Image* img;
+	Image* pDebugImg;
+	MarkerInfoMap* markerInfos;
+	const Math::Matrix< 3, 3, float >* K;
+	const Math::Matrix< 3, 3, float >* invK;
+	unsigned int iCodeSize;
+	unsigned int iMarkerSize;
+	unsigned long long int uiMask;
+	bool useInnerEdgels;
+ 
+};
+
+
+class TBBMarkerCalculationsRefine {
+public:
+ void operator() ( const blocked_range<size_t>& r ) const {	 
+	 for ( size_t i = r.begin(); i != r.end(); ++i ){
+		 markerCalculationsRefine(markerIds->at(i), *img, pDebugImg, *markerInfos, *K, *invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
+	 }
+}
+
+ TBBMarkerCalculationsRefine(std::vector<unsigned long long int>* _markerIds, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
+	const Math::Matrix< 3, 3, float >* _K,const Math::Matrix< 3, 3, float >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
+	markerIds(_markerIds)	
+	, img(_img)
+	, pDebugImg(_pDebugImg)
+	, markerInfos(_markerInfos)
+	, K(_K)
+	, invK(_invK)
+	, iCodeSize(_iCodeSize)
+	, iMarkerSize(_iMarkerSize)
+	, uiMask(_uiMask)
+	, useInnerEdgels(useInnerEdgels)
+	{}
+private:
+	std::vector<unsigned long long int>* markerIds;	
+	const Image* img;
+	Image* pDebugImg;
+	MarkerInfoMap* markerInfos;
+	const Math::Matrix< 3, 3, float >* K;
+	const Math::Matrix< 3, 3, float >* invK;
+	unsigned int iCodeSize;
+	unsigned int iMarkerSize;
+	unsigned long long int uiMask;
+	bool useInnerEdgels;
+ 
+};
+
+
+#endif
+
+
 
 // some constants for tuning
 
@@ -228,61 +337,27 @@ void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corn
 }
 
 
-
-void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
-	const Math::Matrix< 3, 3, float >& _K,  Image* pDebugImg, bool bRefine, 
-	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels )
-{
-	assert( (iMarkerSize - iCodeSize) / 2.0 == 1.0 || (iMarkerSize - iCodeSize) / 2.0 == 2.0 );
-
-	Math::Matrix< 3, 3, float > K( _K );
-		
-	// flip image coordinates if origin==0 
-	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
-	Calibration::correctOrigin( K, img.origin, img.height );
-
-	// compute inverse camera matrix
-	Math::Matrix< 3, 3, float > invK( invert_matrix( K ) );
-	
-	// initialize found state of markerInfos
-	BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, markerInfos )
-		mapEl.second.found = MarkerInfo::ENotFound;
-	
-	if ( !bRefine )
-	{
-		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
-
-		// threshold image
-		Image thresholded( img.width, img.height, 1 );
-
-		// The source image is copied as OpenCV from beta 5 on destroys it
-		cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
-			( img.height / 48 ) | 1 , 4.0 );
-
-		// find markers in the image
-		MarkerList markers = findQuadrangles( thresholded, pDebugImg);
-
-		int iShownMarker = 0;
-		for ( MarkerList::iterator it = markers.begin(); it != markers.end(); it++ )
-		{
-			// refine corner positions
-			if ( refineCorners( img, *it ) ) //, pDebugImg ) )
+void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
+	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels) {
+	// refine corner positions
+		const bool bRefine = false;
+			if ( refineCorners( img, it ) ) //, pDebugImg ) )
 			{
 				// if image is top-down, exchange point 2 and 4 to assure counter-clock-wise order for squareHomography
 				if ( !img.origin )
 				{
-					Math::Vector< 2, float > temp( (*it)[ 3 ] );
-					(*it)[ 3 ] = (*it)[ 1 ];
-					(*it)[ 1 ] = temp;
+					Math::Vector< 2, float > temp( (it)[ 3 ] );
+					(it)[ 3 ] = (it)[ 1 ];
+					(it)[ 1 ] = temp;
 				}
 
 				// compute homography
-				Math::Matrix< 3, 3, float > H( Calibration::squareHomography( *it ) );
+				Math::Matrix< 3, 3, float > H( Calibration::squareHomography( it ) );
 
 				// get marker image & decode
 				boost::shared_ptr< Image > pMarker( getMarkerImage( img, H, iMarkerSize ) );
 				unsigned long long int nCode = readCode( *pMarker, iCodeSize, uiMask );
-
+				/*
 				// show marker image in debug mode
 				if ( pDebugImg )
 				{
@@ -307,7 +382,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
                         cvCircle( *pDebugImg, cvPoint( cvRound( it->at( i )(0) * 16 ), cvRound( it->at( i )(1) * 16 ) ),
                             cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 255, 127, 39 ), -1, CV_AA, 4 );
                     }
-                }
+                }*/
 
 				// normalize marker code
 				int nRotate = 0;
@@ -319,8 +394,8 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
                     // Draw marker contours for found marker
                     if ( pDebugImg )
                     {
-                        for ( size_t i = 0; i < it->size(); ++i) {
-                        cvCircle( *pDebugImg, cvPoint( cvRound( it->at( i )(0) * 16 ), cvRound( it->at( i )(1) * 16 ) ),
+                        for ( size_t i = 0; i < it.size(); ++i) {
+                        cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
 				            cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 0, 255, 255 ), -1, CV_AA, 4 );
                         }
                     }
@@ -338,7 +413,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 					// create corner list
 					info.corners.resize( 4 );
 					for ( unsigned i = 0; i < 4; i++ )
-						Math::vector_cast_assign( info.corners[ i ], Math::Vector< 2 >( (*it)[ ( i + nRotate ) % 4 ]( 0 ), (*it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
+						Math::vector_cast_assign( info.corners[ i ], Math::Vector< 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
 
 					// origin correction
 					if ( !img.origin )
@@ -347,8 +422,8 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 
                     if ( pDebugImg )
                     {
-                        for ( size_t i = 0; i < it->size(); ++i) {
-                        cvCircle( *pDebugImg, cvPoint( cvRound( it->at( i )(0) * 16 ), cvRound( it->at( i )(1) * 16 ) ),
+                        for ( size_t i = 0; i < it.size(); ++i) {
+                        cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
 				            cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
                         }
                     }
@@ -356,12 +431,11 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 					if ( info.refinement >= MarkerInfo::EInitialPose )
 					{
 						// scale homography with marker size
-						ublas::column( H, 2 ) *= info.fSize;
-						LOG4CPP_DEBUG( logger, "Homography: " << H );
-
+						ublas::column( H, 2 ) *= info.fSize;						
+						LOG4CPP_DEBUG( logger, "Homography: " << H  );
 						// compute pose
-						Math::Pose initialPose( Calibration::poseFromHomography( H, invK ) );
-
+						Math::Pose initialPose( Calibration::poseFromHomography( H, invK ) );						
+						LOG4CPP_DEBUG( logger, "initialPose: " << initialPose  );
 						// rotate pose to account for different order of corner points
 						const double fSqrtHalf = 0.70710678118654752440084436210485;
 						static const double csMap[ 4 ][ 2 ] =
@@ -382,13 +456,13 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 						Math::Pose pose( initialPose );
 
 						// perform some LM iterations on the edge points to get a more stable initialization
-						double optRes = Calibration::optimizePose( pose, *it, p3D, K, 4 );
+						double optRes = Calibration::optimizePose( pose, it, p3D, K, 4 );
 							
 						// try optimization with the rotation from the last pose
 						if ( info.bUseInitialPose )
 						{
 							Math::Pose testPose = Math::Pose( info.pose.rotation(), initialPose.translation() );
-							double testOptRes = Calibration::optimizePose( testPose, *it, p3D, K, 4 );
+							double testOptRes = Calibration::optimizePose( testPose, it, p3D, K, 4 );
 							if ( testOptRes < optRes * 9 ) // prefer last pose rotation
 								pose = testPose;
 						}
@@ -396,7 +470,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 						// refine the pose
 						if ( info.refinement >= MarkerInfo::EEdgeRefinedPose )
 						{
-							pose = edgeBasedRefinement( pose, nCode, iCodeSize, iMarkerSize, info, K, img, *it, pDebugImg, bRefine, uiMask, useInnerEdgels );
+							pose = edgeBasedRefinement( pose, nCode, iCodeSize, iMarkerSize, info, K, img, it, pDebugImg, bRefine, uiMask, useInnerEdgels );
 
 							// Compute refined corners, based on the refined pose
 							// This is only necessary here and not with optimizePose() because here, also the inner edgelets are considered for pose estimation
@@ -413,7 +487,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 						else
 						{
 							// more iterations on the edge points
-							Calibration::optimizePose( pose, *it, p3D, K, 7 );
+							Calibration::optimizePose( pose, it, p3D, K, 7 );
 						}
 						
 						// remember pose
@@ -455,13 +529,10 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 				else
 				{ LOG4CPP_TRACE( logger, "no marker info found" ); }
 			}
-		}
-	}
-	else
-	{	
-		LOG4CPP_TRACE( logger, "detectMarkers(): refinement only" );	
-	
-		// declaration of variables
+}
+
+void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
+	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels){
 		int nDiff, nVis;
 		float fRes;
 		bool bDraw = true;				
@@ -471,11 +542,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 		Math::Quaternion quat;
 		Math::Vector< 3 > oldTrans, newTrans;
 		Math::Vector<2,int> res;
-		std::map<unsigned long long int, MarkerInfo>::iterator it;
-
-		for ( it = markerInfos.begin(); it != markerInfos.end(); it++ )
-		{	
-			MarkerInfo& info( markerInfos[it->first] );			
+		MarkerInfo info(markerInfos[markerId]);
 			
 			// Calculate the approximate pose via pixel flow
 			if ( info.bEnablePixelFlow )
@@ -504,7 +571,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			// refine the pose
 			try
 			{
-				pose = edgeBasedRefinement( aprPose, it->first, iCodeSize, iMarkerSize, info, K, img, info.corners, pDebugImg, true, uiMask, useInnerEdgels );
+				pose = edgeBasedRefinement( aprPose, markerId, iCodeSize, iMarkerSize, info, K, img, info.corners, pDebugImg, true, uiMask, useInnerEdgels );
 				fRes = info.fResidual;
 				nVis = info.nVisibility;
 			}
@@ -516,7 +583,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			if ( info.bEnableFlipCheck && info.nVisibility > 0 ) // should be same as bUseInitial Pose?
 			{
 				flipPose = alternateMarkerPose( aprPose );
-				flipPose = edgeBasedRefinement( flipPose, it->first, iCodeSize, iMarkerSize, info, K, img, info.corners, pDebugImg, true, uiMask, useInnerEdgels );
+				flipPose = edgeBasedRefinement( flipPose, markerId, iCodeSize, iMarkerSize, info, K, img, info.corners, pDebugImg, true, uiMask, useInnerEdgels );
 				
 				LOG4CPP_DEBUG( logger, "old res: " << fRes << ", flipped res: " << info.fResidual );
 				LOG4CPP_DEBUG( logger, "old vis: " << nVis << ", flipped vis: " << info.nVisibility );
@@ -531,7 +598,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 				}
 			}
 				
-			if ( !checkRefinedMarker( K, pose, info, img, it->first, pDebugImg, iMarkerSize, iCodeSize ) )
+			if ( !checkRefinedMarker( K, pose, info, img, markerId, pDebugImg, iMarkerSize, iCodeSize ) )
 				info.nVisibility = 0;
 			else
 				info.found = info.ERefinementFound;
@@ -564,9 +631,98 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			
 			// in debug mode, draw a nice cube onto the marker
 			if ( pDebugImg && bDraw )
-				drawCube( *pDebugImg, pose, K, it->second.fSize, CV_RGB( 0, 0, 255 ) );
+				drawCube( *pDebugImg, pose, K, info.fSize, CV_RGB( 0, 0, 255 ) );
+}
+
+void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
+	const Math::Matrix< 3, 3, float >& _K,  Image* pDebugImg, bool bRefine, 
+	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels )
+{
+	assert( (iMarkerSize - iCodeSize) / 2.0 == 1.0 || (iMarkerSize - iCodeSize) / 2.0 == 2.0 );
+	
+	
+	
+	Math::Matrix< 3, 3, float > K( _K );
+		
+	// flip image coordinates if origin==0 
+	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
+	Calibration::correctOrigin( K, img.origin, img.height );
+
+	// compute inverse camera matrix
+	Math::Matrix< 3, 3, float > invK( invert_matrix( K ) );
+	
+	// initialize found state of markerInfos
+	BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, markerInfos )
+		mapEl.second.found = MarkerInfo::ENotFound;
+	
+	if ( !bRefine )
+	{
+		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
+
+		// threshold image
+		Image thresholded( img.width, img.height, 1 );
+		{
+			#ifdef DO_TIMING
+			UBITRACK_TIME( g_blockTimer1 );
+			#endif
+			// The source image is copied as OpenCV from beta 5 on destroys it
+			cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
+			( img.height / 48 ) | 1 , 4.0 );
+		}
+
+		
+		MarkerList markers;
+		{
+			#ifdef DO_TIMING 
+			UBITRACK_TIME( g_blockTimer2 );
+			#endif
+			// find markers in the image
+			markers = findQuadrangles( thresholded, pDebugImg);
+		}
+		{
+			#ifdef DO_TIMING
+			UBITRACK_TIME( g_blockTimer3 );
+			#endif
+#ifdef HAVE_TBB		
+			parallel_for(blocked_range<size_t>(0, markers.size(), 4 ), TBBMarkerCalculations(&markers, &img, pDebugImg, &markerInfos, &K, &invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels ) );
+#else
+			int iShownMarker = 0;
+			for ( MarkerList::iterator it = markers.begin(); it != markers.end(); it++ )
+			{
+				markerCalculations(*it, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
+			}
+#endif
 		}
 	}
+	else
+	{	
+		LOG4CPP_TRACE( logger, "detectMarkers(): refinement only" );	
+		#ifdef DO_TIMING
+		UBITRACK_TIME( g_blockTimer4 );
+		#endif
+		// declaration of variables
+		std::map<unsigned long long int, MarkerInfo>::iterator it;
+#ifdef HAVE_TBB		
+		std::vector<unsigned long long int> _markerIds;
+		for ( it = markerInfos.begin(); it != markerInfos.end(); it++ )
+		{	
+			_markerIds.push_back(it->first);			
+		}
+		parallel_for(blocked_range<size_t>(0, _markerIds.size(), 4 ), TBBMarkerCalculationsRefine(&_markerIds, &img, pDebugImg, &markerInfos, &K, &invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels ));
+#else				
+		for ( it = markerInfos.begin(); it != markerInfos.end(); it++ )
+		{	
+			markerCalculationsRefine(it->first, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
+		}
+#endif
+	}
+	#ifdef DO_TIMING	
+	LOG4CPP_INFO( logger, g_blockTimer1);				
+	LOG4CPP_INFO( logger, g_blockTimer2);				
+	LOG4CPP_INFO( logger, g_blockTimer3);				
+	LOG4CPP_INFO( logger, g_blockTimer4);				
+	
+	#endif
 }
 #endif // HAVE_LAPACK
 
@@ -647,7 +803,7 @@ bool checkRefinedMarker(const Math::Matrix< 3, 3, float >& K, Math::Pose checkPo
 					|| 0 <= y && y < nBorderSize || (iMarkerSize-nBorderSize) <= y && y < iMarkerSize) 
 					&& pData[ y * pMarkerImg->widthStep + x ] <= avg )
 				nCorrectBoxes++;
-		}
+		}	
 
 	if ( nCorrectBoxes < iMarkerSize*iMarkerSize ) {
 		LOG4CPP_INFO( logger, "Wrong boxes detected" );

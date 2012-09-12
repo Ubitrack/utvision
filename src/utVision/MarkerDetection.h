@@ -48,7 +48,7 @@ namespace Ubitrack { namespace Vision { namespace Markers {
 typedef std::vector< Ubitrack::Math::Vector< 2, float > > CornerList;
 
 /** a list of polygons */
-typedef std::list< CornerList > MarkerList;
+typedef std::vector< CornerList > MarkerList;
 
 /** information about a marker */
 struct MarkerInfo
