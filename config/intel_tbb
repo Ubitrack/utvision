@@ -1,0 +1,30 @@
+# CHANGELOG:
+# 2012-08-03 (frieder):
+# - change to common library import
+#
+
+
+# add configuration options
+Import( '*' )
+
+SConscript ( '#/config/libraryConfig.py' )
+Import('standardLibFinder', 'standardLibConfig')
+
+opts.Add( 'TBB_PATH', 'Path to the tbb directory' )
+opts.Add( 'TBB_INCLUDE', 'Path to the tbb header files' )
+opts.Add( 'TBB_LIBS', 'Path to the tbb library files' )
+
+libName = "TBB"
+
+compileSettings =  [{}, "tbb/tbb.h", "C++"]
+libFinder = standardLibFinder(libName,compileSettings)
+
+configHelper = standardLibConfig(libName, libFinder)
+
+tbb_options = configHelper.getLibraryOptions()
+have_tbb = configHelper.haveLib()
+
+
+# export results
+Export( [ 'have_tbb', 'tbb_options' ] )
+
