@@ -3,7 +3,6 @@
 # - change to common library import
 #
 # TODO:
-# - drop support for pre-2.0 versions and use <opencv/...h> style includes in all of Ubitrack
 # - remove OPENCVVERSION hack and use CV_VERSION, defined in cvver.h
 # - remove opencv_have_highgui variable
 

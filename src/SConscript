@@ -35,7 +35,7 @@ else:
 	for dir in subdirs:		
 		headers += globSourceFiles( dir + '/*.h' )
 		sources += globSourceFiles( dir + '/*.cpp' )
-	utvision_options = mergeOptions( boost_options, opencv_options, tinyxml_options, utcore_options, log4cpp_options, tbb_options )
+	utvision_options = mergeOptions( opencv_options, utcore_all_options )
 	utvision_options['CPPPATH'] += [ getCurrentPath() ]
 	
 	env = masterEnv.Clone()
@@ -55,15 +55,18 @@ else:
 	# #############
 	# LINK AGAINST LIBRARY
 	# #############
-	
+	utvision_all_options = utvision_options.copy()
 	utvision_options[ 'LIBS' ] = []
 	utvision_options[ 'LIBPATH' ] = []	
 	utvision_options[ 'LIBS' ] += libs
 	utvision_options[ 'LIBPATH' ] += [ install_library_prefix ]
 	
+	utvision_all_options[ 'LIBS' ] += libs
+	utvision_all_options[ 'LIBPATH' ] += [ install_library_prefix ]
+	
 	have_utvision = True
 	# export the library variables to allow other files to use it
-	Export( 'utvision_options', 'have_utvision' )
+	Export( 'utvision_options', 'have_utvision', 'utvision_all_options' )
 
 	# also create a visual studio project for the library	
 	createVisualStudioProject(env, sources, headers, libName)
