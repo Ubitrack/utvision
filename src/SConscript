@@ -27,7 +27,8 @@ if not have_opencv:
 	print "OpenCV missing -- not building vision libraries"
 	have_utvision = False
 	utvision_options = {}
-	Export( 'utvision_options', 'have_utvision' )
+	utvision_all_options = {}
+	Export( 'utvision_options', 'have_utvision', 'utvision_all_options' )
 else:	
 	subdirs = ['utVision']
 	headers = globSourceFiles( '*.h' )
