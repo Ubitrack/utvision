@@ -42,6 +42,10 @@ else:
 	env = masterEnv.Clone()
 	if have_lapack:
 		env.AppendUnique( **lapack_options )
+	else:
+		for src in [ "utVision/MarkerBundle.cpp", "utVision/MarkerBundleFrontend.cpp" ]:
+			sources.remove( src );
+
 	env.AppendUnique( **utvision_options )
 	
 	if sys.platform == 'win32':
