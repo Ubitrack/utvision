@@ -788,8 +788,13 @@ void createImageList( std::vector< std::string >& l )
 		std::string suffix = ".jpg";
 		
 		// check if file of suitable extension
+#if BOOST_FILESYSTEM_VERSION == 3
+		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf().string(), ext ) )
+			l.push_back( p.leaf().string() );
+#else
 		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf(), ext ) )
 			l.push_back( p.leaf() );
+#endif
 	}
 
 }
