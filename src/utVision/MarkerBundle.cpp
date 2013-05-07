@@ -771,7 +771,7 @@ void createImageList( std::vector< std::string >& l )
 	
 	boost::regex ext( ".*\\.(jpg|JPG|png|PNG|bmp|BMP)" );
 	
-	path compPath( ".", native );
+	path compPath( "." );
 	if ( !exists( compPath ) )
 		throw std::string( "path does not exist" );
 	
@@ -788,8 +788,8 @@ void createImageList( std::vector< std::string >& l )
 		std::string suffix = ".jpg";
 		
 		// check if file of suitable extension
-		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf(), ext ) )
-			l.push_back( p.leaf() );
+		if ( exists( p ) && !is_directory( p ) && regex_match( p.leaf().string(), ext ) )
+			l.push_back( p.leaf().string() );
 	}
 
 }
