@@ -771,7 +771,7 @@ void createImageList( std::vector< std::string >& l )
 	
 	boost::regex ext( ".*\\.(jpg|JPG|png|PNG|bmp|BMP)" );
 	
-	path compPath( ".", native );
+	path compPath( "." );
 	if ( !exists( compPath ) )
 		throw std::string( "path does not exist" );
 	
