@@ -17,8 +17,8 @@ opts.Add( 'OPENCV_INCLUDE', 'Path to the qhull header files' )
 opts.Add( 'OPENCV_LIBS', 'Path to the qhull library files' )
 
 libName = "OPENCV"
-
-compileSettings =  [{} , "", "opencv/cv.h", "C++", "cvSobel( 0, 0, 1, 1 );"]
+#[{additional compile settings}, {include files}, {language (C++)},{library to link against (optional)}, {source code (optional)}]
+compileSettings =  [{} , "opencv/cv.h", "C++", "", "cvSobel( 0, 0, 1, 1 );"]
 libFinder = standardLibFinder(libName,compileSettings)
 
 configHelper = standardLibConfig(libName, libFinder)
