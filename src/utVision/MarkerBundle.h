@@ -29,9 +29,10 @@
 #include <utUtil/Logging.h>
 #include <utUtil/CalibFile.h>
 
-#define OPTIMIZATION_LOGGING
 #include <log4cpp/Category.hh>
-static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+
+//#define OPTIMIZATION_LOGGING
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 #include <utMath/LevenbergMarquardt.h>
 
 using namespace Ubitrack;

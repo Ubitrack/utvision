@@ -2,6 +2,8 @@
 
 #include "MarkerBundle.h"
 
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+
 static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
 {
 	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
@@ -167,14 +169,14 @@ void BAInfo::printConfiguration()
 	for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
 	{
 		std::cout << "Camera " << iCam << ": ~" << ~cameras[ iCam ].pose << std::endl;
-		LOG4CPP_TRACE( optLogger, "Camera " << iCam << ": ~" << ~cameras[ iCam ].pose);
+		LOG4CPP_TRACE( logger, "Camera " << iCam << ": ~" << ~cameras[ iCam ].pose);
 		out << "Camera " << iCam << ": ~" << ~cameras[ iCam ].pose << std::endl;
 	}
 		
 	for ( MarkerMap::iterator it = markers.begin(); it != markers.end(); it++ )
 	{
 		std::cout << "Marker " << std::hex << it->first << ": " << it->second.pose << std::endl;
-		LOG4CPP_TRACE( optLogger, "Marker " << std::hex << it->first << ": " << it->second.pose);
+		LOG4CPP_TRACE( logger, "Marker " << std::hex << it->first << ": " << it->second.pose);
 		out << "Marker " << std::hex << it->first << ": " << it->second.pose << std::endl;
 	}
 	std::cout << std::endl;
@@ -190,7 +192,7 @@ void BAInfo::printResiduals()
 	evaluateWithJacobian( measurements, parameters, J );
 
 	//std::cout << "\nIndividual residuals:\n";
-	LOG4CPP_TRACE( optLogger,"\nIndividual residuals:\n");
+	LOG4CPP_TRACE( logger,"\nIndividual residuals:\n");
 	out << "\nIndividual residuals:\n";
 	
 	unsigned iMeasurement = 0;
@@ -212,7 +214,7 @@ void BAInfo::printResiduals()
 			}
 			r /= 4;
 			std::cout << r << ": marker " << std::hex << it->first << " in image " << std::dec << iCam << " (" << cameras[ iCam ].name  << ")\n";
-			LOG4CPP_TRACE( optLogger, r << ": marker " << std::hex << it->first << " in image " << std::dec << iCam << " (" << cameras[ iCam ].name  << ")");
+			LOG4CPP_TRACE( logger, r << ": marker " << std::hex << it->first << " in image " << std::dec << iCam << " (" << cameras[ iCam ].name  << ")");
 			out << r << ": marker " << std::hex << it->first << " in image " << std::dec << iCam << " (" << cameras[ iCam ].name  << ")\n";
 		}
 
@@ -228,7 +230,7 @@ void BAInfo::printResiduals()
 			
 				std::cout << r << ": refpoint " << itP->first << " in image " << std::dec << imageToCam[ itM->image ] << 
 					" (" << cameras[ imageToCam[ itM->image ] ].name << ")\n";
-				LOG4CPP_TRACE( optLogger, r << ": refpoint " << itP->first << " in image " << std::dec << imageToCam[ itM->image ] << " (" << cameras[ imageToCam[ itM->image ] ].name << ")");
+				LOG4CPP_TRACE( logger, r << ": refpoint " << itP->first << " in image " << std::dec << imageToCam[ itM->image ] << " (" << cameras[ imageToCam[ itM->image ] ].name << ")");
 				out << r << ": refpoint " << itP->first << " in image " << std::dec << imageToCam[ itM->image ] << 
 					" (" << cameras[ imageToCam[ itM->image ] ].name << ")\n";
 				iMeasurement += 2;
@@ -237,7 +239,7 @@ void BAInfo::printResiduals()
 	stdDev /= ( size() - parameterSize() );
 	std::cout << "Estimated measurement stddev: " << sqrt( stdDev ) << std::endl;
 	out << "Estimated measurement stddev: " << sqrt( stdDev ) << std::endl;
-	LOG4CPP_TRACE( optLogger, "Estimated measurement stddev: " << sqrt( stdDev ));
+	LOG4CPP_TRACE( logger, "Estimated measurement stddev: " << sqrt( stdDev ));
 
 	// perform backward propagation
 	// unclear if this makes sense!
@@ -251,7 +253,7 @@ void BAInfo::printResiduals()
 	}
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;
-	LOG4CPP_TRACE( optLogger, "Estimated standard deviations (r, t):" );
+	LOG4CPP_TRACE( logger, "Estimated standard deviations (r, t):" );
 	out << "Estimated standard deviations (r, t):" << std::endl;
 	
 	
@@ -260,12 +262,12 @@ void BAInfo::printResiduals()
 	{
 		std::cout << "camera " << iCam << ": ";
 		out << "camera " << iCam << ": ";
-		LOG4CPP_TRACE( optLogger, "camera " << iCam << ": ");
+		LOG4CPP_TRACE( logger, "camera " << iCam << ": ");
 		
 		for ( unsigned i = 0; i < 6 ; i++ )
 		{
 			std::cout << sqrt( covariance( iCam*6 + i, iCam*6 + i ) ) << ( i < 5 ? ", " : "" );
-			LOG4CPP_TRACE( optLogger, sqrt( covariance( iCam*6 + i, iCam*6 + i ) ) << ( i < 5 ? ", " : "" ));
+			LOG4CPP_TRACE( logger, sqrt( covariance( iCam*6 + i, iCam*6 + i ) ) << ( i < 5 ? ", " : "" ));
 			out << sqrt( covariance( iCam*6 + i, iCam*6 + i ) ) << ( i < 5 ? ", " : "" );
 		}
 		std::cout << std::endl;
@@ -278,11 +280,11 @@ void BAInfo::printResiduals()
 	{
 		unsigned iStart = iMarkersStart + 6 * it->second.index;
 		std::cout << "marker " << std::hex << it->first << ": ";
-		LOG4CPP_TRACE( optLogger,"marker " << std::hex << it->first << ": ");
+		LOG4CPP_TRACE( logger,"marker " << std::hex << it->first << ": ");
 		for ( unsigned i = 0; i < 6 ; i++ )
 		{
 			std::cout << sqrt( covariance( iStart + i, iStart + i ) ) << ( i < 5 ? ", " : "" );
-			LOG4CPP_TRACE( optLogger, sqrt( covariance( iStart + i, iStart + i ) ) << ( i < 5 ? ", " : "" ));
+			LOG4CPP_TRACE( logger, sqrt( covariance( iStart + i, iStart + i ) ) << ( i < 5 ? ", " : "" ));
 			out << sqrt( covariance( iStart + i, iStart + i ) ) << ( i < 5 ? ", " : "" );
 		}
 		std::cout << std::endl;
@@ -399,19 +401,19 @@ void BAInfo::initRefPoints(bool undistorted)
 			
 
 			//std::cout << "Point " << it->first << " from {" << m1.image << ", " << m2.image << "}: " << p3d << std::endl;
-			LOG4CPP_TRACE( optLogger, "Point " << it->first << " from {" << m1.image << ", " << m2.image << "}: " << p3d );
+			LOG4CPP_TRACE( logger, "Point " << it->first << " from {" << m1.image << ", " << m2.image << "}: " << p3d );
 			//std::cout << "      world: " << it->second.pos << std::endl;
-			LOG4CPP_TRACE( optLogger, " world: " << it->second.pos );
+			LOG4CPP_TRACE( logger, " world: " << it->second.pos );
 		}
 		
-	//LOG4CPP_TRACE( optLogger, "Just Checking " << refPointsCam.size());
+	//LOG4CPP_TRACE( logger, "Just Checking " << refPointsCam.size());
 	if ( refPointsCam.size() < 3 )
 		throw std::runtime_error( "You need at least three reference points which are seen by at least two cameras" );
 	else
 	{
 		Math::Pose t = Calibration::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
 		//std::cout << "Room transformation " << t << " / " << ~t << std::endl;
-		LOG4CPP_TRACE( optLogger, "Room transformation " << t << " / " << ~t );
+		LOG4CPP_TRACE( logger, "Room transformation " << t << " / " << ~t );
 
 		// multiply the t to all poses
 		for ( std::size_t iCam = 0; iCam < cameras.size(); iCam++ )
@@ -660,7 +662,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 		subJOrigin = ublas::identity_matrix< double >( 6 );
 	}
 
-	//LOG4CPP_TRACE( optLogger, "J: " << J );
+	//LOG4CPP_TRACE( logger, "J: " << J );
 }
 
 template< class VT >
@@ -750,18 +752,18 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 	ublas::vector< double > measurements( size() );
 	genTargetVector( measurements );
 	
-	LOG4CPP_TRACE( optLogger, "Starting Bundle Adjustment" );
+	LOG4CPP_TRACE( logger, "Starting Bundle Adjustment" );
 	
 	ublas::vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
-	LOG4CPP_DEBUG( optLogger, "original parameters: " << parameters );
-	LOG4CPP_DEBUG( optLogger, "original measurements: " << measurements);
+	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
+	LOG4CPP_DEBUG( logger, "original measurements: " << measurements);
 	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
-	LOG4CPP_DEBUG( optLogger, "improved parameters: " << parameters );
+	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 	
 	updateParameters( parameters );
-	LOG4CPP_TRACE( optLogger, "Ending Bundle Adjustment" );
+	LOG4CPP_TRACE( logger, "Ending Bundle Adjustment" );
 }
 
 

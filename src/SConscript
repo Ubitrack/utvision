@@ -42,8 +42,8 @@ else:
 	env = masterEnv.Clone()
 	if have_lapack:
 		env.AppendUnique( **lapack_options )
-	else:
-		for src in [ "utVision/MarkerBundle.cpp", "utVision/MarkerBundleFrontend.cpp" ]:
+	else:		
+		for src in [  os.path.join ('utVision', 'MarkerBundle.cpp') , os.path.join ('utVision', 'MarkerBundleFrontend.cpp')]:
 			sources.remove( src );
 
 	env.AppendUnique( **utvision_options )
