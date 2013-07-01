@@ -799,8 +799,8 @@ bool checkRefinedMarker(const Math::Matrix< 3, 3, float >& K, Math::Pose checkPo
 	for (unsigned int x = 0; x < iMarkerSize ; x ++)
 		for(unsigned int y = 0; y < iMarkerSize; y++)
 		{
-			if( ( 0 <= x && x < nBorderSize || (iMarkerSize-nBorderSize) <= x && x < iMarkerSize
-					|| 0 <= y && y < nBorderSize || (iMarkerSize-nBorderSize) <= y && y < iMarkerSize) 
+			if( ( (0 <= x && x < nBorderSize) || ((iMarkerSize-nBorderSize) <= x && x < iMarkerSize)
+					|| (0 <= y && y < nBorderSize) || ((iMarkerSize-nBorderSize) <= y && y < iMarkerSize) ) 
 					&& pData[ y * pMarkerImg->widthStep + x ] <= avg )
 				nCorrectBoxes++;
 		}	

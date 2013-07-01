@@ -285,7 +285,7 @@ namespace Ubitrack { namespace Vision {
 			result(0) = xIndex- int(x.size()/2);
 		}
 		else
-		if(xCut = -1)
+		if(xCut == -1)
 		{
 			result(0) = xIndex - 2*int(x.size()/2)-xdif;
 		}
@@ -295,7 +295,7 @@ namespace Ubitrack { namespace Vision {
 			result(1) = yIndex - int(y.size()/2) ;
 		}
 		else
-		if(yCut = -1)
+		if(yCut == -1)
 		{
 			result(1) = yIndex - 2*int(y.size()/2) -ydif;
 		}
