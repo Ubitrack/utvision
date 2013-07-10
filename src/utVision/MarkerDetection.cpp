@@ -58,8 +58,9 @@
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker" ) );
 
 // for edge tracking
-#define OPTIMIZATION_LOGGING
-static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker.Opt" ) );
+//#define OPTIMIZATION_LOGGING
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker.Opt" ) );
+
 #include <utMath/LevenbergMarquardt.h>
 #include <utMath/GaussNewton.h>
 #include <utVision/EdgeMeasurement.h>
