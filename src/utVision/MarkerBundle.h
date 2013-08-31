@@ -113,12 +113,12 @@ struct BAMarkerInfo
 		: bPoseComputed( false )
 	{}
 
-	unsigned index;
+	std::size_t index;
 	bool bPoseComputed;
 	Math::Pose pose;
 	double fSize;
 	
-	std::set< unsigned > cameras;
+	std::set< std::size_t > cameras;
 };
 #endif
 
@@ -158,7 +158,7 @@ struct BAInfo
 	MarkerMap markers;
 	typedef std::vector< BACameraInfo > CameraList;
 	CameraList cameras;
-	std::map< std::string, unsigned > imageToCam;
+	std::map< std::string, std::size_t > imageToCam;
 		
 	
 	// initialization routines for minimization
@@ -167,8 +167,9 @@ struct BAInfo
 	UTVISION_EXPORT void initRefPoints(bool undistorted = false);
 	
 	// functions required for levenberg-marquardt
-	unsigned size() const;
-	unsigned parameterSize() const
+	std::size_t size() const;
+	
+	std::size_t parameterSize() const
 	{ return 6 * ( markers.size() + cameras.size() ); }
 	
 	template< class VT1, class VT2, class MT1 > 

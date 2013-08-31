@@ -28,7 +28,7 @@ int main( int, char** )
 		BAInfo baInfo( intrinsics, undistorter.getRadialCoeffs() );
 		for ( std::vector< std::string >::iterator itImage = imageNames.begin(); itImage != imageNames.end(); itImage++ )
 		{
-			unsigned camId = baInfo.cameras.size();
+			const std::size_t camId( baInfo.cameras.size() );
 			baInfo.cameras.push_back( BACameraInfo() );
 			baInfo.cameras.back().name = *itImage;
 			baInfo.imageToCam[ *itImage ] = camId;
