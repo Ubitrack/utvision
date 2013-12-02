@@ -184,11 +184,11 @@ void BAInfo::printConfiguration()
 
 void BAInfo::printResiduals()
 {
-	ublas::vector< double > parameters( parameterSize() );
+	Math::Vector< 0, double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
-	ublas::vector< double > measurements( size() );
-	ublas::matrix< double, ublas::column_major > J( size(), parameterSize() );
+	Math::Vector< 0, double > measurements( size() );
+	Math::Matrix< 0, 0, double > J( size(), parameterSize() );
 	evaluateWithJacobian( measurements, parameters, J );
 
 	//std::cout << "\nIndividual residuals:\n";
@@ -243,12 +243,12 @@ void BAInfo::printResiduals()
 
 	// perform backward propagation
 	// unclear if this makes sense!
-	ublas::matrix< double, ublas::column_major > covariance( parameterSize(), parameterSize() );
+	Math::Matrix< 0, 0, T > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
 		Math::backwardPropagationIdentity( covariance, stdDev, J );
 	else
 	{
-		ublas::matrix_range< ublas::matrix< double, ublas::column_major > > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
+		ublas::matrix_range< typename Math::Matrix< 0, 0, T >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
 		Math::backwardPropagationIdentity( covariance, stdDev, subJ );
 	}
 
@@ -749,12 +749,12 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 {	
 	m_bUseRefPoints = bUseRefPoints;
 
-	ublas::vector< double > measurements( size() );
+	Math::Vector< 0, double > measurements( size() );
 	genTargetVector( measurements );
 	
 	LOG4CPP_TRACE( logger, "Starting Bundle Adjustment" );
 	
-	ublas::vector< double > parameters( parameterSize() );
+	Math::Vector< 0, double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );

@@ -95,7 +95,7 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		ublas::vector< T > p2d( m_p3d.size() * 2 );
+		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -132,8 +132,8 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		ublas::vector< T > p2d( m_p3d.size() * 2 );
-		ublas::matrix< T > j2d( m_p3d.size() * 2, input.size() );
+		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
+		Math::Matrix< 0, 0, T > j2d( m_p3d.size() * 2, input.size() );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluateWithJacobian( p2d, input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -178,7 +178,7 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		ublas::matrix< T > j2d( m_p3d.size() * 2, input.size() );
+		Math::Matrix< 0, 0, T > j2d( m_p3d.size() * 2, input.size() );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).jacobian( input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -244,11 +244,11 @@ protected:
 		m_intensities.resize( m_p3d.size() );
 
 		// project first points
-		ublas::vector< T > p2d( m_p3d.size() * 2 );
+		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		// project second points
-		ublas::vector< T > p2d2( m_p3d.size() * 2 );
+		Math::Vector< 0, T > p2d2( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d2, m_K ).evaluate( p2d2, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
