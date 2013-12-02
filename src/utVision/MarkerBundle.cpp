@@ -243,12 +243,12 @@ void BAInfo::printResiduals()
 
 	// perform backward propagation
 	// unclear if this makes sense!
-	Math::Matrix< 0, 0, T > covariance( parameterSize(), parameterSize() );
+	Math::Matrix< 0, 0, double > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
 		Math::backwardPropagationIdentity( covariance, stdDev, J );
 	else
 	{
-		ublas::matrix_range< typename Math::Matrix< 0, 0, T >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
+		ublas::matrix_range< typename Math::Matrix< 0, 0, double >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
 		Math::backwardPropagationIdentity( covariance, stdDev, subJ );
 	}
 
