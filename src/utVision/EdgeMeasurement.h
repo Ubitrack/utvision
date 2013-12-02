@@ -142,7 +142,7 @@ public:
 			// TODO: magic number -> bad
 			if ( m_intensities[ i ] < g_minEdgeIntensity )
 			{
-				noalias( ublas::row( J, i ) ) = ublas::zero_vector< T >( input.size() );
+				noalias( ublas::row( J, i ) ) = Math::Vector< 0, T >::zeros( input.size() );
 				result( i ) = 0;
 				fBoundedResidual += m_outlierThreshold * m_searchLengths[ i ] * m_outlierThreshold * m_searchLengths[ i ];
 			}
@@ -186,7 +186,7 @@ public:
 			// remove too small intensity edges
 			// TODO: magic number -> bad
 			if ( m_intensities[ i ] < g_minEdgeIntensity )
-				noalias( ublas::row( J, i ) ) = ublas::zero_vector< T >( input.size() );
+				noalias( ublas::row( J, i ) ) = Math::Vector< 0, T >::zeros( input.size() );
 			else
 			{
 				// results...

@@ -105,7 +105,7 @@ void Undistortion::initParams( const std::string& intrinsicMatrixFile, const std
 		
 	}
 	else
-		m_coeffs = boost::numeric::ublas::zero_vector< double >( 8 );
+		m_coeffs = Math::Vector< 8, double >::zeros();
 }
 
 

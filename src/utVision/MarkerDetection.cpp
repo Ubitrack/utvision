@@ -229,7 +229,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 
 	// compute scaling of normals as covariance of the marker corners
 	Math::Matrix< 2, 2, float > cornerCov( Math::Matrix< 2, 2, float >::zeros( ) );
-	Math::Vector< 2, float > cornerAvg( ublas::zero_vector< float >( 2 ) );
+	Math::Vector< 2, float > cornerAvg( Math::Vector< 2, float >::zeros() );
 	for ( unsigned int i = 0; i < 4; i++ )
 	{
 		cornerCov += ublas::outer_prod( (it)[ i ], (it)[ i ] );
@@ -256,7 +256,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 		info.fResidual = Math::weightedLevenbergMarquardt( 
 			edgeMF,
 			poseVector,
-			boost::numeric::ublas::zero_vector< float >( edgels1.size() ),
+			Math::Vector< 0, float >::zeros( edgels1.size() ),
 			// Max. 6 iterations, precision 1e-4
 			Math::OptTerminate( 6, 1e-4 ),
 			Calibration::Function::ProjectivePoseNormalize(),

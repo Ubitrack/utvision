@@ -695,7 +695,7 @@ void BAInfo::genTargetVector( VT& v )
 	{
 		// add origin measurement
 		ublas::vector_range< VT > subOrigin( v, ublas::range( iMeasurement, iMeasurement + 6 ) );
-		subOrigin = ublas::zero_vector< double >( 6 );
+		subOrigin = Math::Vector< 6, double >::zeros();
 	}
 }
 
