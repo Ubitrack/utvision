@@ -583,7 +583,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 	using namespace Calibration::Function;
 
 	// initialize jacobian
-	J = ublas::zero_matrix< double >( J.size1(), J.size2() );
+	J =  Math::Matrix< 0, 0, double >::zeros( J.size1(), J.size2() );
 
 	const std::size_t iMarkersStart( 6 * cameras.size() );
 	std::size_t  iMeasurement = 0;

@@ -228,7 +228,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 	pose.toVector( poseVector );
 
 	// compute scaling of normals as covariance of the marker corners
-	Math::Matrix< 2, 2, float > cornerCov( ublas::zero_matrix< float >( 2, 2 ) );
+	Math::Matrix< 2, 2, float > cornerCov( Math::Matrix< 2, 2, float >::zeros( ) );
 	Math::Vector< 2, float > cornerAvg( ublas::zero_vector< float >( 2 ) );
 	for ( unsigned int i = 0; i < 4; i++ )
 	{
@@ -735,7 +735,7 @@ bool checkRefinedMarker(const Math::Matrix< 3, 3, float >& K, Math::Pose checkPo
 	Math::Matrix< 3, 4 > KRt( ublas::prod( K, Rt ) );
 
 	// scale to make marker coordinates from -1 to +1
-	Math::Matrix< 4, 3 > Sr( ublas::zero_matrix< double >( 4, 3 ) );
+	Math::Matrix< 4, 3, double > Sr( Math::Matrix< 4, 3, double >::zeros( ) );
 	Sr( 0, 0 ) = Sr( 1, 1 ) = info.fSize;
 	Sr( 3, 2 ) = 1;
 	Math::Matrix< 3, 3 > h( ublas::prod( KRt, Sr ) );
