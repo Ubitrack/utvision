@@ -16,8 +16,8 @@ void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, 
 		{ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }
 	};
 
-	Math::Matrix<3,3> mat = ublas::identity_matrix<double>(3);
-	Math::Pose pose2 = Math::Pose(Math::Quaternion(mat), Math::Vector<3>(0.0, 0.0, -5.0));
+	Math::Matrix< 3, 3, double > mat = Math::Matrix< 3, 3, double  >::identity();
+	Math::Pose pose2 = Math::Pose(Math::Quaternion(mat), Math::Vector< 3, double >(0.0, 0.0, -5.0));
 
 	// project points
 	Math::Vector< 3, double > p2D[ 12 ];

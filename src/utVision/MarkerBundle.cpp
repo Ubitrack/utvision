@@ -659,7 +659,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 		subROrigin = ublas::subrange( input, iMarkersStart, iMarkersStart + 6 );
 
 		ublas::matrix_range< MT1 > subJOrigin( J, ublas::range( iMeasurement, iMeasurement + 6 ), ublas::range( iMarkersStart, iMarkersStart + 6 ) );
-		subJOrigin = ublas::identity_matrix< double >( 6 );
+		subJOrigin = Math::Matrix< 6, 6, double >::identity();
 	}
 
 	//LOG4CPP_TRACE( logger, "J: " << J );
