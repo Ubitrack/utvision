@@ -32,7 +32,6 @@
 #ifndef __UBITRACK_VISION_EDGEMEASUREMENT_H_INCLUDED__
 #define __UBITRACK_VISION_EDGEMEASUREMENT_H_INCLUDED__
 
-#include <list>
 #include <vector>
 #include <utVision.h>
 #include <utMath/Vector.h>
