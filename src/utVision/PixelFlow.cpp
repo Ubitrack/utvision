@@ -40,7 +40,7 @@ namespace Ubitrack { namespace Vision {
 	{
 	}
 	
-	void PixelFlow::calcProjectionBuffer( const Image& image, const Math::Vector< 2, int >& topLeft, const Math::Vector< 2, int >& bottomRight )
+	void PixelFlow::calcProjectionBuffer( const Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight )
 	{
 		//clearing previous data
 		x.clear();
@@ -80,7 +80,7 @@ namespace Ubitrack { namespace Vision {
 	}
 
 	void PixelFlow::calculateIncrisedCoordiants(int width, int height,double incr, std::vector<int> topL, std::vector<int> bottomR,
-			Math::Vector<4,int>& xRec, Math::Vector<4,int>& yRec)
+			Math::Vector< int, 4 >& xRec, Math::Vector< int, 4 >& yRec)
 	{
 		int incrX = int((bottomR[0] - topL[0]+1)*incr);	
 		int incrY = int((bottomR[1] - topL[1]+1)*incr);
@@ -96,7 +96,7 @@ namespace Ubitrack { namespace Vision {
 		yRec(3) = std::min(bottomR[1] + incrY,height);
 	}
 
-	void PixelFlow::calculateErrorBuffer(const std::vector<int>& v,const std::vector<int>& newV, std::vector<int>& ErrorBuf, int nCut)
+	void PixelFlow::calculateErrorBuffer( const std::vector< int >& v,const std::vector< int >& newV, std::vector< int >& ErrorBuf, int nCut)
 	{
 		int temp,t,nSize;
 		
@@ -158,7 +158,7 @@ namespace Ubitrack { namespace Vision {
 		}
 	}
 
-	void PixelFlow::computeFlow( const Image& image, Math::Vector< 2, int >& result, int& difference, Image* pDebugImg)
+	void PixelFlow::computeFlow( const Image& image, Math::Vector< int, 2 >& result, int& difference, Image* pDebugImg)
 	{
 		//decliaring variables
 		int xCut = 0;
@@ -172,8 +172,8 @@ namespace Ubitrack { namespace Vision {
 		int hight = image.height; 
 		int xSize = int(x.size());
 		int ySize = int(y.size());
-		Math::Vector<4,int> xRec;
-		Math::Vector<4,int> yRec;
+		Math::Vector< int, 4 > xRec;
+		Math::Vector< int, 4 > yRec;
 
 		calculateIncrisedCoordiants(width, hight, 0.5, topL, bottomR, xRec,  yRec);
 

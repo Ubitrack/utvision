@@ -61,17 +61,17 @@ struct SConfig
 			: pos( 0, 0, 0 )
 		{}
 
-		Math::Vector< 3 > pos;
+		Math::Vector< double, 3 > pos;
 
 		struct Meas
 		{
-			Meas( const std::string& i, const Math::Vector< 2 >& m )
+			Meas( const std::string& i, const Math::Vector< double, 2 >& m )
 				: image( i )
 				, pos( m )
 			{}
 
 			std::string image;
-			Math::Vector< 2 > pos;
+			Math::Vector< double, 2 > pos;
 		};
 		std::vector< Meas > measurements;
 	};
@@ -142,7 +142,7 @@ struct BACameraInfo
 #define BAI_H
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< 4 >& _radial )
+	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -201,8 +201,8 @@ struct BAInfo
 
 	// intrinsic camera parameters
 	Math::Matrix< 3, 3 > intrinsicMatrix;
-	Math::Vector< 4 > radialCoeffs;
-	Math::Vector< 5 > intrinsics;
+	Math::Vector< double, 4 > radialCoeffs;
+	Math::Vector< double, 5 > intrinsics;
 };
 
 #endif

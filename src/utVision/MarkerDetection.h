@@ -45,7 +45,7 @@
 namespace Ubitrack { namespace Vision { namespace Markers {
 
 /** a list of corner points */
-typedef std::vector< Ubitrack::Math::Vector< 2, float > > CornerList;
+typedef std::vector< Ubitrack::Math::Vector< float, 2 > > CornerList;
 
 /** a list of polygons */
 typedef std::vector< CornerList > MarkerList;
@@ -246,7 +246,7 @@ UTVISION_EXPORT unsigned long long int normalizeCode( unsigned long long int nCo
  * @param uiMask regions of the marker's bit pattern that belong to the ID (1) or not (0)
  */
 UTVISION_EXPORT void computeMarkerEdgels( unsigned long long int markerCode, float markerSize, 
-	std::vector< Math::Vector< 3, float > >& points1, std::vector< Math::Vector< 3, float > >& points2, 
+	std::vector< Math::Vector< float, 3 > >& points1, std::vector< Math::Vector< float, 3 > >& points2, 
 	unsigned int uiCodeSize, unsigned int uiMarkerSize, unsigned long long int uiMask, bool computeInnerEdgels );
 
 /**
@@ -281,7 +281,7 @@ UTVISION_EXPORT Math::Pose alternateMarkerPose( const Math::Pose& p );
  */
  
 UTVISION_EXPORT int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
-	const Math::Vector< 2, float >& point1, const Math::Vector< 2, float >& point2, int nSearchPixels, 
+	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg );
 
 } } } // namespace Ubitrack::Vision::Markers

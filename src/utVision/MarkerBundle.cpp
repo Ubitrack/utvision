@@ -4,12 +4,12 @@
 
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 
-static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
+static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
-	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
-	Math::Vector< 3 >( -0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5,  0.5, 0.0 ) 
+	Math::Vector< double, 3 >( -0.5,  0.5, 0.0 ),
+	Math::Vector< double, 3 >( -0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5,  0.5, 0.0 ) 
 };
 
 void SConfig::setResultFile(std::string re)
@@ -30,7 +30,7 @@ void SConfig::setMarkersInfo(unsigned long long int code, float size)
 }
 void SConfig::setRefPositions(std::string id, double x, double y, double z)
 {
-	refPoints[ id ].pos = Math::Vector< 3 >( x , y , z );
+	refPoints[ id ].pos = Math::Vector< double, 3 >( x , y , z );
 }
 void SConfig::setRefPoints(std::string id, RefPoint::Meas measurement)
 {
@@ -153,7 +153,7 @@ void SConfig::parseMBConf(std::string conFile)
 		else if ( boost::regex_match( buf, match, reRefPointMeasurement ) )
 		{
 			setRefPoints( match[ 1 ] , RefPoint::Meas( match[ 2 ].str(), 
-			Math::Vector< 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ))));
+			Math::Vector< double, 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ))));
 		}
 		else
 			std::cerr << "unknown configuration string: " << buf << std::endl;
@@ -184,10 +184,10 @@ void BAInfo::printConfiguration()
 
 void BAInfo::printResiduals()
 {
-	Math::Vector< 0, double > parameters( parameterSize() );
+	Math::Vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
-	Math::Vector< 0, double > measurements( size() );
+	Math::Vector< double > measurements( size() );
 	Math::Matrix< 0, 0, double > J( size(), parameterSize() );
 	evaluateWithJacobian( measurements, parameters, J );
 
@@ -321,7 +321,7 @@ void BAInfo::initMarkers()
 	const unsigned long long int startMarker = markers.begin()->first;	
 	
 	
-	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
+	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< double, 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
 	markerQueue.push_back( startMarker );
 	
@@ -379,8 +379,8 @@ void BAInfo::initRefPoints(bool undistorted)
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
     getStream() << std::endl << "Initializing reference points:" << std::endl;
-	std::vector< Math::Vector< 3 > > refPointsCam;
-	std::vector< Math::Vector< 3 > > refPointsRoom;
+	std::vector< Math::Vector< double, 3 > > refPointsCam;
+	std::vector< Math::Vector< double, 3 > > refPointsRoom;
 
 	for ( SConfig::RefPointMap::iterator it = get_config().refPoints.begin(); it != get_config().refPoints.end(); it++ )
 		if ( it->second.measurements.size() >= 2 )
@@ -393,7 +393,7 @@ void BAInfo::initRefPoints(bool undistorted)
 			P1 = ublas::prod( intrinsicMatrix, P1 );
 			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
-			Math::Vector< 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
+			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
 
 			refPointsCam.push_back( p3d );
 			refPointsRoom.push_back( it->second.pos );
@@ -495,12 +495,12 @@ void BAInfo::writeUTQL( std::ostream& of )
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
 		//###
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
 			
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			//###
@@ -695,7 +695,7 @@ void BAInfo::genTargetVector( VT& v )
 	{
 		// add origin measurement
 		ublas::vector_range< VT > subOrigin( v, ublas::range( iMeasurement, iMeasurement + 6 ) );
-		subOrigin = Math::Vector< 6, double >::zeros();
+		subOrigin = Math::Vector< double, 6 >::zeros();
 	}
 }
 
@@ -749,12 +749,12 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 {	
 	m_bUseRefPoints = bUseRefPoints;
 
-	Math::Vector< 0, double > measurements( size() );
+	Math::Vector< double > measurements( size() );
 	genTargetVector( measurements );
 	
 	LOG4CPP_TRACE( logger, "Starting Bundle Adjustment" );
 	
-	Math::Vector< 0, double > parameters( parameterSize() );
+	Math::Vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );

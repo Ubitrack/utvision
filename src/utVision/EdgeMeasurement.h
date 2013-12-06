@@ -69,8 +69,8 @@ public:
 	 * @param image image to search for gradients
 	 * @param pDebugImage if not NULL, will draw some information in this image
 	 */
-	EdgeListMeasurementFunction( const std::vector< Math::Vector< 3, T > >& p3d, 
-		const std::vector< Math::Vector< 3, T > >& p3d2, const Math::Matrix< 3, 3, T >& K, 
+	EdgeListMeasurementFunction( const std::vector< Math::Vector< T, 3 > >& p3d, 
+		const std::vector< Math::Vector< T, 3 > >& p3d2, const Math::Matrix< 3, 3, T >& K, 
 		const Math::Matrix< 2, 2, T >& scale, const Image& image, Image* pDebugImage = 0, T outlierThreshold = 1 )
 		: m_p3d( p3d )
 		, m_p3d2( p3d2 )
@@ -95,7 +95,7 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
+		Math::Vector< T > p2d( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -108,7 +108,7 @@ public:
 			{
 				// compute result
 				result( i ) = ublas::inner_prod( m_normals[ i ], 
-					Math::Vector< 2, T >( p2d( i * 2 ), p2d( i * 2 + 1 ) ) - m_edgePoints[ i ] );
+					Math::Vector< T, 2 >( p2d( i * 2 ), p2d( i * 2 + 1 ) ) - m_edgePoints[ i ] );
 
 				if ( fabs( result( i ) ) < m_outlierThreshold * m_searchLengths[ i ] )
 					m_goodEdgels++;
@@ -132,7 +132,7 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
+		Math::Vector< T > p2d( m_p3d.size() * 2 );
 		Math::Matrix< 0, 0, T > j2d( m_p3d.size() * 2, input.size() );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluateWithJacobian( p2d, input, j2d );
 
@@ -141,7 +141,7 @@ public:
 			// TODO: magic number -> bad
 			if ( m_intensities[ i ] < g_minEdgeIntensity )
 			{
-				noalias( ublas::row( J, i ) ) = Math::Vector< 0, T >::zeros( input.size() );
+				noalias( ublas::row( J, i ) ) = Math::Vector< T >::zeros( input.size() );
 				result( i ) = 0;
 				fBoundedResidual += m_outlierThreshold * m_searchLengths[ i ] * m_outlierThreshold * m_searchLengths[ i ];
 			}
@@ -149,7 +149,7 @@ public:
 			{
 				// compute result
 				result( i ) = ublas::inner_prod( m_normals[ i ], 
-					Math::Vector< 2, T >( p2d( i * 2 ), p2d( i * 2 + 1 ) ) - m_edgePoints[ i ] );
+					Math::Vector< T, 2 >( p2d( i * 2 ), p2d( i * 2 + 1 ) ) - m_edgePoints[ i ] );
 
 				if ( fabs( result( i ) ) < m_outlierThreshold * m_searchLengths[ i ] )
 				{
@@ -185,7 +185,7 @@ public:
 			// remove too small intensity edges
 			// TODO: magic number -> bad
 			if ( m_intensities[ i ] < g_minEdgeIntensity )
-				noalias( ublas::row( J, i ) ) = Math::Vector< 0, T >::zeros( input.size() );
+				noalias( ublas::row( J, i ) ) = Math::Vector< T >::zeros( input.size() );
 			else
 			{
 				// results...
@@ -244,22 +244,22 @@ protected:
 		m_intensities.resize( m_p3d.size() );
 
 		// project first points
-		Math::Vector< 0, T > p2d( m_p3d.size() * 2 );
+		Math::Vector< T > p2d( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		// project second points
-		Math::Vector< 0, T > p2d2( m_p3d.size() * 2 );
+		Math::Vector< T > p2d2( m_p3d.size() * 2 );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d2, m_K ).evaluate( p2d2, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
 		{
 			// compute edge direction
-			Math::Vector< 2, T > dir( p2d2( i * 2 ) - p2d( i * 2 ), p2d2( i * 2 + 1 ) - p2d( i * 2 + 1 ) );
+			Math::Vector< T, 2 > dir( p2d2( i * 2 ) - p2d( i * 2 ), p2d2( i * 2 + 1 ) - p2d( i * 2 + 1 ) );
 			T searchLen = ublas::norm_2( dir );
 			dir /= searchLen;
 
 			// compute normal direction
-			Math::Vector< 2, T > normal( dir( 1 ), -dir( 0 ) );
+			Math::Vector< T, 2 > normal( dir( 1 ), -dir( 0 ) );
 			if ( m_image.origin )
 				normal *= -1;
 
@@ -272,7 +272,7 @@ protected:
 				searchPixels = 1;
 
 			// search for position of maximum
-			Math::Vector< 2, T > start( p2d( i * 2 ), p2d( i * 2 + 1 ) );
+			Math::Vector< T, 2 > start( p2d( i * 2 ), p2d( i * 2 + 1 ) );
 			int maxIntensity;
 			T maxPos = findEdge< MaximumT, GradientT >
 				( m_image, start, normal, searchPixels, maxIntensity );
@@ -285,8 +285,8 @@ protected:
 
 			if ( m_pDebugImage )
 			{
-				Math::Vector< 2, float > p1( start + searchPixels * normal );
-				Math::Vector< 2, float > p2( start - searchPixels * normal );
+				Math::Vector< float, 2 > p1( start + searchPixels * normal );
+				Math::Vector< float, 2 > p2( start - searchPixels * normal );
 				cvLine( *m_pDebugImage, 
 					cvPoint( cvRound( p1( 0 ) * 16 ), cvRound( p1( 1 ) * 16 ) ), 
 					cvPoint( cvRound( p2( 0 ) * 16 ), cvRound( p2( 1 ) * 16 ) ), 
@@ -304,8 +304,8 @@ protected:
 	}
 
 	// parameters
-	const std::vector< Math::Vector< 3, T > >& m_p3d; 
-	const std::vector< Math::Vector< 3, T > >& m_p3d2;
+	const std::vector< Math::Vector< T, 3 > >& m_p3d; 
+	const std::vector< Math::Vector< T, 3 > >& m_p3d2;
 	const Math::Matrix< 3, 3, T >& m_K;
 	const Math::Matrix< 2, 2, T >& m_scale;
 	const Image& m_image;
@@ -313,13 +313,13 @@ protected:
 	mutable T m_outlierThreshold;
 
 	/** positions of points on edge */
-	mutable std::vector< Math::Vector< 2, T > > m_edgePoints;
+	mutable std::vector< Math::Vector< T, 2 > > m_edgePoints;
 
 	/** point intensities */
 	mutable std::vector< int > m_intensities;
 
 	/** normal directions */
-	mutable std::vector< Math::Vector< 2, T > > m_normals;
+	mutable std::vector< Math::Vector< T, 2 > > m_normals;
 
 	/** point intensities */
 	mutable std::vector< T > m_searchLengths;

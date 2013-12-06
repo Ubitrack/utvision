@@ -17,13 +17,13 @@ void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, 
 	};
 
 	Math::Matrix< 3, 3, double > mat = Math::Matrix< 3, 3, double  >::identity();
-	Math::Pose pose2 = Math::Pose(Math::Quaternion(mat), Math::Vector< 3, double >(0.0, 0.0, -5.0));
+	Math::Pose pose2 = Math::Pose(Math::Quaternion(mat), Math::Vector< double, 3 >(0.0, 0.0, -5.0));
 
 	// project points
-	Math::Vector< 3, double > p2D[ 12 ];
+	Math::Vector< double, 3 > p2D[ 12 ];
 	for ( int i = 0; i < 12; i++ )
 	{
-		p2D[ i ] = ublas::prod( K, pose * Math::Vector< 3 >( scale * Math::Vector< 3, float >( points3D[ i ] ) ) );
+		p2D[ i ] = ublas::prod( K, pose * Math::Vector< double, 3 >( scale * Math::Vector< float, 3 >( points3D[ i ] ) ) );
 		p2D[ i ] /= p2D[ i ][ 2 ];
 
 		p2D[ i ](1) = img.rows  - p2D[ i ](1)  -1;
@@ -60,10 +60,10 @@ void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, 
 }
 
 
-Math::Vector < 3 > projectPoint ( Math::Vector < 3 > pt, Math::Matrix < 3, 3> projection, int imageHeight)
+Math::Vector< double, 3 > projectPoint ( Math::Vector< double, 3 > pt, Math::Matrix < 3, 3 > projection, int imageHeight)
 {
     namespace ublas = boost::numeric::ublas;
-	Math::Vector < 3 > p2D = ublas::prod( projection, pt );
+	Math::Vector< double, 3 > p2D = ublas::prod( projection, pt );
 	p2D /= p2D(2);
 	// flip y
 	if (imageHeight > 0)
@@ -82,10 +82,10 @@ void drawPose ( cv::Mat & dbgImage, Math::Pose pose, Math::Matrix < 3, 3> projec
 	};
 
 	// project points
-	Math::Vector< 3, double > p2D[ 4 ];
+	Math::Vector< double, 3 > p2D[ 4 ];
 	for ( int i = 0; i < 4; i++ )
 	{
-		p2D[ i] = projectPoint ( pose * (Math::Vector< 3, float >( points3D[ i ] ) * 0.07), projection, dbgImage.rows);
+		p2D[ i] = projectPoint ( pose * ( Math::Vector< float, 3 >( points3D[ i ] ) * 0.07), projection, dbgImage.rows);
 	}
 
 	CvScalar colors[3] = {CV_RGB(255, 0, 0), CV_RGB(0, 255, 0), CV_RGB(0, 0, 255)};
@@ -100,7 +100,7 @@ void drawPose ( cv::Mat & dbgImage, Math::Pose pose, Math::Matrix < 3, 3> projec
 	cv::circle ( dbgImage, cvPoint ( p2D[0](0), p2D[0](1)), cvRound( dbgImage.cols / 50.0 ), Ubitrack::Vision::getGradientRampColor (error, 0.0, 100.0), 4);
 }
 
-void drawPosition ( cv::Mat & dbgImage, Math::Vector< 3 > position, Math::Matrix < 3, 3> projection, double error )
+void drawPosition ( cv::Mat & dbgImage, Math::Vector< double, 3 > position, Math::Matrix < 3, 3 > projection, double error )
 {
 // the corner points
 	static float points3D[ 6 ][ 3 ] = {
@@ -108,13 +108,13 @@ void drawPosition ( cv::Mat & dbgImage, Math::Vector< 3 > position, Math::Matrix
         { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f, 1.0f },
 	};
 
-    Math::Pose pose ( Math::Quaternion(), position);
+    Math::Pose pose ( Math::Quaternion(), position );
 
 	// project points
-	Math::Vector< 3, double > p2D[ 6 ];
+	Math::Vector< double, 3 > p2D[ 6 ];
 	for ( int i = 0; i < 6; i++ )
 	{
-		p2D[ i] = projectPoint ( pose * (Math::Vector< 3, float >( points3D[ i ] ) * 0.07), projection, dbgImage.rows);
+		p2D[ i] = projectPoint ( pose * (Math::Vector< float, 3 >( points3D[ i ] ) * 0.07), projection, dbgImage.rows);
 	}
 
 

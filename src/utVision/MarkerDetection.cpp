@@ -219,17 +219,17 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 	Math::Pose pose( initialPose );
 
 	// create edgel lists
-	std::vector< Math::Vector< 3, float > > edgels1;
-	std::vector< Math::Vector< 3, float > > edgels2;
+	std::vector< Math::Vector< float, 3 > > edgels1;
+	std::vector< Math::Vector< float, 3 > > edgels2;
 	computeMarkerEdgels( nCode, info.fSize, edgels1, edgels2, nCodeSize, nMarkerSize, uiMask, computeInnerEdgels );
 
 	// optimize pose
-	Math::Vector< 7, float > poseVector;
+	Math::Vector< float, 7 > poseVector;
 	pose.toVector( poseVector );
 
 	// compute scaling of normals as covariance of the marker corners
 	Math::Matrix< 2, 2, float > cornerCov( Math::Matrix< 2, 2, float >::zeros( ) );
-	Math::Vector< 2, float > cornerAvg( Math::Vector< 2, float >::zeros() );
+	Math::Vector< float, 2 > cornerAvg( Math::Vector< float, 2 >::zeros() );
 	for ( unsigned int i = 0; i < 4; i++ )
 	{
 		cornerCov += ublas::outer_prod( (it)[ i ], (it)[ i ] );
@@ -256,7 +256,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 		info.fResidual = Math::weightedLevenbergMarquardt( 
 			edgeMF,
 			poseVector,
-			Math::Vector< 0, float >::zeros( edgels1.size() ),
+			Math::Vector< float >::zeros( edgels1.size() ),
 			// Max. 6 iterations, precision 1e-4
 			Math::OptTerminate( 6, 1e-4 ),
 			Calibration::Function::ProjectivePoseNormalize(),
@@ -283,16 +283,16 @@ void updateCorners( Math::Matrix< 3, 3 > K, Math::Pose pose, MarkerInfo& info )
 
 	for ( unsigned i = 0; i < 4; i++ )
 	{
-		Math::Vector< 3, float > p2D = 
-			ublas::prod( K, pose * Math::Vector< 3, float >( 0.5f * (float)info.fSize * 
-			Math::Vector< 3, float >( std2dPoints[ i ][ 0 ], std2dPoints[ i ][ 1 ], 0.0 ) ) );
+		Math::Vector< float, 3 > p2D = 
+			ublas::prod( K, pose * Math::Vector< float, 3 >( 0.5f * (float)info.fSize * 
+			Math::Vector< float, 3 >( std2dPoints[ i ][ 0 ], std2dPoints[ i ][ 1 ], 0.0 ) ) );
 		info.corners[ i ]( 0 ) = p2D( 0 ) / p2D( 2 );
 		info.corners[ i ]( 1 ) = p2D( 1 ) / p2D( 2 );
 	}
 }
 
 
-void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corners, Math::Vector<2,int>& topLeft, Math::Vector<2,int>& botRight, double percentage)
+void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corners, Math::Vector< int, 2 >& topLeft, Math::Vector< int, 2 >& botRight, double percentage)
 {
 	int maxTemp = int(corners[0](0));
 	int minTemp = int(corners[0](0));
@@ -347,7 +347,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 				// if image is top-down, exchange point 2 and 4 to assure counter-clock-wise order for squareHomography
 				if ( !img.origin )
 				{
-					Math::Vector< 2, float > temp( (it)[ 3 ] );
+					Math::Vector< float, 2 > temp( (it)[ 3 ] );
 					(it)[ 3 ] = (it)[ 1 ];
 					(it)[ 1 ] = temp;
 				}
@@ -414,7 +414,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 					// create corner list
 					info.corners.resize( 4 );
 					for ( unsigned i = 0; i < 4; i++ )
-						Math::vector_cast_assign( info.corners[ i ], Math::Vector< 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
+						Math::vector_cast_assign( info.corners[ i ], Math::Vector< double, 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
 
 					// origin correction
 					if ( !img.origin )
@@ -445,13 +445,13 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						LOG4CPP_DEBUG( logger, "initial pose: " << initialPose << ", marker size: " << info.fSize );
 
 						// create list of 3D marker points
-						std::vector< Math::Vector< 3, float > > p3D;
+						std::vector< Math::Vector< float, 3 > > p3D;
 							
 						const float fF = 0.5f * info.fSize;
 						for ( unsigned i = 0; i < 4; i++ )
 						{
 							unsigned j = ( i + 4 - nRotate ) % 4;
-							p3D.push_back( Math::Vector< 3, float >( fF * std2dPoints[ j ][ 0 ], fF * std2dPoints[ j ][ 1 ], 0.0f ) );
+							p3D.push_back( Math::Vector< float, 3 >( fF * std2dPoints[ j ][ 0 ], fF * std2dPoints[ j ][ 1 ], 0.0f ) );
 						}
 
 						Math::Pose pose( initialPose );
@@ -518,8 +518,8 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						info.nPrevPoseValidator++;
 						
 						// calculate projection buffer
-						Math::Vector<2,int> topLeft;
-						Math::Vector<2,int> botRight;
+						Math::Vector< int, 2 > topLeft;
+						Math::Vector< int, 2 > botRight;
 						
 						calculateMarkerBoundingRectangle( img, info.corners, topLeft, botRight, 0.2 );
 
@@ -541,8 +541,8 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 		Math::Pose aprPose;
 		Math::Pose flipPose;
 		Math::Quaternion quat;
-		Math::Vector< 3 > oldTrans, newTrans;
-		Math::Vector<2,int> res;
+		Math::Vector< double, 3 > oldTrans, newTrans;
+		Math::Vector< int, 2 > res;
 		MarkerInfo info(markerInfos[markerId]);
 			
 			// Calculate the approximate pose via pixel flow
@@ -615,8 +615,8 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 			updateCorners( K, pose, info );
 
 			// calculating the projection buffer
-			Math::Vector<2,int> topLeft;
-			Math::Vector<2,int> botRight;
+			Math::Vector< int, 2 > topLeft;
+			Math::Vector< int, 2 > botRight;
 			
 			// additional steps needed for pixel flow
 			if ( info.bEnablePixelFlow )
@@ -740,10 +740,10 @@ bool checkRefinedMarker(const Math::Matrix< 3, 3, float >& K, Math::Pose checkPo
 	Sr( 3, 2 ) = 1;
 	Math::Matrix< 3, 3 > h( ublas::prod( KRt, Sr ) );
 
-	Math::Vector< 3 > test = ublas::prod( h, Math::Vector< 3 >( -1, -1, 1 ) );
+	Math::Vector< double, 3 > test = ublas::prod( h, Math::Vector< double, 3 >( -1, -1, 1 ) );
 	test /= test( 2 );
 
-	Math::Vector< 3 > test2 = ublas::prod( h, Math::Vector< 3 >( 1, 1, 1 ) );
+	Math::Vector< double, 3 > test2 = ublas::prod( h, Math::Vector< double, 3 >( 1, 1, 1 ) );
 	test2 /= test2( 2 );
 
 	boost::shared_ptr< Image > pMarkerImg = getMarkerImage(img, h, iMarkerSize);
@@ -898,18 +898,18 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
  * @return number of detected points
  */
 int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
-	const Math::Vector< 2, float >& point1, const Math::Vector< 2, float >& point2, int nSearchPixels, 
+	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg = NULL )
 {
 	int iPoint = 0;
 
 	// compute normalized direction vector of input line
-	Math::Vector< 2, float > direction( point2 - point1 );
+	Math::Vector< float, 2 > direction( point2 - point1 );
 	float fLength = boost::numeric::ublas::norm_2( direction );
 	direction /= fLength;
 
 	// compute normal of input line
-	Math::Vector< 2, float > normal( -direction( 1 ), direction( 0 ) );
+	Math::Vector< float, 2 > normal( -direction( 1 ), direction( 0 ) );
 
 	// create buffer
 	boost::scoped_array< int > pBuffer( new int[ nSearchPixels ] );
@@ -919,7 +919,7 @@ int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const
 	{
 		// sample image perpendicular to input line with sobel operator
 		float fPos = ( i + 2 ) * fLength / ( nPoints + 3 );
-		Math::Vector< 2, float > startPoint( point1 + fPos * direction );
+		Math::Vector< float, 2 > startPoint( point1 + fPos * direction );
 
 		int nMax;
 		float fMaxSubPix = findEdge< FindEdgePositiveMaximum, ExtractLineSobel>
@@ -1197,7 +1197,7 @@ unsigned long long int normalizeCode( unsigned long long int nCode, int codeSize
 
 
 void computeMarkerEdgels( unsigned long long int markerCode, float markerSize, 
-	std::vector< Math::Vector< 3, float > >& points1, std::vector< Math::Vector< 3, float > >& points2, 
+	std::vector< Math::Vector< float, 3 > >& points1, std::vector< Math::Vector< float, 3 > >& points2, 
 	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool computeInnerEdgels )
 {
 	float halfMarkerSize = (float)iMarkerSize / 2;
@@ -1213,20 +1213,20 @@ void computeMarkerEdgels( unsigned long long int markerCode, float markerSize,
 		float p2 = (float)( -(halfMarkerSize+0.2) + i ) * scale;
 
 		// left
-		points1.push_back( Math::Vector< 3, float >( -halfMarkerSize * scale, p1, 0 ) );
-		points2.push_back( Math::Vector< 3, float >( -halfMarkerSize * scale, p2, 0 ) );
+		points1.push_back( Math::Vector< float, 3 >( -halfMarkerSize * scale, p1, 0 ) );
+		points2.push_back( Math::Vector< float, 3 >( -halfMarkerSize * scale, p2, 0 ) );
 
 		// right
-		points1.push_back( Math::Vector< 3, float >( halfMarkerSize * scale, -p1, 0 ) );
-		points2.push_back( Math::Vector< 3, float >( halfMarkerSize * scale, -p2, 0 ) );
+		points1.push_back( Math::Vector< float, 3 >( halfMarkerSize * scale, -p1, 0 ) );
+		points2.push_back( Math::Vector< float, 3 >( halfMarkerSize * scale, -p2, 0 ) );
 
 		// top
-		points1.push_back( Math::Vector< 3, float >( p1, halfMarkerSize * scale, 0 ) );
-		points2.push_back( Math::Vector< 3, float >( p2, halfMarkerSize* scale, 0 ) );
+		points1.push_back( Math::Vector< float, 3 >( p1, halfMarkerSize * scale, 0 ) );
+		points2.push_back( Math::Vector< float, 3 >( p2, halfMarkerSize* scale, 0 ) );
 
 		// bottom
-		points1.push_back( Math::Vector< 3, float >( -p1, -halfMarkerSize * scale, 0 ) );
-		points2.push_back( Math::Vector< 3, float >( -p2, -halfMarkerSize * scale, 0 ) );
+		points1.push_back( Math::Vector< float, 3 >( -p1, -halfMarkerSize * scale, 0 ) );
+		points2.push_back( Math::Vector< float, 3 >( -p2, -halfMarkerSize * scale, 0 ) );
 	}
 	
 	if ( !computeInnerEdgels )
@@ -1242,29 +1242,29 @@ void computeMarkerEdgels( unsigned long long int markerCode, float markerSize,
 		// left
 		if ( ! ( markerCode & ( ((unsigned long long int)1) << ( i * iCodeSize + (iCodeSize-1) ) ) ) )
 		{
-			points1.push_back( Math::Vector< 3, float >( -halfCodeSize * scale, p, 0 ) );
-			points2.push_back( Math::Vector< 3, float >( -halfCodeSize * scale, p2, 0 ) );
+			points1.push_back( Math::Vector< float, 3 >( -halfCodeSize * scale, p, 0 ) );
+			points2.push_back( Math::Vector< float, 3 >( -halfCodeSize * scale, p2, 0 ) );
 		}
 
 		// right
 		if ( ! ( markerCode & ( ((unsigned long long int)1) << ( i * iCodeSize ) ) ) )
 		{
-			points1.push_back( Math::Vector< 3, float >( halfCodeSize * scale, p, 0 ) );
-			points2.push_back( Math::Vector< 3, float >( halfCodeSize * scale, p1, 0 ) );
+			points1.push_back( Math::Vector< float, 3 >( halfCodeSize * scale, p, 0 ) );
+			points2.push_back( Math::Vector< float, 3 >( halfCodeSize * scale, p1, 0 ) );
 		}
 
 		// top
 		if ( ! ( markerCode & ( ((unsigned long long int)1) << ( i + iCodeSize*iCodeSize - iCodeSize ) ) ) )
 		{
-			points1.push_back( Math::Vector< 3, float >( -p, halfCodeSize * scale, 0 ) );
-			points2.push_back( Math::Vector< 3, float >( -p1, halfCodeSize * scale, 0 ) );
+			points1.push_back( Math::Vector< float, 3 >( -p, halfCodeSize * scale, 0 ) );
+			points2.push_back( Math::Vector< float, 3 >( -p1, halfCodeSize * scale, 0 ) );
 		}
 
 		// bottom
 		if ( ! ( markerCode & ( ((unsigned long long int)1) << i ) ) )
 		{
-			points1.push_back( Math::Vector< 3, float >( -p, -halfCodeSize * scale, 0 ) );
-			points2.push_back( Math::Vector< 3, float >( -p2, -halfCodeSize * scale, 0 ) );
+			points1.push_back( Math::Vector< float, 3 >( -p, -halfCodeSize * scale, 0 ) );
+			points2.push_back( Math::Vector< float, 3 >( -p2, -halfCodeSize * scale, 0 ) );
 		}
 	}
 
@@ -1285,13 +1285,13 @@ void computeMarkerEdgels( unsigned long long int markerCode, float markerSize,
 				bool bLeftSet = ( markerCode & ( ((unsigned long long int)1) << ( y * iCodeSize + (x + 1) ) ) ) != 0;
 				if ( !bSet && bLeftSet )
 				{
-					points1.push_back( Math::Vector< 3, float >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-0.5f) + y ) * scale, 0 ) );
-					points2.push_back( Math::Vector< 3, float >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-1.2f) + y ) * scale, 0 ) );
+					points1.push_back( Math::Vector< float, 3 >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-0.5f) + y ) * scale, 0 ) );
+					points2.push_back( Math::Vector< float, 3 >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-1.2f) + y ) * scale, 0 ) );
 				}
 				else if ( bSet && !bLeftSet )
 				{
-					points1.push_back( Math::Vector< 3, float >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-0.5f) + y ) * scale, 0 ) );
-					points2.push_back( Math::Vector< 3, float >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize+0.2f) + y ) * scale, 0 ) );
+					points1.push_back( Math::Vector< float, 3 >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize-0.5f) + y ) * scale, 0 ) );
+					points2.push_back( Math::Vector< float, 3 >( (halfCodeSize - x -1.0f) * scale, ( -(halfCodeSize+0.2f) + y ) * scale, 0 ) );
 				}
 			}
 			// upside edge, for all except highest row, ignore masked neighbor bits
@@ -1300,13 +1300,13 @@ void computeMarkerEdgels( unsigned long long int markerCode, float markerSize,
 				bool bUpSet = ( markerCode & ( ((unsigned long long int)1) << ( (y + 1) * iCodeSize + x ) ) ) != 0;
 				if ( !bSet && bUpSet )
 				{
-					points1.push_back( Math::Vector< 3, float >( ( (halfCodeSize-0.5f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
-					points2.push_back( Math::Vector< 3, float >( ( (halfCodeSize+0.2f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
+					points1.push_back( Math::Vector< float, 3 >( ( (halfCodeSize-0.5f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
+					points2.push_back( Math::Vector< float, 3 >( ( (halfCodeSize+0.2f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
 				}
 				else if ( bSet && !bUpSet )
 				{
-					points1.push_back( Math::Vector< 3, float >( ( (halfCodeSize-0.5f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
-					points2.push_back( Math::Vector< 3, float >( ( (halfCodeSize-1.2f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
+					points1.push_back( Math::Vector< float, 3 >( ( (halfCodeSize-0.5f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
+					points2.push_back( Math::Vector< float, 3 >( ( (halfCodeSize-1.2f) - x ) * scale, ( y - halfCodeSize + 1.0f) * scale, 0 ) );
 				}
 			}
 		}
@@ -1342,10 +1342,10 @@ void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< 3
 	};
 
 	// project points
-	Math::Vector< 3, double > p2D[ 8 ];
+	Math::Vector< double, 3 > p2D[ 8 ];
 	for ( int i = 0; i < 8; i++ )
 	{
-		p2D[ i ] = ublas::prod( K, pose * Math::Vector< 3 >( markerSize * Math::Vector< 3, float >( points3D[ i ] ) ) );
+		p2D[ i ] = ublas::prod( K, pose * Math::Vector< double, 3 >( markerSize * Math::Vector< float, 3 >( points3D[ i ] ) ) );
 		p2D[ i ] /= p2D[ i ][ 2 ];
 	}
 
