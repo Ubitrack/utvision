@@ -70,8 +70,8 @@ public:
 	 * @param pDebugImage if not NULL, will draw some information in this image
 	 */
 	EdgeListMeasurementFunction( const std::vector< Math::Vector< T, 3 > >& p3d, 
-		const std::vector< Math::Vector< T, 3 > >& p3d2, const Math::Matrix< 3, 3, T >& K, 
-		const Math::Matrix< 2, 2, T >& scale, const Image& image, Image* pDebugImage = 0, T outlierThreshold = 1 )
+		const std::vector< Math::Vector< T, 3 > >& p3d2, const Math::Matrix< T, 3, 3 >& K, 
+		const Math::Matrix< T, 2, 2 >& scale, const Image& image, Image* pDebugImage = 0, T outlierThreshold = 1 )
 		: m_p3d( p3d )
 		, m_p3d2( p3d2 )
 		, m_K( K )
@@ -133,7 +133,7 @@ public:
 
 		// project first points and calculate jacobian
 		Math::Vector< T > p2d( m_p3d.size() * 2 );
-		Math::Matrix< 0, 0, T > j2d( m_p3d.size() * 2, input.size() );
+		Math::Matrix< T, 0, 0 > j2d( m_p3d.size() * 2, input.size() );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluateWithJacobian( p2d, input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -178,7 +178,7 @@ public:
 			findEdgePoints( input );
 
 		// project first points and calculate jacobian
-		Math::Matrix< 0, 0, T > j2d( m_p3d.size() * 2, input.size() );
+		Math::Matrix< T, 0, 0 > j2d( m_p3d.size() * 2, input.size() );
 		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).jacobian( input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
@@ -306,8 +306,8 @@ protected:
 	// parameters
 	const std::vector< Math::Vector< T, 3 > >& m_p3d; 
 	const std::vector< Math::Vector< T, 3 > >& m_p3d2;
-	const Math::Matrix< 3, 3, T >& m_K;
-	const Math::Matrix< 2, 2, T >& m_scale;
+	const Math::Matrix< T, 3, 3 >& m_K;
+	const Math::Matrix< T, 2, 2 >& m_scale;
 	const Image& m_image;
 	mutable Image* m_pDebugImage;
 	mutable T m_outlierThreshold;

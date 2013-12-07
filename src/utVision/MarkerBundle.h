@@ -142,7 +142,7 @@ struct BACameraInfo
 #define BAI_H
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< double, 4 >& _radial )
+	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -200,7 +200,7 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
-	Math::Matrix< 3, 3 > intrinsicMatrix;
+	Math::Matrix< double, 3, 3 > intrinsicMatrix;
 	Math::Vector< double, 4 > radialCoeffs;
 	Math::Vector< double, 5 > intrinsics;
 };

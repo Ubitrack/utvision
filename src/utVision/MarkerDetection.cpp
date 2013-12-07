@@ -98,9 +98,9 @@ namespace Ubitrack { namespace Vision { namespace Markers {
 
 #ifdef HAVE_TBB
 void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
-	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
+	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
 void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
-	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
+	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
 
 class TBBMarkerCalculations {
 public:
@@ -113,7 +113,7 @@ public:
 }
 
  TBBMarkerCalculations(MarkerList *_markerList, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
-	const Math::Matrix< 3, 3, float >* _K,const Math::Matrix< 3, 3, float >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
+	const Math::Matrix< float, 3, 3 >* _K,const Math::Matrix< float, 3, 3 >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
 	markerList(_markerList)
 	, img(_img)
 	, pDebugImg(_pDebugImg)
@@ -130,8 +130,8 @@ private:
 	const Image* img;
 	Image* pDebugImg;
 	MarkerInfoMap* markerInfos;
-	const Math::Matrix< 3, 3, float >* K;
-	const Math::Matrix< 3, 3, float >* invK;
+	const Math::Matrix< float, 3, 3 >* K;
+	const Math::Matrix< float, 3, 3 >* invK;
 	unsigned int iCodeSize;
 	unsigned int iMarkerSize;
 	unsigned long long int uiMask;
@@ -149,7 +149,7 @@ public:
 }
 
  TBBMarkerCalculationsRefine(std::vector<unsigned long long int>* _markerIds, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
-	const Math::Matrix< 3, 3, float >* _K,const Math::Matrix< 3, 3, float >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
+	const Math::Matrix< float, 3, 3 >* _K,const Math::Matrix< float, 3, 3 >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
 	markerIds(_markerIds)	
 	, img(_img)
 	, pDebugImg(_pDebugImg)
@@ -166,8 +166,8 @@ private:
 	const Image* img;
 	Image* pDebugImg;
 	MarkerInfoMap* markerInfos;
-	const Math::Matrix< 3, 3, float >* K;
-	const Math::Matrix< 3, 3, float >* invK;
+	const Math::Matrix< float, 3, 3 >* K;
+	const Math::Matrix< float, 3, 3 >* invK;
 	unsigned int iCodeSize;
 	unsigned int iMarkerSize;
 	unsigned long long int uiMask;
@@ -203,14 +203,14 @@ const float std2dPoints[ 4 ][ 2 ] =
 
 
 // forward declaration of private functions
-static void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< 3, 3, float >& K, double markerSize, CvScalar color, double error = -1.0 );
-bool checkRefinedMarker( const Math::Matrix< 3, 3, float >& K ,Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
+static void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double markerSize, CvScalar color, double error = -1.0 );
+bool checkRefinedMarker( const Math::Matrix< float, 3, 3 >& K ,Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
 
 
 #ifdef HAVE_LAPACK
 
 Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int nCode, unsigned int nCodeSize, unsigned int nMarkerSize, MarkerInfo& info, 
-	Math::Matrix< 3, 3, float > K,const Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
+	Math::Matrix< float, 3, 3 > K,const Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
 {
 	int sum = 0;
 	for(int i = 1; i< img.imageSize; i++)
@@ -228,7 +228,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 	pose.toVector( poseVector );
 
 	// compute scaling of normals as covariance of the marker corners
-	Math::Matrix< 2, 2, float > cornerCov( Math::Matrix< 2, 2, float >::zeros( ) );
+	Math::Matrix< float, 2, 2 > cornerCov( Math::Matrix< float, 2, 2 >::zeros( ) );
 	Math::Vector< float, 2 > cornerAvg( Math::Vector< float, 2 >::zeros() );
 	for ( unsigned int i = 0; i < 4; i++ )
 	{
@@ -277,7 +277,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 }
 
 
-void updateCorners( Math::Matrix< 3, 3 > K, Math::Pose pose, MarkerInfo& info )
+void updateCorners( Math::Matrix< double, 3, 3 > K, Math::Pose pose, MarkerInfo& info )
 {
 	//TODO Allow for templated pose type to get rid of compiler warning due to float and double types.
 
@@ -339,7 +339,7 @@ void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corn
 
 
 void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
-	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels) {
+	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels) {
 	// refine corner positions
 		const bool bRefine = false;
 			if ( refineCorners( img, it ) ) //, pDebugImg ) )
@@ -353,7 +353,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 				}
 
 				// compute homography
-				Math::Matrix< 3, 3, float > H( Calibration::squareHomography( it ) );
+				Math::Matrix< float, 3, 3 > H( Calibration::squareHomography( it ) );
 
 				// get marker image & decode
 				boost::shared_ptr< Image > pMarker( getMarkerImage( img, H, iMarkerSize ) );
@@ -533,7 +533,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 }
 
 void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
-	const Math::Matrix< 3, 3, float >& K,const Math::Matrix< 3, 3, float >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels){
+	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels){
 		int nDiff, nVis;
 		float fRes;
 		bool bDraw = true;				
@@ -636,21 +636,21 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 }
 
 void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
-	const Math::Matrix< 3, 3, float >& _K,  Image* pDebugImg, bool bRefine, 
+	const Math::Matrix< float, 3, 3 >& _K,  Image* pDebugImg, bool bRefine, 
 	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels )
 {
 	assert( (iMarkerSize - iCodeSize) / 2.0 == 1.0 || (iMarkerSize - iCodeSize) / 2.0 == 2.0 );
 	
 	
 	
-	Math::Matrix< 3, 3, float > K( _K );
+	Math::Matrix< float, 3, 3 > K( _K );
 		
 	// flip image coordinates if origin==0 
 	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
 	Calibration::correctOrigin( K, img.origin, img.height );
 
 	// compute inverse camera matrix
-	Math::Matrix< 3, 3, float > invK( invert_matrix( K ) );
+	Math::Matrix< float, 3, 3 > invK( invert_matrix( K ) );
 	
 	// initialize found state of markerInfos
 	BOOST_FOREACH( MarkerInfoMap::value_type& mapEl, markerInfos )
@@ -729,16 +729,16 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 
 
 /** extracts the marker from the image and checks how many pixels are correct */
-bool checkRefinedMarker(const Math::Matrix< 3, 3, float >& K, Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
+bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
 {
-	Math::Matrix< 3, 4 > Rt( checkPose );
-	Math::Matrix< 3, 4 > KRt( ublas::prod( K, Rt ) );
+	Math::Matrix< double, 3, 4 > Rt( checkPose );
+	Math::Matrix< double, 3, 4 > KRt( ublas::prod( K, Rt ) );
 
 	// scale to make marker coordinates from -1 to +1
-	Math::Matrix< 4, 3, double > Sr( Math::Matrix< 4, 3, double >::zeros( ) );
+	Math::Matrix< double, 4, 3 > Sr( Math::Matrix< double, 4, 3 >::zeros( ) );
 	Sr( 0, 0 ) = Sr( 1, 1 ) = info.fSize;
 	Sr( 3, 2 ) = 1;
-	Math::Matrix< 3, 3 > h( ublas::prod( KRt, Sr ) );
+	Math::Matrix< double, 3, 3 > h( ublas::prod( KRt, Sr ) );
 
 	Math::Vector< double, 3 > test = ublas::prod( h, Math::Vector< double, 3 >( -1, -1, 1 ) );
 	test /= test( 2 );
@@ -1043,12 +1043,12 @@ bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg )
 }
  
 
-boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< 3, 3, float > homography, int nSize )
+boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize )
 	{
 	// compute a suitable scaling matrix that maps 
 	// for x: -0.5 -> -1 and (nSize-0.5) -> +1
 	// for y: -0.5 -> +1 and (nSize-0.5) -> -1
-	Math::Matrix< 3, 3, float > hScale;
+	Math::Matrix< float, 3, 3 > hScale;
 	
 	float m = 1.0f / nSize;
 	hScale( 0, 0 ) = m;
@@ -1062,7 +1062,7 @@ boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix<
 	hScale( 2, 2 ) = 1.0f;
 
 	// transpose because of column major representation in Matrix
-	Math::Matrix< 3, 3, float > Htrans = ublas::trans( ublas::prod( homography, hScale ) );	
+	Math::Matrix< float, 3, 3 > Htrans = ublas::trans( ublas::prod( homography, hScale ) );	
 	CvMat cvH = cvMat( 3, 3, CV_32FC1, Htrans.content() );
 	
 	// create target image
@@ -1319,7 +1319,7 @@ Math::Pose alternateMarkerPose( const Math::Pose& p )
 	namespace ublas = boost::numeric::ublas;
 
 	// compute normal and viewing direction
-	Math::Matrix< 3, 3 > rot( p.rotation() );
+	Math::Matrix< double, 3, 3 > rot( p.rotation() );
 	rot( 0, 2 ) *= -1;
 	rot( 1, 2 ) *= -1;
 	rot( 2, 0 ) *= -1;
@@ -1333,7 +1333,7 @@ Math::Pose alternateMarkerPose( const Math::Pose& p )
 
 
 
-void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< 3, 3, float >& K, double markerSize, CvScalar color, double error )
+void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double markerSize, CvScalar color, double error )
 {
 	// the corner points
 	static float points3D[ 8 ][ 3 ] = {

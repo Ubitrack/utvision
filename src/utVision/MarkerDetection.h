@@ -126,7 +126,7 @@ struct MarkerInfo
 	Math::Pose pose;
 
 	/** covariance matrix */
-	Math::Matrix< 6, 6 > covariance;
+	Math::Matrix< double, 6, 6 > covariance;
 
 	// INTERNAL 
 
@@ -172,7 +172,7 @@ typedef std::map< unsigned long long int, MarkerInfo > MarkerInfoMap;
  * @param useInnerEdgels incorporate inner edgelets into pose refinement. May be unstable.
  */
 UTVISION_EXPORT void detectMarkers( const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
-	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
+	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 #endif
 
@@ -209,7 +209,7 @@ UTVISION_EXPORT bool refineCorners( const Image& img, CornerList& corners, Image
  * @param homography a homography as computed by Ubitrack::Calibration::squareHomograph
  * @param nSize sidelength of the resulting image in pixels
  */
-UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< 3, 3, float > homography, int nSize );
+UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize );
 
 /**
  * @ingroup vision

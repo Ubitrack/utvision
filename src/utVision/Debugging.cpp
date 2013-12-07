@@ -5,7 +5,7 @@
 
 namespace Ubitrack { namespace Vision {
 
-void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, float >& K, double scale, CvScalar color, bool paintCoordSystem )
+void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double scale, CvScalar color, bool paintCoordSystem )
 {
 	namespace ublas = boost::numeric::ublas;
 
@@ -16,7 +16,7 @@ void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, 
 		{ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }
 	};
 
-	Math::Matrix< 3, 3, double > mat = Math::Matrix< 3, 3, double  >::identity();
+	Math::Matrix< double, 3, 3 > mat = Math::Matrix< double, 3, 3 >::identity();
 	Math::Pose pose2 = Math::Pose(Math::Quaternion(mat), Math::Vector< double, 3 >(0.0, 0.0, -5.0));
 
 	// project points
@@ -60,7 +60,7 @@ void drawPoseCube( Mat & img, const Math::Pose& pose, const Math::Matrix< 3, 3, 
 }
 
 
-Math::Vector< double, 3 > projectPoint ( Math::Vector< double, 3 > pt, Math::Matrix < 3, 3 > projection, int imageHeight)
+Math::Vector< double, 3 > projectPoint ( Math::Vector< double, 3 > pt, Math::Matrix< double, 3, 3 > projection, int imageHeight)
 {
     namespace ublas = boost::numeric::ublas;
 	Math::Vector< double, 3 > p2D = ublas::prod( projection, pt );
@@ -72,7 +72,7 @@ Math::Vector< double, 3 > projectPoint ( Math::Vector< double, 3 > pt, Math::Mat
 }
 
 
-void drawPose ( cv::Mat & dbgImage, Math::Pose pose, Math::Matrix < 3, 3> projection, double error )
+void drawPose ( cv::Mat & dbgImage, Math::Pose pose, Math::Matrix< double, 3, 3 > projection, double error )
 {
 	
 
@@ -100,7 +100,7 @@ void drawPose ( cv::Mat & dbgImage, Math::Pose pose, Math::Matrix < 3, 3> projec
 	cv::circle ( dbgImage, cvPoint ( p2D[0](0), p2D[0](1)), cvRound( dbgImage.cols / 50.0 ), Ubitrack::Vision::getGradientRampColor (error, 0.0, 100.0), 4);
 }
 
-void drawPosition ( cv::Mat & dbgImage, Math::Vector< double, 3 > position, Math::Matrix < 3, 3 > projection, double error )
+void drawPosition ( cv::Mat & dbgImage, Math::Vector< double, 3 > position, Math::Matrix< double, 3, 3 > projection, double error )
 {
 // the corner points
 	static float points3D[ 6 ][ 3 ] = {

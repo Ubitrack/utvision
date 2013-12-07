@@ -46,13 +46,13 @@ Undistortion::Undistortion( const std::string& intrinsicMatrixFile, const std::s
 }
 
 
-Undistortion::Undistortion( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
+Undistortion::Undistortion( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
 {
 	initParams( intrinsicMatrix, distortion );
 }
 
 
-void Undistortion::initParams( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
+void Undistortion::initParams( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
 {
 	m_intrinsics = intrinsicMatrix;
 	m_coeffs = distortion;
@@ -66,7 +66,7 @@ void Undistortion::initParams( const std::string& intrinsicMatrixFile, const std
 	{
 		
 		Measurement::Matrix3x3 measMat;
-		measMat.reset( new Math::Matrix< 3, 3 >() );
+		measMat.reset( new Math::Matrix< double, 3, 3 >() );
 		Util::readCalibFile( intrinsicMatrixFile, measMat );
 		m_intrinsics = *measMat;
 		LOG4CPP_DEBUG(logger, "Loaded calibration file : " << m_intrinsics);

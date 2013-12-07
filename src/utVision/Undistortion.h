@@ -51,7 +51,7 @@ public:
 	/**
 	 * Initialize from matrix+vector.
 	 */
-	Undistortion( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
+	Undistortion( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
 	
 	/** 
 	 * Undistorts an image.
@@ -65,7 +65,7 @@ public:
 	boost::shared_ptr< Image > undistort( boost::shared_ptr< Image > pImage );
 
 	/** returns the intrinsic matrix */
-	const Math::Matrix< 3, 3 >& getIntrinsics() const
+	const Math::Matrix< double, 3, 3 >& getIntrinsics() const
 	{ return m_intrinsics; }
 	
 	/** returns the radial distortion coefficients */
@@ -96,11 +96,11 @@ protected:
 	void initParams( const std::string& intrinsicMatrixFile, const std::string& distortionFile );
 
 	/** initialize from matrix+vector */
-	void initParams( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
+	void initParams( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
 
 	// distortion parameters
 	Math::Vector< double, 8 > m_coeffs;
-	Math::Matrix< 3, 3 > m_intrinsics;
+	Math::Matrix< double, 3, 3 > m_intrinsics;
 	
 	// undistortion maps
 	boost::scoped_ptr< Image > m_pMapX;

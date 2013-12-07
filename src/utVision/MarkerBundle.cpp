@@ -188,7 +188,7 @@ void BAInfo::printResiduals()
 	genParameterVector( parameters );
 
 	Math::Vector< double > measurements( size() );
-	Math::Matrix< 0, 0, double > J( size(), parameterSize() );
+	Math::Matrix< double, 0, 0 > J( size(), parameterSize() );
 	evaluateWithJacobian( measurements, parameters, J );
 
 	//std::cout << "\nIndividual residuals:\n";
@@ -243,12 +243,12 @@ void BAInfo::printResiduals()
 
 	// perform backward propagation
 	// unclear if this makes sense!
-	Math::Matrix< 0, 0, double > covariance( parameterSize(), parameterSize() );
+	Math::Matrix< double, 0, 0 > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
 		Math::backwardPropagationIdentity( covariance, stdDev, J );
 	else
 	{
-		ublas::matrix_range< typename Math::Matrix< 0, 0, double >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
+		ublas::matrix_range< typename Math::Matrix< double, 0, 0 >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
 		Math::backwardPropagationIdentity( covariance, stdDev, subJ );
 	}
 
@@ -389,9 +389,9 @@ void BAInfo::initRefPoints(bool undistorted)
 			SConfig::RefPoint::Meas& m2( *(it->second.measurements.rbegin()) );
 
 			// triangulate position in camera coordinates
-			Math::Matrix< 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
 			P1 = ublas::prod( intrinsicMatrix, P1 );
-			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
 			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
 
@@ -583,7 +583,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 	using namespace Calibration::Function;
 
 	// initialize jacobian
-	J =  Math::Matrix< 0, 0, double >::zeros( J.size1(), J.size2() );
+	J =  Math::Matrix< double, 0, 0 >::zeros( J.size1(), J.size2() );
 
 	const std::size_t iMarkersStart( 6 * cameras.size() );
 	std::size_t  iMeasurement = 0;
@@ -659,7 +659,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 		subROrigin = ublas::subrange( input, iMarkersStart, iMarkersStart + 6 );
 
 		ublas::matrix_range< MT1 > subJOrigin( J, ublas::range( iMeasurement, iMeasurement + 6 ), ublas::range( iMarkersStart, iMarkersStart + 6 ) );
-		subJOrigin = Math::Matrix< 6, 6, double >::identity();
+		subJOrigin = Math::Matrix< double, 6, 6 >::identity();
 	}
 
 	//LOG4CPP_TRACE( logger, "J: " << J );

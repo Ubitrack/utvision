@@ -15,7 +15,7 @@ int main( int, char** )
 		// load intrinsics
 		Vision::Undistortion undistorter( get_config().sMatrixFile, get_config().sDistortionFile );
 
-		Math::Matrix< 3, 3, float > intrinsics;
+		Math::Matrix< float, 3, 3 > intrinsics;
 		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
