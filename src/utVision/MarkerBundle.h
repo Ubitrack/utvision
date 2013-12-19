@@ -23,24 +23,18 @@
 
 
 
-
+#include <utCore.h> 
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
 
-#include <utUtil/Logging.h>
-#include <utUtil/CalibFile.h>
-
+#include <utVision/MarkerDetection.h>
 
 #include <map>
 #include <string>
-#include <iostream>
-
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
-
+#include <iosfwd>
 
 using namespace Ubitrack;
-namespace Markers = Ubitrack::Vision::Markers;
+
 
 
 #ifndef SCONF_H
@@ -51,7 +45,7 @@ struct SConfig
 	
 	//void init();
 	//void init(std::string sMFile,std::string sDFile,std::string sRFile);
-	std::map< unsigned long long int, Markers::MarkerInfo > markers;
+	std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > markers;
 	std::string sMatrixFile;
 	std::string sDistortionFile;
 	std::string sResultFile;
@@ -90,7 +84,7 @@ struct SConfig
 	UTVISION_EXPORT std::string getResultFile();
 	UTVISION_EXPORT std::string getMatrixFile();
 	UTVISION_EXPORT std::string getDistortionFile();	
-	UTVISION_EXPORT std::map< unsigned long long int, Markers::MarkerInfo > getMarkers();
+	UTVISION_EXPORT std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > getMarkers();
 	
 	
 	
@@ -135,7 +129,7 @@ struct BACameraInfo
 	bool bPoseComputed;
 	Math::Pose pose;
 	std::string name;
-	typedef std::map< unsigned long long int, Markers::MarkerInfo > MarkerMeasMap;
+	typedef std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > MarkerMeasMap;
 	MarkerMeasMap measMarker;
 };
 #endif

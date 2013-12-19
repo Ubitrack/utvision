@@ -21,13 +21,12 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-
-
 #include "MarkerBundle.h"
 
-#include <utVision/MarkerDetection.h>
+#include <utUtil/Logging.h>
 #include <utVision/Undistortion.h>
 
+#include <fstream>
 
 // highgui includes windows.h with the wrong parameters
 #ifdef _WIN32
@@ -35,6 +34,9 @@
 #endif
 
 #include <opencv/highgui.h>
+
+
+namespace Markers = Ubitrack::Vision::Markers;
 
 int main( int, char** )
 {

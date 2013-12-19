@@ -27,19 +27,23 @@
 #include "MarkerBundle.h"
 
 
+#include <utUtil/CalibFile.h>
+
 #include <utMath/Optimization/NewFunction/Function.h>
 #include <utMath/Optimization/NewFunction/Addition.h>
 #include <utMath/Optimization/NewFunction/Dehomogenization.h>
 #include <utMath/Optimization/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
 
 #include <utCalibration/LensDistortion.h>
 #include <utCalibration/AbsoluteOrientation.h>
 #include <utCalibration/3DPointReconstruction.h>
 #include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
 
-
+#include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/numeric/ublas/io.hpp>
+
 
 //#define OPTIMIZATION_LOGGING
 
@@ -52,6 +56,7 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle"
 
 
 namespace ublas = boost::numeric::ublas;
+namespace Markers = Ubitrack::Vision::Markers;
 
 static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
