@@ -299,11 +299,11 @@ void BAInfo::printResiduals()
 	// unclear if this makes sense!
 	Math::Matrix< double, 0, 0 > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
-		Math::backwardPropagationIdentity( covariance, stdDev, J );
+		Math::Stochastic::backwardPropagationIdentity( covariance, stdDev, J );
 	else
 	{
 		ublas::matrix_range< typename Math::Matrix< double, 0, 0 >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
-		Math::backwardPropagationIdentity( covariance, stdDev, subJ );
+		Math::Stochastic::backwardPropagationIdentity( covariance, stdDev, subJ );
 	}
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;
