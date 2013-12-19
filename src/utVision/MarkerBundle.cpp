@@ -1,8 +1,57 @@
+/*
+ * Ubitrack - Library for Ubiquitous Tracking
+ * Copyright 2006, Technische Universitaet Muenchen, and individual
+ * contributors as indicated by the @authors tag. See the
+ * copyright.txt in the distribution for a full listing of individual
+ * contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+
+
 //#define INSTANTIATE_SCONFIG
 
 #include "MarkerBundle.h"
 
+
+#include <utMath/Optimization/NewFunction/Function.h>
+#include <utMath/Optimization/NewFunction/Addition.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
+#include <utMath/Optimization/NewFunction/LieRotation.h>
+#include <utMath/BackwardPropagation.h>
+
+#include <utCalibration/LensDistortion.h>
+#include <utCalibration/AbsoluteOrientation.h>
+#include <utCalibration/3DPointReconstruction.h>
+#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
+
+
+#include <boost/numeric/ublas/io.hpp>
+
+//#define OPTIMIZATION_LOGGING
+
+#include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+#include <utMath/Optimization/LevenbergMarquardt.h>
+
+
+
+
+namespace ublas = boost::numeric::ublas;
 
 static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
@@ -579,7 +628,7 @@ void BAInfo::writeUTQL( std::ostream& of )
 template< class VT1, class VT2, class MT1 > 
 void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 {
-	using namespace Math::Function;
+	using namespace Math::Optimization::Function;
 	using namespace Calibration::Function;
 
 	// initialize jacobian

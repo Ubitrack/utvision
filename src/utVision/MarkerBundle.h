@@ -1,44 +1,46 @@
-#include <vector>
-#include <deque>
-#include <string>
-#include <set>
-#include <fstream>
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
-#include <boost/numeric/ublas/io.hpp>
+/*
+ * Ubitrack - Library for Ubiquitous Tracking
+ * Copyright 2006, Technische Universitaet Muenchen, and individual
+ * contributors as indicated by the @authors tag. See the
+ * copyright.txt in the distribution for a full listing of individual
+ * contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 
 
-// highgui includes windows.h with the wrong parameters
-#ifdef _WIN32
-#include <utUtil/CleanWindows.h>
-#endif
 
-#include <opencv/highgui.h>
-#include <utMath/NewFunction/Function.h>
-#include <utMath/NewFunction/Addition.h>
-#include <utMath/NewFunction/Dehomogenization.h>
-#include <utMath/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
-#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utCalibration/AbsoluteOrientation.h>
-#include <utCalibration/3DPointReconstruction.h>
-#include <utCalibration/LensDistortion.h>
 
-#include <utVision/MarkerDetection.h>
-#include <utVision/Undistortion.h>
+#include <utMath/Vector.h>
+#include <utMath/Matrix.h>
+
 #include <utUtil/Logging.h>
 #include <utUtil/CalibFile.h>
 
-#include <log4cpp/Category.hh>
 
-//#define OPTIMIZATION_LOGGING
-//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
-#include <utMath/Optimization/LevenbergMarquardt.h>
+#include <map>
+#include <string>
+#include <iostream>
+
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
+
 
 using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;
-namespace ublas = boost::numeric::ublas;
-
 
 
 #ifndef SCONF_H
