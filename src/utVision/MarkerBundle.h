@@ -33,7 +33,7 @@
 
 //#define OPTIMIZATION_LOGGING
 //static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
-#include <utMath/LevenbergMarquardt.h>
+#include <utMath/Optimization/LevenbergMarquardt.h>
 
 using namespace Ubitrack;
 namespace Markers = Ubitrack::Vision::Markers;

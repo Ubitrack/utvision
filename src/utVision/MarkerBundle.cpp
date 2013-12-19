@@ -759,7 +759,7 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
 	LOG4CPP_DEBUG( logger, "original measurements: " << measurements);
-	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
+	Math::Optimization::levenbergMarquardt( *this, parameters, measurements, Math::Optimization::OptTerminate( 200, 1e-6 ), Math::Optimization::OptNoNormalize() );
 	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 	
 	updateParameters( parameters );

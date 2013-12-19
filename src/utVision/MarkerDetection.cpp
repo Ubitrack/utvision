@@ -61,8 +61,7 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 //#define OPTIMIZATION_LOGGING
 //static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.MarkerTracker.Opt" ) );
 
-#include <utMath/LevenbergMarquardt.h>
-#include <utMath/GaussNewton.h>
+#include <utMath/Optimization/LevenbergMarquardt.h>
 #include <utVision/EdgeMeasurement.h>
 #include <utCalibration/Function/ProjectivePoseNormalize.h>
 
@@ -253,12 +252,12 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 	
 	try
 	{
-		info.fResidual = Math::weightedLevenbergMarquardt( 
+		info.fResidual = Math::Optimization::weightedLevenbergMarquardt( 
 			edgeMF,
 			poseVector,
 			Math::Vector< float >::zeros( edgels1.size() ),
 			// Max. 6 iterations, precision 1e-4
-			Math::OptTerminate( 6, 1e-4 ),
+			Math::Optimization::OptTerminate( 6, 1e-4 ),
 			Calibration::Function::ProjectivePoseNormalize(),
 			edgeMF
 		);
