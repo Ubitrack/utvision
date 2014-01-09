@@ -1,15 +1,69 @@
+/*
+ * Ubitrack - Library for Ubiquitous Tracking
+ * Copyright 2006, Technische Universitaet Muenchen, and individual
+ * contributors as indicated by the @authors tag. See the
+ * copyright.txt in the distribution for a full listing of individual
+ * contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+
+
 //#define INSTANTIATE_SCONFIG
 
 #include "MarkerBundle.h"
 
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
 
-static const Math::Vector< 3 > g_unitCorners[ 4 ] = 
+#include <utUtil/CalibFile.h>
+
+#include <utMath/Optimization/NewFunction/Function.h>
+#include <utMath/Optimization/NewFunction/Addition.h>
+#include <utMath/Optimization/NewFunction/Dehomogenization.h>
+#include <utMath/Optimization/NewFunction/LieRotation.h>
+#include <utMath/Stochastic/BackwardPropagation.h>
+
+#include <utCalibration/LensDistortion.h>
+#include <utCalibration/AbsoluteOrientation.h>
+#include <utCalibration/3DPointReconstruction.h>
+#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
+
+#include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/numeric/ublas/io.hpp>
+
+
+//#define OPTIMIZATION_LOGGING
+
+#include <log4cpp/Category.hh>
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
+#include <utMath/Optimization/LevenbergMarquardt.h>
+
+
+
+
+namespace ublas = boost::numeric::ublas;
+namespace Markers = Ubitrack::Vision::Markers;
+
+static const Math::Vector< double, 3 > g_unitCorners[ 4 ] = 
 {
-	Math::Vector< 3 >( -0.5,  0.5, 0.0 ),
-	Math::Vector< 3 >( -0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5, -0.5, 0.0 ),
-	Math::Vector< 3 >(  0.5,  0.5, 0.0 ) 
+	Math::Vector< double, 3 >( -0.5,  0.5, 0.0 ),
+	Math::Vector< double, 3 >( -0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5, -0.5, 0.0 ),
+	Math::Vector< double, 3 >(  0.5,  0.5, 0.0 ) 
 };
 
 void SConfig::setResultFile(std::string re)
@@ -30,7 +84,7 @@ void SConfig::setMarkersInfo(unsigned long long int code, float size)
 }
 void SConfig::setRefPositions(std::string id, double x, double y, double z)
 {
-	refPoints[ id ].pos = Math::Vector< 3 >( x , y , z );
+	refPoints[ id ].pos = Math::Vector< double, 3 >( x , y , z );
 }
 void SConfig::setRefPoints(std::string id, RefPoint::Meas measurement)
 {
@@ -153,7 +207,7 @@ void SConfig::parseMBConf(std::string conFile)
 		else if ( boost::regex_match( buf, match, reRefPointMeasurement ) )
 		{
 			setRefPoints( match[ 1 ] , RefPoint::Meas( match[ 2 ].str(), 
-			Math::Vector< 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ))));
+			Math::Vector< double, 2 >( strtod( match[ 3 ].str().c_str(), &dummy ), strtod( match[ 4 ].str().c_str(), &dummy ))));
 		}
 		else
 			std::cerr << "unknown configuration string: " << buf << std::endl;
@@ -184,11 +238,11 @@ void BAInfo::printConfiguration()
 
 void BAInfo::printResiduals()
 {
-	ublas::vector< double > parameters( parameterSize() );
+	Math::Vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
-	ublas::vector< double > measurements( size() );
-	ublas::matrix< double, ublas::column_major > J( size(), parameterSize() );
+	Math::Vector< double > measurements( size() );
+	Math::Matrix< double, 0, 0 > J( size(), parameterSize() );
 	evaluateWithJacobian( measurements, parameters, J );
 
 	//std::cout << "\nIndividual residuals:\n";
@@ -243,13 +297,13 @@ void BAInfo::printResiduals()
 
 	// perform backward propagation
 	// unclear if this makes sense!
-	ublas::matrix< double, ublas::column_major > covariance( parameterSize(), parameterSize() );
+	Math::Matrix< double, 0, 0 > covariance( parameterSize(), parameterSize() );
 	if ( m_bUseRefPoints )
-		Math::backwardPropagationIdentity( covariance, stdDev, J );
+		Math::Stochastic::backwardPropagationIdentity( covariance, stdDev, J );
 	else
 	{
-		ublas::matrix_range< ublas::matrix< double, ublas::column_major > > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
-		Math::backwardPropagationIdentity( covariance, stdDev, subJ );
+		ublas::matrix_range< typename Math::Matrix< double, 0, 0 >::base_type > subJ( J, ublas::range( 0, J.size1() - 6 ), ublas::range( 0, J.size2() ) );
+		Math::Stochastic::backwardPropagationIdentity( covariance, stdDev, subJ );
 	}
 
 	std::cout << "Estimated standard deviations (r, t):" << std::endl;
@@ -321,7 +375,7 @@ void BAInfo::initMarkers()
 	const unsigned long long int startMarker = markers.begin()->first;	
 	
 	
-	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< 3 >( 0, 0, 0 ) );	
+	markers[ startMarker ].pose = Math::Pose( Math::Quaternion( 0, 0, 0, 1 ), Math::Vector< double, 3 >( 0, 0, 0 ) );	
 	markers[ startMarker ].bPoseComputed = true;
 	markerQueue.push_back( startMarker );
 	
@@ -379,8 +433,8 @@ void BAInfo::initRefPoints(bool undistorted)
 	// find reference points with at least two measurements
 	std::cout << std::endl << "Initializing reference points:" << std::endl;
     getStream() << std::endl << "Initializing reference points:" << std::endl;
-	std::vector< Math::Vector< 3 > > refPointsCam;
-	std::vector< Math::Vector< 3 > > refPointsRoom;
+	std::vector< Math::Vector< double, 3 > > refPointsCam;
+	std::vector< Math::Vector< double, 3 > > refPointsRoom;
 
 	for ( SConfig::RefPointMap::iterator it = get_config().refPoints.begin(); it != get_config().refPoints.end(); it++ )
 		if ( it->second.measurements.size() >= 2 )
@@ -389,11 +443,11 @@ void BAInfo::initRefPoints(bool undistorted)
 			SConfig::RefPoint::Meas& m2( *(it->second.measurements.rbegin()) );
 
 			// triangulate position in camera coordinates
-			Math::Matrix< 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P1( cameras[ imageToCam[ m1.image ] ].pose );
 			P1 = ublas::prod( intrinsicMatrix, P1 );
-			Math::Matrix< 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
+			Math::Matrix< double, 3, 4 > P2( cameras[ imageToCam[ m2.image ] ].pose );
 			P2 = ublas::prod( intrinsicMatrix, P2 );
-			Math::Vector< 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
+			Math::Vector< double, 3 > p3d = Calibration::get3DPosition( P1, P2, m1.pos, m2.pos );
 
 			refPointsCam.push_back( p3d );
 			refPointsRoom.push_back( it->second.pos );
@@ -495,12 +549,12 @@ void BAInfo::writeUTQL( std::ostream& of )
     	of << "                <Value xsi:type=\"utql:ListOfPrimitiveValueType\">\n";
 
 		//###
-		std::vector< Math::Vector< 3 > > markerCorners;		
+		std::vector< Math::Vector< double, 3 > > markerCorners;		
 
 		for ( std::size_t i( 0 ); i < 4; i++ )
 		{
 			
-			Math::Vector< 3 > p = it->second.pose * Math::Vector< 3 >( g_unitCorners[ i ] * it->second.fSize );
+			Math::Vector< double, 3 > p = it->second.pose * Math::Vector< double, 3 >( g_unitCorners[ i ] * it->second.fSize );
 	    	of << "                    <Attribute name=\"staticPosition\" value=\"" << p( 0 ) << " " << p( 1 ) << " " << p( 2 ) << "\"/>\n";
 			
 			//###
@@ -579,11 +633,11 @@ void BAInfo::writeUTQL( std::ostream& of )
 template< class VT1, class VT2, class MT1 > 
 void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 {
-	using namespace Math::Function;
+	using namespace Math::Optimization::Function;
 	using namespace Calibration::Function;
 
 	// initialize jacobian
-	J = ublas::zero_matrix< double >( J.size1(), J.size2() );
+	J =  Math::Matrix< double, 0, 0 >::zeros( J.size1(), J.size2() );
 
 	const std::size_t iMarkersStart( 6 * cameras.size() );
 	std::size_t  iMeasurement = 0;
@@ -659,7 +713,7 @@ void BAInfo::evaluateWithJacobian( VT1& result, const VT2& input, MT1& J) const
 		subROrigin = ublas::subrange( input, iMarkersStart, iMarkersStart + 6 );
 
 		ublas::matrix_range< MT1 > subJOrigin( J, ublas::range( iMeasurement, iMeasurement + 6 ), ublas::range( iMarkersStart, iMarkersStart + 6 ) );
-		subJOrigin = ublas::identity_matrix< double >( 6 );
+		subJOrigin = Math::Matrix< double, 6, 6 >::identity();
 	}
 
 	//LOG4CPP_TRACE( logger, "J: " << J );
@@ -695,7 +749,7 @@ void BAInfo::genTargetVector( VT& v )
 	{
 		// add origin measurement
 		ublas::vector_range< VT > subOrigin( v, ublas::range( iMeasurement, iMeasurement + 6 ) );
-		subOrigin = ublas::zero_vector< double >( 6 );
+		subOrigin = Math::Vector< double, 6 >::zeros();
 	}
 }
 
@@ -749,17 +803,17 @@ void BAInfo::bundleAdjustment( bool bUseRefPoints )
 {	
 	m_bUseRefPoints = bUseRefPoints;
 
-	ublas::vector< double > measurements( size() );
+	Math::Vector< double > measurements( size() );
 	genTargetVector( measurements );
 	
 	LOG4CPP_TRACE( logger, "Starting Bundle Adjustment" );
 	
-	ublas::vector< double > parameters( parameterSize() );
+	Math::Vector< double > parameters( parameterSize() );
 	genParameterVector( parameters );
 
 	LOG4CPP_DEBUG( logger, "original parameters: " << parameters );
 	LOG4CPP_DEBUG( logger, "original measurements: " << measurements);
-	Math::levenbergMarquardt( *this, parameters, measurements, Math::OptTerminate( 200, 1e-6 ), Math::OptNoNormalize() );
+	Math::Optimization::levenbergMarquardt( *this, parameters, measurements, Math::Optimization::OptTerminate( 200, 1e-6 ), Math::Optimization::OptNoNormalize() );
 	LOG4CPP_DEBUG( logger, "improved parameters: " << parameters );
 	
 	updateParameters( parameters );

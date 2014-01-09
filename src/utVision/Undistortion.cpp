@@ -46,13 +46,13 @@ Undistortion::Undistortion( const std::string& intrinsicMatrixFile, const std::s
 }
 
 
-Undistortion::Undistortion( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< 8 >& distortion )
+Undistortion::Undistortion( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
 {
 	initParams( intrinsicMatrix, distortion );
 }
 
 
-void Undistortion::initParams( const Math::Matrix< 3, 3 >& intrinsicMatrix, const Math::Vector< 8 >& distortion )
+void Undistortion::initParams( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
 {
 	m_intrinsics = intrinsicMatrix;
 	m_coeffs = distortion;
@@ -66,7 +66,7 @@ void Undistortion::initParams( const std::string& intrinsicMatrixFile, const std
 	{
 		
 		Measurement::Matrix3x3 measMat;
-		measMat.reset( new Math::Matrix< 3, 3 >() );
+		measMat.reset( new Math::Matrix< double, 3, 3 >() );
 		Util::readCalibFile( intrinsicMatrixFile, measMat );
 		m_intrinsics = *measMat;
 		LOG4CPP_DEBUG(logger, "Loaded calibration file : " << m_intrinsics);
@@ -89,7 +89,7 @@ void Undistortion::initParams( const std::string& intrinsicMatrixFile, const std
 	{
         // first try new, eight element distortion file
 		Measurement::Vector8D measVec;
-		measVec.reset( new Math::Vector< 8 >() );
+		measVec.reset( new Math::Vector< double, 8 >() );
         try {
 		    Util::readCalibFile( distortionFile, measVec );
             m_coeffs = *measVec;
@@ -97,15 +97,15 @@ void Undistortion::initParams( const std::string& intrinsicMatrixFile, const std
             LOG4CPP_ERROR( logger, "Cannot read new image distortion model. Trying old format." );
             // try old format, this time without exception handling
             Measurement::Vector4D measVec4D;
-            measVec4D.reset( new Math::Vector< 4 >() );
+            measVec4D.reset( new Math::Vector< double, 4 >() );
             Util::readCalibFile( distortionFile, measVec4D );
-            m_coeffs = Math::Vector< 8 >::zeros();
+            m_coeffs = Math::Vector< double, 8 >::zeros();
             boost::numeric::ublas::subrange(m_coeffs, 0, 4 ) = *measVec4D;
         }
 		
 	}
 	else
-		m_coeffs = boost::numeric::ublas::zero_vector< double >( 8 );
+		m_coeffs = Math::Vector< double, 8 >::zeros();
 }
 
 
@@ -180,7 +180,7 @@ void Undistortion::initMap( int width, int height, int origin )
 	cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
 	
 	LOG4CPP_TRACE( logger, "origin=" << origin );
-	Math::Vector< 2 > startPixel( *reinterpret_cast< float* >( m_pMapX->imageData ), *reinterpret_cast< float* >( m_pMapY->imageData ) );
+	Math::Vector< double, 2 > startPixel( *reinterpret_cast< float* >( m_pMapX->imageData ), *reinterpret_cast< float* >( m_pMapY->imageData ) );
 	LOG4CPP_DEBUG( logger, "first pixel (0, 0) mapped from " << startPixel );
 		
 	// release data

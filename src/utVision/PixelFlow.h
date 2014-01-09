@@ -60,7 +60,7 @@ public:
 	 * @param topLeft top-left corner of the area in the reference image for which to compute the pixel flow
 	 * @param bottomRight bottom-right corner of the area in the reference image for which to compute the pixel flow
 	 */
-	void calcProjectionBuffer( const Image& image, const Math::Vector< 2, int >& topLeft, const Math::Vector< 2, int >& bottomRight );
+	void calcProjectionBuffer( const Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight );
 	
 	/** 
 	 * Search for the most likely image shift in another image.
@@ -68,7 +68,7 @@ public:
 	 * @param result the shift vector. (-2,1) means the area was moved two pixels left and one down
 	 * @param difference the RMS error of the pixel difference (sum of x and y differences)
 	 */
-	void computeFlow( const Image& image, Math::Vector< 2, int >& result, int& difference , Image* pDebugImg);
+	void computeFlow( const Image& image, Math::Vector< int, 2 >& result, int& difference , Image* pDebugImg);
 	
 
 protected:	
@@ -84,7 +84,7 @@ protected:
 	 * @param yRec new Increased in y direction rectangle
 	 */
 	void calculateIncrisedCoordiants(int width, int height,double incr, std::vector<int> topL,
-			std::vector<int> bottomR, Math::Vector<4,int>& xRec, Math::Vector<4,int>& yRec);
+			std::vector<int> bottomR, Math::Vector< int, 4 >& xRec, Math::Vector< int, 4 >& yRec);
 
 	/** 
 	* Calcualte the error buffer for the current two vectores

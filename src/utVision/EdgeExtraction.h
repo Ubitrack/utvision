@@ -53,8 +53,8 @@ namespace Ubitrack { namespace Vision {
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-UTVISION_EXPORT void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< 2, float >& center, 
-	const Math::Vector< 2, float >& direction, int nExtension );
+UTVISION_EXPORT void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+	const Math::Vector< float, 2 >& direction, int nExtension );
 
 /**
  * Sample a line centered in a given point with subpixel precision and apply compute the gradient.
@@ -67,8 +67,8 @@ UTVISION_EXPORT void sobelLineSubPix( const Image& src, int* pDst, const Math::V
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-UTVISION_EXPORT void simpleLineGradient( const Image& src, int* pDst, const Math::Vector< 2, float >& center, 
-	const Math::Vector< 2, float >& direction, int nExtension );
+UTVISION_EXPORT void simpleLineGradient( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+	const Math::Vector< float, 2 >& direction, int nExtension );
 
 /**
  * Policy class for findEdge: find the edge with the highest positive intensity.
@@ -129,8 +129,8 @@ struct FindEdgeAbsoluteMaximum
  */
 struct ExtractLineSobel
 {
-	void sample( const Image& image, int* pDst, const Math::Vector< 2, float >& center, 
-		const Math::Vector< 2, float >& direction, int distance )
+	void sample( const Image& image, int* pDst, const Math::Vector< float, 2 >& center, 
+		const Math::Vector< float, 2 >& direction, int distance )
 	{ sobelLineSubPix( image, pDst, center, direction, distance * 2 ); }
 };
 
@@ -141,8 +141,8 @@ struct ExtractLineSobel
  */
 struct ExtractLineSimpleGradient
 {
-	void sample( const Image& image, int* pDst, const Math::Vector< 2, float >& center, 
-		const Math::Vector< 2, float >& direction, int distance )
+	void sample( const Image& image, int* pDst, const Math::Vector< float, 2 >& center, 
+		const Math::Vector< float, 2 >& direction, int distance )
 	{ simpleLineGradient( image, pDst, center, direction, distance * 2 ); }
 };
 
@@ -165,7 +165,7 @@ struct ExtractLineSimpleGradient
  * @return the distance of the pixel with maximum response from \c start. Positive values are in the direction of \c dir.
  */
 template< class EdgeComparison, class LineExtraction, class T >
-T findEdge( const Image& image, const Math::Vector< 2, T >& start, const Math::Vector< 2, T >& dir, int maxDistance, int& maxResponse )
+T findEdge( const Image& image, const Math::Vector< T, 2 >& start, const Math::Vector< T, 2 >& dir, int maxDistance, int& maxResponse )
 {
 	// extract the sampled line
 	boost::scoped_array< int > pBuffer( new int[ 2 * maxDistance + 1 ] );
@@ -194,7 +194,7 @@ T findEdge( const Image& image, const Math::Vector< 2, T >& start, const Math::V
  * @param pSrc image to sample
  * @param point to sample
  */
-UTVISION_EXPORT int subpixSampleFast( const Image& src, const Math::Vector< 2, float >& p );
+UTVISION_EXPORT int subpixSampleFast( const Image& src, const Math::Vector< float, 2 >& p );
 	
 /**
  * Samples a point with subpixel precision and outlier checks.
@@ -202,7 +202,7 @@ UTVISION_EXPORT int subpixSampleFast( const Image& src, const Math::Vector< 2, f
  * @param pSrc image to sample
  * @param point to sample
  */
-UTVISION_EXPORT int subpixSampleSafe( const Image& src, const Math::Vector< 2, float >& p );
+UTVISION_EXPORT int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p );
 
 } } // namespace Ubitrack::Vision
 

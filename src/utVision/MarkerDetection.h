@@ -45,7 +45,7 @@
 namespace Ubitrack { namespace Vision { namespace Markers {
 
 /** a list of corner points */
-typedef std::vector< Ubitrack::Math::Vector< 2, float > > CornerList;
+typedef std::vector< Ubitrack::Math::Vector< float, 2 > > CornerList;
 
 /** a list of polygons */
 typedef std::vector< CornerList > MarkerList;
@@ -126,7 +126,7 @@ struct MarkerInfo
 	Math::Pose pose;
 
 	/** covariance matrix */
-	Math::Matrix< 6, 6 > covariance;
+	Math::Matrix< double, 6, 6 > covariance;
 
 	// INTERNAL 
 
@@ -172,7 +172,7 @@ typedef std::map< unsigned long long int, MarkerInfo > MarkerInfoMap;
  * @param useInnerEdgels incorporate inner edgelets into pose refinement. May be unstable.
  */
 UTVISION_EXPORT void detectMarkers( const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
-	const Math::Matrix< 3, 3, float >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
+	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
 #endif
 
@@ -209,7 +209,7 @@ UTVISION_EXPORT bool refineCorners( const Image& img, CornerList& corners, Image
  * @param homography a homography as computed by Ubitrack::Calibration::squareHomograph
  * @param nSize sidelength of the resulting image in pixels
  */
-UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< 3, 3, float > homography, int nSize );
+UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize );
 
 /**
  * @ingroup vision
@@ -246,7 +246,7 @@ UTVISION_EXPORT unsigned long long int normalizeCode( unsigned long long int nCo
  * @param uiMask regions of the marker's bit pattern that belong to the ID (1) or not (0)
  */
 UTVISION_EXPORT void computeMarkerEdgels( unsigned long long int markerCode, float markerSize, 
-	std::vector< Math::Vector< 3, float > >& points1, std::vector< Math::Vector< 3, float > >& points2, 
+	std::vector< Math::Vector< float, 3 > >& points1, std::vector< Math::Vector< float, 3 > >& points2, 
 	unsigned int uiCodeSize, unsigned int uiMarkerSize, unsigned long long int uiMask, bool computeInnerEdgels );
 
 /**
@@ -281,7 +281,7 @@ UTVISION_EXPORT Math::Pose alternateMarkerPose( const Math::Pose& p );
  */
  
 UTVISION_EXPORT int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
-	const Math::Vector< 2, float >& point1, const Math::Vector< 2, float >& point2, int nSearchPixels, 
+	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg );
 
 } } } // namespace Ubitrack::Vision::Markers

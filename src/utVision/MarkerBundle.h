@@ -1,43 +1,39 @@
-#include <vector>
-#include <deque>
-#include <string>
-#include <set>
-#include <fstream>
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
-#include <boost/numeric/ublas/io.hpp>
+/*
+ * Ubitrack - Library for Ubiquitous Tracking
+ * Copyright 2006, Technische Universitaet Muenchen, and individual
+ * contributors as indicated by the @authors tag. See the
+ * copyright.txt in the distribution for a full listing of individual
+ * contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 
 
-// highgui includes windows.h with the wrong parameters
-#ifdef _WIN32
-#include <utUtil/CleanWindows.h>
-#endif
 
-#include <opencv/highgui.h>
-#include <utMath/NewFunction/Function.h>
-#include <utMath/NewFunction/Addition.h>
-#include <utMath/NewFunction/Dehomogenization.h>
-#include <utMath/NewFunction/LieRotation.h>
-#include <utMath/BackwardPropagation.h>
-#include <utCalibration/NewFunction/CameraIntrinsicsMultiplication.h>
-#include <utCalibration/AbsoluteOrientation.h>
-#include <utCalibration/3DPointReconstruction.h>
-#include <utCalibration/LensDistortion.h>
+#include <utCore.h> 
+#include <utMath/Vector.h>
+#include <utMath/Matrix.h>
 
 #include <utVision/MarkerDetection.h>
-#include <utVision/Undistortion.h>
-#include <utUtil/Logging.h>
-#include <utUtil/CalibFile.h>
 
-#include <log4cpp/Category.hh>
-
-//#define OPTIMIZATION_LOGGING
-//static log4cpp::Category& optLogger( log4cpp::Category::getInstance( "MarkerBundle" ) );
-#include <utMath/LevenbergMarquardt.h>
+#include <map>
+#include <string>
+#include <iosfwd>
 
 using namespace Ubitrack;
-namespace Markers = Ubitrack::Vision::Markers;
-namespace ublas = boost::numeric::ublas;
 
 
 
@@ -49,7 +45,7 @@ struct SConfig
 	
 	//void init();
 	//void init(std::string sMFile,std::string sDFile,std::string sRFile);
-	std::map< unsigned long long int, Markers::MarkerInfo > markers;
+	std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > markers;
 	std::string sMatrixFile;
 	std::string sDistortionFile;
 	std::string sResultFile;
@@ -61,17 +57,17 @@ struct SConfig
 			: pos( 0, 0, 0 )
 		{}
 
-		Math::Vector< 3 > pos;
+		Math::Vector< double, 3 > pos;
 
 		struct Meas
 		{
-			Meas( const std::string& i, const Math::Vector< 2 >& m )
+			Meas( const std::string& i, const Math::Vector< double, 2 >& m )
 				: image( i )
 				, pos( m )
 			{}
 
 			std::string image;
-			Math::Vector< 2 > pos;
+			Math::Vector< double, 2 > pos;
 		};
 		std::vector< Meas > measurements;
 	};
@@ -88,7 +84,7 @@ struct SConfig
 	UTVISION_EXPORT std::string getResultFile();
 	UTVISION_EXPORT std::string getMatrixFile();
 	UTVISION_EXPORT std::string getDistortionFile();	
-	UTVISION_EXPORT std::map< unsigned long long int, Markers::MarkerInfo > getMarkers();
+	UTVISION_EXPORT std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > getMarkers();
 	
 	
 	
@@ -133,7 +129,7 @@ struct BACameraInfo
 	bool bPoseComputed;
 	Math::Pose pose;
 	std::string name;
-	typedef std::map< unsigned long long int, Markers::MarkerInfo > MarkerMeasMap;
+	typedef std::map< unsigned long long int, Ubitrack::Vision::Markers::MarkerInfo > MarkerMeasMap;
 	MarkerMeasMap measMarker;
 };
 #endif
@@ -142,7 +138,7 @@ struct BACameraInfo
 #define BAI_H
 struct BAInfo
 {
-	BAInfo( const Math::Matrix< 3, 3, float >& _intrinsics, const Math::Vector< 4 >& _radial )
+	BAInfo( const Math::Matrix< float, 3, 3 >& _intrinsics, const Math::Vector< double, 4 >& _radial )
 		: intrinsicMatrix( _intrinsics )
 		, radialCoeffs( _radial )
 	{
@@ -200,9 +196,9 @@ struct BAInfo
 	bool m_bUseRefPoints;
 
 	// intrinsic camera parameters
-	Math::Matrix< 3, 3 > intrinsicMatrix;
-	Math::Vector< 4 > radialCoeffs;
-	Math::Vector< 5 > intrinsics;
+	Math::Matrix< double, 3, 3 > intrinsicMatrix;
+	Math::Vector< double, 4 > radialCoeffs;
+	Math::Vector< double, 5 > intrinsics;
 };
 
 #endif
