@@ -1,7 +1,7 @@
 #ifndef __COLORS_UBITRACK_H_INCLUDED__
 #define __COLORS_UBITRACK_H_INCLUDED__
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core/types_c.h>
 #include <utVision.h>
 
 namespace Ubitrack { namespace Vision {
