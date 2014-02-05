@@ -29,6 +29,7 @@
 
 #include <utVision/MarkerDetection.h>
 
+#include <set>
 #include <map>
 #include <string>
 #include <iosfwd>
