@@ -40,7 +40,7 @@
 #include <iostream>
 
 #include <utMath/MatrixOperations.h>
-#include <utMath/cast_assign.h>
+#include <utMath/Util/cast_assign.h>
 #include <utCalibration/Homography.h>
 #include <utCalibration/2D3DPoseEstimation.h>
 #include <utCalibration/Projection.h>
@@ -413,7 +413,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 					// create corner list
 					info.corners.resize( 4 );
 					for ( unsigned i = 0; i < 4; i++ )
-						Math::vector_cast_assign( info.corners[ i ], Math::Vector< double, 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
+						Math::Util::vector_cast_assign( info.corners[ i ], Math::Vector< double, 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
 
 					// origin correction
 					if ( !img.origin )

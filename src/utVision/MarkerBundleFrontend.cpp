@@ -54,7 +54,7 @@ int main( int, char** )
 		Vision::Undistortion undistorter( get_config().sMatrixFile, get_config().sDistortionFile );
 
 		Math::Matrix< float, 3, 3 > intrinsics;
-		Math::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
+		Math::Util::matrix_cast_assign( intrinsics, undistorter.getIntrinsics() );
 		
 		// find image files in directories
 		std::vector< std::string > imageNames;
