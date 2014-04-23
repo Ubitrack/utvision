@@ -206,7 +206,7 @@ UTVISION_EXPORT bool refineCorners( const Image& img, CornerList& corners, Image
  * Returns a rectified image of a marker.
  *
  * @param img the grey-scale camera image
- * @param homography a homography as computed by Ubitrack::Calibration::squareHomograph
+ * @param homography a homography as computed by Ubitrack::Algorithm::squareHomograph
  * @param nSize sidelength of the resulting image in pixels
  */
 UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize );

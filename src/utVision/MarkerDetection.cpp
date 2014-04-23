@@ -41,9 +41,9 @@
 
 #include <utMath/MatrixOperations.h>
 #include <utMath/Util/cast_assign.h>
-#include <utCalibration/Homography.h>
-#include <utCalibration/2D3DPoseEstimation.h>
-#include <utCalibration/Projection.h>
+#include <utAlgorithm/Homography.h>
+#include <utAlgorithm/2D3DPoseEstimation.h>
+#include <utAlgorithm/Projection.h>
 #include <utVision/Colors.h>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
@@ -63,7 +63,7 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 
 #include <utMath/Optimization/LevenbergMarquardt.h>
 #include <utVision/EdgeMeasurement.h>
-#include <utCalibration/Function/ProjectivePoseNormalize.h>
+#include <utAlgorithm/Function/ProjectivePoseNormalize.h>
 
 #ifdef HAVE_TBB
 #undef HAVE_TBB
@@ -258,7 +258,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 			Math::Vector< float >::zeros( edgels1.size() ),
 			// Max. 6 iterations, precision 1e-4
 			Math::Optimization::OptTerminate( 6, 1e-4 ),
-			Calibration::Function::ProjectivePoseNormalize(),
+			Algorithm::Function::ProjectivePoseNormalize(),
 			edgeMF
 		);
 		
@@ -352,7 +352,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 				}
 
 				// compute homography
-				Math::Matrix< float, 3, 3 > H( Calibration::squareHomography( it ) );
+				Math::Matrix< float, 3, 3 > H( Algorithm::squareHomography( it ) );
 
 				// get marker image & decode
 				boost::shared_ptr< Image > pMarker( getMarkerImage( img, H, iMarkerSize ) );
@@ -434,7 +434,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						ublas::column( H, 2 ) *= info.fSize;						
 						LOG4CPP_DEBUG( logger, "Homography: " << H  );
 						// compute pose
-						Math::Pose initialPose( Calibration::poseFromHomography( H, invK ) );						
+						Math::Pose initialPose( Algorithm::poseFromHomography( H, invK ) );						
 						LOG4CPP_DEBUG( logger, "initialPose: " << initialPose  );
 						// rotate pose to account for different order of corner points
 						const double fSqrtHalf = 0.70710678118654752440084436210485;
@@ -456,13 +456,13 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						Math::Pose pose( initialPose );
 
 						// perform some LM iterations on the edge points to get a more stable initialization
-						double optRes = Calibration::optimizePose( pose, it, p3D, K, 4 );
+						double optRes = Algorithm::optimizePose( pose, it, p3D, K, 4 );
 							
 						// try optimization with the rotation from the last pose
 						if ( info.bUseInitialPose )
 						{
 							Math::Pose testPose = Math::Pose( info.pose.rotation(), initialPose.translation() );
-							double testOptRes = Calibration::optimizePose( testPose, it, p3D, K, 4 );
+							double testOptRes = Algorithm::optimizePose( testPose, it, p3D, K, 4 );
 							if ( testOptRes < optRes * 9 ) // prefer last pose rotation
 								pose = testPose;
 						}
@@ -487,7 +487,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						else
 						{
 							// more iterations on the edge points
-							Calibration::optimizePose( pose, it, p3D, K, 7 );
+							Algorithm::optimizePose( pose, it, p3D, K, 7 );
 						}
 						
 						// remember pose
@@ -496,7 +496,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						// also send ErrorPose if anybody is connected
 						if ( info.bCalculateCovariance )
 							// FIXME: make pixel variance configurable
-							info.covariance = Calibration::singleCameraPoseError( pose, p3D, K, 0.04f * 0.04f );
+							info.covariance = Algorithm::singleCameraPoseError( pose, p3D, K, 0.04f * 0.04f );
 						
 						// in debug mode, draw a nice cube onto the marker
 						if ( pDebugImg ) {
@@ -646,7 +646,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 		
 	// flip image coordinates if origin==0 
 	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
-	Calibration::correctOrigin( K, img.origin, img.height );
+	Algorithm::correctOrigin( K, img.origin, img.height );
 
 	// compute inverse camera matrix
 	Math::Matrix< float, 3, 3 > invK( invert_matrix( K ) );

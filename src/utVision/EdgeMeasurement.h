@@ -36,7 +36,7 @@
 #include <utVision.h>
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
-#include <utCalibration/Function/MultiplePointProjection.h>
+#include <utAlgorithm/Function/MultiplePointProjection.h>
 #include "EdgeExtraction.h"
 #include "Image.h"
 
@@ -96,7 +96,7 @@ public:
 
 		// project first points and calculate jacobian
 		Math::Vector< T > p2d( m_p3d.size() * 2 );
-		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
+		Algorithm::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
 		{
@@ -134,7 +134,7 @@ public:
 		// project first points and calculate jacobian
 		Math::Vector< T > p2d( m_p3d.size() * 2 );
 		Math::Matrix< T, 0, 0 > j2d( m_p3d.size() * 2, input.size() );
-		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluateWithJacobian( p2d, input, j2d );
+		Algorithm::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluateWithJacobian( p2d, input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
 			// remove too small intensity edges
@@ -179,7 +179,7 @@ public:
 
 		// project first points and calculate jacobian
 		Math::Matrix< T, 0, 0 > j2d( m_p3d.size() * 2, input.size() );
-		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).jacobian( input, j2d );
+		Algorithm::Function::MultiplePointProjection< T >( m_p3d, m_K ).jacobian( input, j2d );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
 			// remove too small intensity edges
@@ -245,11 +245,11 @@ protected:
 
 		// project first points
 		Math::Vector< T > p2d( m_p3d.size() * 2 );
-		Calibration::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
+		Algorithm::Function::MultiplePointProjection< T >( m_p3d, m_K ).evaluate( p2d, input );
 
 		// project second points
 		Math::Vector< T > p2d2( m_p3d.size() * 2 );
-		Calibration::Function::MultiplePointProjection< T >( m_p3d2, m_K ).evaluate( p2d2, input );
+		Algorithm::Function::MultiplePointProjection< T >( m_p3d2, m_K ).evaluate( p2d2, input );
 
 		for ( unsigned i = 0; i < m_p3d.size(); i++ )
 		{
