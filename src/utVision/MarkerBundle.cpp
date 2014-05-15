@@ -36,7 +36,7 @@
 #include <utMath/Stochastic/BackwardPropagation.h>
 
 #include <utAlgorithm/LensDistortion.h>
-#include <utAlgorithm/AbsoluteOrientation/AbsoluteOrientation.h>
+#include <utAlgorithm/PoseEstimation3D3D/AbsoluteOrientation.h>
 #include <utAlgorithm/3DPointReconstruction.h>
 #include <utAlgorithm/NewFunction/CameraIntrinsicsMultiplication.h>
 
@@ -465,7 +465,7 @@ void BAInfo::initRefPoints(bool undistorted)
 		throw std::runtime_error( "You need at least three reference points which are seen by at least two cameras" );
 	else
 	{
-		Math::Pose t = Algorithm::AbsoluteOrientation::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
+		Math::Pose t = Algorithm::PoseEstimation3D3D::calculateAbsoluteOrientation( refPointsCam, refPointsRoom );
 		//std::cout << "Room transformation " << t << " / " << ~t << std::endl;
 		LOG4CPP_TRACE( logger, "Room transformation " << t << " / " << ~t );
 
