@@ -42,7 +42,7 @@
 #include <utMath/MatrixOperations.h>
 #include <utMath/Util/cast_assign.h>
 #include <utAlgorithm/Homography.h>
-#include <utAlgorithm/PoseEstimation2D3D/2D3DPoseEstimation.h>
+#include <utAlgorithm/PoseEstimation2D3D/PlanarPoseEstimation.h>
 #include <utAlgorithm/Projection.h>
 #include <utVision/Colors.h>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
