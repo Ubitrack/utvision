@@ -42,7 +42,7 @@
 #include <utMath/MatrixOperations.h>
 #include <utMath/Util/cast_assign.h>
 #include <utAlgorithm/Homography.h>
-#include <utAlgorithm/2D3DPoseEstimation.h>
+#include <utAlgorithm/PoseEstimation2D3D/PlanarPoseEstimation.h>
 #include <utAlgorithm/Projection.h>
 #include <utVision/Colors.h>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -350,7 +350,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						ublas::column( H, 2 ) *= info.fSize;						
 						LOG4CPP_DEBUG( logger, "Homography: " << H  );
 						// compute pose
-						Math::Pose initialPose( Algorithm::poseFromHomography( H, invK ) );						
+						Math::Pose initialPose( Algorithm::PoseEstimation2D3D::poseFromHomography( H, invK ) );						
 						LOG4CPP_DEBUG( logger, "initialPose: " << initialPose  );
 						// rotate pose to account for different order of corner points
 						const double fSqrtHalf = 0.70710678118654752440084436210485;
@@ -372,13 +372,13 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						Math::Pose pose( initialPose );
 
 						// perform some LM iterations on the edge points to get a more stable initialization
-						double optRes = Algorithm::optimizePose( pose, it, p3D, K, 4 );
+						double optRes = Algorithm::PoseEstimation2D3D::optimizePose( pose, it, p3D, K, 4 );
 							
 						// try optimization with the rotation from the last pose
 						if ( info.bUseInitialPose )
 						{
 							Math::Pose testPose = Math::Pose( info.pose.rotation(), initialPose.translation() );
-							double testOptRes = Algorithm::optimizePose( testPose, it, p3D, K, 4 );
+							double testOptRes = Algorithm::PoseEstimation2D3D::optimizePose( testPose, it, p3D, K, 4 );
 							if ( testOptRes < optRes * 9 ) // prefer last pose rotation
 								pose = testPose;
 						}
@@ -403,7 +403,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						else
 						{
 							// more iterations on the edge points
-							Algorithm::optimizePose( pose, it, p3D, K, 7 );
+							Algorithm::PoseEstimation2D3D::optimizePose( pose, it, p3D, K, 7 );
 						}
 						
 						// remember pose
@@ -412,7 +412,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						// also send ErrorPose if anybody is connected
 						if ( info.bCalculateCovariance )
 							// FIXME: make pixel variance configurable
-							info.covariance = Algorithm::singleCameraPoseError( pose, p3D, K, 0.04f * 0.04f );
+							info.covariance = Algorithm::PoseEstimation2D3D::singleCameraPoseError( pose, p3D, K, 0.04f * 0.04f );
 						
 						// in debug mode, draw a nice cube onto the marker
 						if ( pDebugImg ) {
