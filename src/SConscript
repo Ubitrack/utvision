@@ -1,9 +1,12 @@
 #general script to call all SConscript files in all first level subdirectories
 
-Import( 'globSourceFiles' )
+Import( 'globSourceFiles' , 'masterEnv','setupIncludeInstallAll' )
 
 # glob all SConscript files in subdirectories
 sconsfiles = globSourceFiles( "*/SConscript" )
+
+env = masterEnv.Clone()
+setupIncludeInstallAll(env, '.')
 
 # call all SConscript files
 SConscript( sconsfiles )

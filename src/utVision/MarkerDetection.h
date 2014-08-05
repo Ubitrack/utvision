@@ -173,7 +173,8 @@ typedef std::map< unsigned long long int, MarkerInfo > MarkerInfoMap;
  */
 UTVISION_EXPORT void detectMarkers( const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
 	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
-	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true );
+	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true,
+	bool useAdaptiveThresholding = true, int binaryThresholdValue = 120 );
 #endif
 
 /**

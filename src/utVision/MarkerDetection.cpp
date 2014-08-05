@@ -95,90 +95,6 @@ namespace ublas = boost::numeric::ublas;
 
 namespace Ubitrack { namespace Vision { namespace Markers {
 
-#ifdef HAVE_TBB
-void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
-	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
-void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
-	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels);
-
-class TBBMarkerCalculations {
-public:
- void operator() ( const blocked_range<size_t>& r ) const {	 	 
-	 for ( size_t i = r.begin(); i != r.end(); ++i ){
-		CornerList cl(markerList->at(i)); 
-		markerCalculations(cl, *img, pDebugImg, *markerInfos, *K, *invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
-		 
-	 }	 
-}
-
- TBBMarkerCalculations(MarkerList *_markerList, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
-	const Math::Matrix< float, 3, 3 >* _K,const Math::Matrix< float, 3, 3 >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
-	markerList(_markerList)
-	, img(_img)
-	, pDebugImg(_pDebugImg)
-	, markerInfos(_markerInfos)
-	, K(_K)
-	, invK(_invK)
-	, iCodeSize(_iCodeSize)
-	, iMarkerSize(_iMarkerSize)
-	, uiMask(_uiMask)
-	, useInnerEdgels(useInnerEdgels)
-	{}
-private:
-	MarkerList* markerList;
-	const Image* img;
-	Image* pDebugImg;
-	MarkerInfoMap* markerInfos;
-	const Math::Matrix< float, 3, 3 >* K;
-	const Math::Matrix< float, 3, 3 >* invK;
-	unsigned int iCodeSize;
-	unsigned int iMarkerSize;
-	unsigned long long int uiMask;
-	bool useInnerEdgels;
- 
-};
-
-
-class TBBMarkerCalculationsRefine {
-public:
- void operator() ( const blocked_range<size_t>& r ) const {	 
-	 for ( size_t i = r.begin(); i != r.end(); ++i ){
-		 markerCalculationsRefine(markerIds->at(i), *img, pDebugImg, *markerInfos, *K, *invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
-	 }
-}
-
- TBBMarkerCalculationsRefine(std::vector<unsigned long long int>* _markerIds, const Image* _img, Image* _pDebugImg,MarkerInfoMap* _markerInfos,
-	const Math::Matrix< float, 3, 3 >* _K,const Math::Matrix< float, 3, 3 >* _invK, unsigned int _iCodeSize, unsigned int _iMarkerSize, unsigned long long int _uiMask, bool _useInnerEdgels):
-	markerIds(_markerIds)	
-	, img(_img)
-	, pDebugImg(_pDebugImg)
-	, markerInfos(_markerInfos)
-	, K(_K)
-	, invK(_invK)
-	, iCodeSize(_iCodeSize)
-	, iMarkerSize(_iMarkerSize)
-	, uiMask(_uiMask)
-	, useInnerEdgels(useInnerEdgels)
-	{}
-private:
-	std::vector<unsigned long long int>* markerIds;	
-	const Image* img;
-	Image* pDebugImg;
-	MarkerInfoMap* markerInfos;
-	const Math::Matrix< float, 3, 3 >* K;
-	const Math::Matrix< float, 3, 3 >* invK;
-	unsigned int iCodeSize;
-	unsigned int iMarkerSize;
-	unsigned long long int uiMask;
-	bool useInnerEdgels;
- 
-};
-
-
-#endif
-
-
-
 // some constants for tuning
 
 /** width of area in which to search for edges, as percentage of marker extension */
@@ -636,7 +552,8 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 
 void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
 	const Math::Matrix< float, 3, 3 >& _K,  Image* pDebugImg, bool bRefine, 
-	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels )
+	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels,
+	bool useAdaptiveThresholding, int binaryThresholdValue )
 {
 	assert( (iMarkerSize - iCodeSize) / 2.0 == 1.0 || (iMarkerSize - iCodeSize) / 2.0 == 2.0 );
 	
@@ -666,8 +583,11 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			UBITRACK_TIME( g_blockTimer1 );
 			#endif
 			// The source image is copied as OpenCV from beta 5 on destroys it
-			cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,
-			( img.height / 48 ) | 1 , 4.0 );
+			if(useAdaptiveThresholding){
+				cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,( img.height / 48 ) | 1 , 4.0 );
+			} else {
+				cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);				
+			}
 		}
 
 		
@@ -683,15 +603,11 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			#ifdef DO_TIMING
 			UBITRACK_TIME( g_blockTimer3 );
 			#endif
-#ifdef HAVE_TBB		
-			parallel_for(blocked_range<size_t>(0, markers.size(), 4 ), TBBMarkerCalculations(&markers, &img, pDebugImg, &markerInfos, &K, &invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels ) );
-#else
 			int iShownMarker = 0;
 			for ( MarkerList::iterator it = markers.begin(); it != markers.end(); it++ )
 			{
 				markerCalculations(*it, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 			}
-#endif
 		}
 	}
 	else
@@ -701,20 +617,11 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 		UBITRACK_TIME( g_blockTimer4 );
 		#endif
 		// declaration of variables
-		std::map<unsigned long long int, MarkerInfo>::iterator it;
-#ifdef HAVE_TBB		
-		std::vector<unsigned long long int> _markerIds;
-		for ( it = markerInfos.begin(); it != markerInfos.end(); it++ )
-		{	
-			_markerIds.push_back(it->first);			
-		}
-		parallel_for(blocked_range<size_t>(0, _markerIds.size(), 4 ), TBBMarkerCalculationsRefine(&_markerIds, &img, pDebugImg, &markerInfos, &K, &invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels ));
-#else				
+		std::map<unsigned long long int, MarkerInfo>::iterator it;		
 		for ( it = markerInfos.begin(); it != markerInfos.end(); it++ )
 		{	
 			markerCalculationsRefine(it->first, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 		}
-#endif
 	}
 	#ifdef DO_TIMING	
 	LOG4CPP_INFO( logger, g_blockTimer1);				
