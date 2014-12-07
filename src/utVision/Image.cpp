@@ -31,6 +31,7 @@
 
 #include <opencv/cv.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <utUtil/Exception.h>
 #include "Image.h"
 
@@ -153,6 +154,7 @@ Image::Ptr Image::getGrayscale( void ) const
 // This function is copied from http://mehrez.kristou.org/opencv-change-contrast-and-brightness-of-an-image/
 boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness ) const
 {
+
 	if(contrast > 100) contrast = 100;
 	if(contrast < -100) contrast = -100;
 	if(brightness > 100) brightness = 100;
@@ -221,11 +223,11 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 		IplImage * R = cvCreateImage(cvGetSize(this),this->depth,1);
 		IplImage * G = cvCreateImage(cvGetSize(this),this->depth,1);
 		IplImage * B = cvCreateImage(cvGetSize(this),this->depth,1);
-		cvCvtPixToPlane(this,R,G,B,NULL);
+		cvSplit(this,R,G,B,NULL);
 		cvLUT( R, R, lut_mat );
 		cvLUT( G, G, lut_mat );
 		cvLUT( B, B, lut_mat );
-		cvCvtPlaneToPix(R,G,B,NULL,dest);
+		cvMerge(R,G,B,NULL,dest);
 		cvReleaseImage(&R);
 		cvReleaseImage(&G);
 		cvReleaseImage(&B);
@@ -237,8 +239,7 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	cvReleaseImage(&GRAY);
 	cvReleaseMat( &lut_mat);
 	
-	return boost::shared_ptr< Image >( new Image( dest, true ) );
-}
+	return boost::shared_ptr< Image >( new Image( dest, true ) );}
 
 
 void Image::saveAsJpeg( const std::string filename, int compressionFactor ) const
@@ -247,7 +248,7 @@ void Image::saveAsJpeg( const std::string filename, int compressionFactor ) cons
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imwrite( filename, cv::Mat( *this ), params );
+    cv::imwrite( filename, cv::Mat( cv::cvarrToMat(*this) ), params );
 }
 
 
@@ -257,7 +258,7 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imencode( ".jpg", cv::Mat( *this ), buffer, params );
+    cv::imencode( ".jpg", cv::Mat( cv::cvarrToMat(*this) ), buffer, params );
 }
 
 

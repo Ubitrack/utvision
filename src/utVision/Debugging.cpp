@@ -4,6 +4,9 @@
 
 #include <boost/numeric/ublas/operations.hpp>
 #include <opencv2/core/core_c.h> // CV_RGB
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc/imgproc_c.h>
+#include <utVision/Colors.h>
 
 namespace Ubitrack { namespace Vision {
 

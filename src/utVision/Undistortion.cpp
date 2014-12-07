@@ -133,7 +133,8 @@ boost::shared_ptr< Image > Undistortion::undistort( const Image& image )
 	pUndistorted->origin = image.origin;
 	memcpy( pUndistorted->colorModel,  image.colorModel, 4 );
 	memcpy( pUndistorted->channelSeq,  image.channelSeq, 4 );
-
+	
+	 
 	cvRemap( image, *pUndistorted, *m_pMapX, *m_pMapY );
 	
 	// send result
