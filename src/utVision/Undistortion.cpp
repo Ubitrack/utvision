@@ -126,10 +126,10 @@ boost::shared_ptr< Image > Undistortion::undistort( const Image& image )
 		return image.Clone();
 		
 	// initialize the distortion map
-	initMap( image.width, image.height, image.origin );
+	initMap( image.width(), image.height(), image.origin );
 	
 	// undistort
-	boost::shared_ptr< Image > pUndistorted( new Image( image.width, image.height, image.nChannels, image.depth ) );
+	boost::shared_ptr< Image > pUndistorted( new Image( image.width(), image.height(), image.nChannels, image.depth ) );
 	pUndistorted->origin = image.origin;
 	memcpy( pUndistorted->colorModel,  image.colorModel, 4 );
 	memcpy( pUndistorted->channelSeq,  image.channelSeq, 4 );
@@ -145,7 +145,7 @@ boost::shared_ptr< Image > Undistortion::undistort( const Image& image )
 void Undistortion::initMap( int width, int height, int origin )
 {
 	// skip if already initialized with same values
-	if ( m_pMapX && m_pMapX->width == width && m_pMapX->height == height )
+	if ( m_pMapX && m_pMapX->width() == width && m_pMapX->height() == height )
 		return;
 		
 	LOG4CPP_INFO( logger, "Creating undistortion map" );

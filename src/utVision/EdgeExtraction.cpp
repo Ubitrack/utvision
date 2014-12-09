@@ -59,18 +59,18 @@ int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
 	int x = static_cast< int >( floorf( p( 0 ) ) );
 	int y = static_cast< int >( floorf( p( 1 ) ) );
 
-	if ( x < 0 || x >= src.width - 1 || y < 0 || y >= src.height - 1 )
+	if ( x < 0 || x >= src.width() - 1 || y < 0 || y >= src.height() - 1 )
 	{
 		// continue border pixels
 		if ( x < 0 ) 
 			x = 0;
-		else if ( x >= src.width )
-			x = src.width - 1;
+		else if ( x >= src.width() )
+			x = src.width() - 1;
 			
 		if ( y < 0 )
 			y = 0;
-		else if ( y >= src.height )
-			y = src.height - 1;
+		else if ( y >= src.height() )
+			y = src.height() - 1;
 			
 		return *( reinterpret_cast< unsigned char* >( src.imageData ) + y * src.widthStep + x );
 	}
@@ -112,7 +112,7 @@ void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 
 		p = center + ( (t&1) ? -1 : 1 ) * ( ( nExtension >> 1 ) + 1 ) * direction + ( (t&2) ? -1 : 1 ) * n;
 		int x = static_cast< int >( floorf( p( 0 ) ) );
 		int y = static_cast< int >( floorf( p( 1 ) ) );
-		if ( x < 0 || x >= src.width - 1 || y < 0 || y >= src.height - 1 )
+		if ( x < 0 || x >= src.width() - 1 || y < 0 || y >= src.height() - 1 )
 			break;
 	}
 
@@ -164,7 +164,7 @@ void simpleLineGradient( const Image& src, int* pDst, const Math::Vector< float,
 		p = center + ( (t&1) ? -1 : 1 ) * ( ( nExtension >> 1 ) + 1 ) * direction;
 		int x = static_cast< int >( floorf( p( 0 ) ) );
 		int y = static_cast< int >( floorf( p( 1 ) ) );
-		if ( x < 0 || x >= src.width - 1 || y < 0 || y >= src.height - 1 )
+		if ( x < 0 || x >= src.width() - 1 || y < 0 || y >= src.height() - 1 )
 			break;
 	}
 

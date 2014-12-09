@@ -39,6 +39,7 @@
 #include <opencv/cxcore.h>
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
+#include <opencv2/cuda.hpp>
 
 namespace Ubitrack { namespace Vision {
 
@@ -199,8 +200,24 @@ public:
 
     /** Returns the dimension of the image */
     Dimension dimension( void ) const {
-        return Dimension(width, height);
+        return Dimension(width(), height());
     };
+
+	int width( void ) const {
+		if(m_cpuMat){
+			return m_cpuMat->size().width;
+		}else{
+			return m_gpuMat->size().width;
+		}
+	}
+
+	int height( void ) const {
+		if(m_cpuMat){
+			return m_cpuMat->size().height;
+		}else{
+			return m_gpuMat->size().height;
+		}
+	}
 
     /**
      * @brief Saves an image as compressed JPEG
@@ -222,6 +239,11 @@ public:
 private:
 	// does this object own the data imageData points to?
 	bool m_bOwned;
+
+	boost::shared_ptr<cv::Mat> m_cpuMat;
+	boost::shared_ptr<IplImage> m_cpuIplImage;
+
+	boost::shared_ptr<cv::cuda::GpuMat> m_gpuMat;
 	
 	friend class ::boost::serialization::access;
 	/** boost serialization helper. does not do any useful serialization... */

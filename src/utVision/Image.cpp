@@ -43,6 +43,11 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 {
 	cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
 	imageData = static_cast< char* >( pImageData );
+
+	// TODO: überprüfe
+	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
+	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
+	//m_cpuMat = m_cpuIplImage;
 }
 
 
@@ -79,7 +84,7 @@ Image::~Image()
 
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
-	boost::shared_ptr< Image > r( new Image( width, height, nChannels, nDepth ) );
+	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
 	cvCvtColor( this, *r, nCode ); 
 	r->origin = origin; 
 	return r;
@@ -91,9 +96,9 @@ void Image::Invert()
 	if ( nChannels != 1 || depth != IPL_DEPTH_8U )
 		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
 
-	for ( int i=0; i < width; i++ )
+	for ( int i=0; i < width(); i++ )
 	{
-		for ( int j=0; j < height; j++ )
+		for ( int j=0; j < height(); j++ )
 		{
 			unsigned char val = 255 - getPixel< unsigned char >( i, j );
 			setPixel< unsigned char >( i, j, val );
@@ -103,7 +108,7 @@ void Image::Invert()
 
 boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width, height, nChannels, depth, origin) );
+    return ImagePtr( new Image( width(), height(), nChannels, depth, origin) );
 }
 
 boost::shared_ptr< Image > Image::Clone() const
@@ -114,7 +119,7 @@ boost::shared_ptr< Image > Image::Clone() const
 
 boost::shared_ptr< Image > Image::PyrDown() const
 {
-	boost::shared_ptr< Image > r( new Image( width / 2, height / 2, nChannels, depth, origin ) );
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, nChannels, depth, origin ) );
 	cvPyrDown( *this, *r );
 	return r;
 }
@@ -132,7 +137,7 @@ boost::shared_ptr< Image > Image::Scale( double scale ) const
 {
     if (scale <= 0.0 || scale > 1.0)
         UBITRACK_THROW( "Invalid scale factor" );
-    return Scale( static_cast< int >( width * scale ), static_cast< int > ( height * scale ) );
+    return Scale( static_cast< int >( width() * scale ), static_cast< int > ( height() * scale ) );
 }
 
 bool Image::isGrayscale() const
@@ -239,7 +244,8 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	cvReleaseImage(&GRAY);
 	cvReleaseMat( &lut_mat);
 	
-	return boost::shared_ptr< Image >( new Image( dest, true ) );}
+	return boost::shared_ptr< Image >( new Image( dest, true ) );
+}
 
 
 void Image::saveAsJpeg( const std::string filename, int compressionFactor ) const

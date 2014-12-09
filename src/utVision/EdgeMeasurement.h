@@ -293,7 +293,7 @@ protected:
 					CV_RGB( 128, 128, 0 ), 1, CV_AA, 4 );
 				cvCircle( *m_pDebugImage, 
 					cvPoint( cvRound( m_edgePoints[ i ]( 0 ) * 16 ), cvRound( m_edgePoints[ i ]( 1 ) * 16 ) ),
-					cvRound( m_pDebugImage->width / 1600.0 * 16 ),
+					cvRound( m_pDebugImage->width() / 1600.0 * 16 ),
 					m_intensities[ i ] >= g_minEdgeIntensity ? CV_RGB( 0, 255, 0 ) : CV_RGB( 255, 0, 0 ), 
 					-1, CV_AA, 4 );
 			}

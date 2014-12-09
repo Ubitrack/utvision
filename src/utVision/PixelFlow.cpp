@@ -50,7 +50,7 @@ namespace Ubitrack { namespace Vision {
 
 		//decliaring variables
 		int width = image.widthStep;
-		int hight = image.height;
+		int hight = image.height();
 		int xSize = bottomRight(0) - topLeft(0) + 1;
 		int ySize = bottomRight(1) - topLeft(1) + 1;
 			
@@ -169,7 +169,7 @@ namespace Ubitrack { namespace Vision {
 		int xBufSize = 0;
 		int yBufSize = 0;
 		int width= image.widthStep;
-		int hight = image.height; 
+		int hight = image.height(); 
 		int xSize = int(x.size());
 		int ySize = int(y.size());
 		Math::Vector< int, 4 > xRec;
@@ -212,7 +212,7 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < xRec(2) - xRec(0); i++)
 			for(int j = 0; j < xRec(3) - xRec(1); j++)
 			{	
-				int temp = (xRec(1)  + j)*image.width +  xRec(0) + i;
+				int temp = (xRec(1)  + j)*image.width() +  xRec(0) + i;
 				newX[i] += ((unsigned char*)image.imageData)[temp];
 			}
 		
@@ -222,7 +222,7 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < yRec(2) - yRec(0); i++)
 			for(int j = 0; j < yRec(3) - yRec(1); j++)
 			{	
-				int temp = (yRec(1)  + j)*image.width +  yRec(0) + i;
+				int temp = (yRec(1)  + j)*image.width() +  yRec(0) + i;
 				newY[j] += ((unsigned char*)image.imageData)[temp];
 			}
 
