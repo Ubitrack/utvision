@@ -41,28 +41,32 @@ namespace Ubitrack { namespace Vision {
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
 {
-	cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
-	imageData = static_cast< char* >( pImageData );
+	//cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
+	//imageData = static_cast< char* >( pImageData );
 
 	// TODO: überprüfe
 	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
-	//m_cpuMat = m_cpuIplImage;
+	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
 }
 
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	: m_bOwned( true )
 {
-	cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
+	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
+	
+	// TODO: memory allocation/deallocation ok with that?
 	imageDataOrigin = imageData = static_cast< char* >( cvAlloc( imageSize ) );
+	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
 }
 
 
 Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
 {
-	memcpy( static_cast< IplImage* >( this ), pIplImage, sizeof( IplImage ) );
+	memcpy( m_cpuIplImage.get(), pIplImage, sizeof( IplImage ) );
+	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
@@ -70,15 +74,25 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
 {
-	IplImage imgIpl = img;
-	memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
+	//IplImage imgIpl = img;
+	//memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
+	*m_cpuMat = img;
+	*m_cpuIplImage = img;
 }
 
 
 Image::~Image()
 {
+	
+	if ( m_cpuMat )
+		m_cpuMat->release();
+
 	if ( m_bOwned )
 		cvFree( reinterpret_cast< void** >( &imageDataOrigin ) );
+
+	if ( m_gpuMat )
+		m_gpuMat->release();
+
 }
 
 
@@ -93,7 +107,7 @@ boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth
 
 void Image::Invert()
 {
-	if ( nChannels != 1 || depth != IPL_DEPTH_8U )
+	if ( channels() != 1 || depth != IPL_DEPTH_8U )
 		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
 
 	for ( int i=0; i < width(); i++ )
@@ -108,7 +122,7 @@ void Image::Invert()
 
 boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width(), height(), nChannels, depth, origin) );
+    return ImagePtr( new Image( width(), height(), channels(), depth, origin) );
 }
 
 boost::shared_ptr< Image > Image::Clone() const
@@ -117,23 +131,25 @@ boost::shared_ptr< Image > Image::Clone() const
 }
 
 
-boost::shared_ptr< Image > Image::PyrDown() const
+boost::shared_ptr< Image > Image::PyrDown()
 {
-	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, nChannels, depth, origin ) );
-	cvPyrDown( *this, *r );
+	checkCPUMat();
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth, origin ) );
+	cvPyrDown( m_cpuIplImage.get(), *r );
 	return r;
 }
 
 
-boost::shared_ptr< Image > Image::Scale( int width, int height ) const
+boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
-	boost::shared_ptr< Image > scaledImg( new Image( width, height, nChannels, depth, origin ) );
+	checkCPUMat();
+	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth, origin ) );
 	cvResize( *this, *scaledImg );
 	return scaledImg;
 }
 
 /** creates an image with the given scale factor 0.0 < f <= 1.0 */
-boost::shared_ptr< Image > Image::Scale( double scale ) const
+boost::shared_ptr< Image > Image::Scale( double scale )
 {
     if (scale <= 0.0 || scale > 1.0)
         UBITRACK_THROW( "Invalid scale factor" );
@@ -142,7 +158,7 @@ boost::shared_ptr< Image > Image::Scale( double scale ) const
 
 bool Image::isGrayscale() const
 {
-    return nChannels == 1;
+    return channels() == 1;
 }
 
 Image::Ptr Image::getGrayscale( void ) const
@@ -157,9 +173,9 @@ Image::Ptr Image::getGrayscale( void ) const
 
 
 // This function is copied from http://mehrez.kristou.org/opencv-change-contrast-and-brightness-of-an-image/
-boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness ) const
+boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness )
 {
-
+	checkCPUMat();
 	if(contrast > 100) contrast = 100;
 	if(contrast < -100) contrast = -100;
 	if(brightness > 100) brightness = 100;
@@ -176,9 +192,10 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	IplImage * dest = cvCloneImage(this);
 	
 	IplImage * GRAY;
-	if (this->nChannels == 3)
+	if (this->channels() == 3)
 	{
 		GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
+		//GRAY = cvCreateImage(cvGetSize(m_cpuIplImage.get()), this->depth(), 1);
 		cvCvtColor(this,GRAY,CV_RGB2GRAY);
 	}
 	else
@@ -223,7 +240,7 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
             lut[i] = v;
         }
     }
-	if (this->nChannels ==3)
+	if (this->channels() ==3)
 	{
 		IplImage * R = cvCreateImage(cvGetSize(this),this->depth,1);
 		IplImage * G = cvCreateImage(cvGetSize(this),this->depth,1);
@@ -267,5 +284,17 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     cv::imencode( ".jpg", cv::Mat( cv::cvarrToMat(*this) ), buffer, params );
 }
 
+void Image::checkCPUMat( ) {
+	if( m_cpuMat != nullptr && m_cpuIplImage != nullptr )
+		return;
+	m_gpuMat->download( *m_cpuMat );
+	cvGetImage( m_cpuMat.get() , m_cpuIplImage.get() );
+}
+
+void Image::checkGPUMat( ) {
+	if( m_gpuMat != nullptr )
+		return;
+	m_gpuMat->upload( *m_cpuMat );
+}
 
 } } // namespace Ubitrack::Vision

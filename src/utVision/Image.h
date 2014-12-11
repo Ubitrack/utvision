@@ -132,15 +132,30 @@ public:
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
-		{ return static_cast< IplImage* >( this ); }
+	{
+		if(m_cpuMat){
+			return static_cast< CvArr* > (m_cpuMat.get());
+		}else{
+			return static_cast< CvArr* > (m_gpuMat.get());
+		}
+	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*() const
-	{ return static_cast< const IplImage* >( this ); }
+	{ 
+		if(m_cpuMat){
+			return static_cast< const CvArr* > (m_cpuMat.get());
+		}else{
+			return static_cast< const CvArr* > (m_gpuMat.get());
+		}
+	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
-	{ return static_cast< IplImage* >( this ); }
+	{ 
+		checkCPUMat();
+		return static_cast< IplImage* >( this->m_cpuIplImage.get() ); 
+	}
 
     /// COMMENTED OUT: FUNCTIONALITY HAS TO BE CLARIFIED
 	///** convert to cv::Mat */
@@ -150,16 +165,25 @@ public:
 
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*() const
-	{ return static_cast< const IplImage* >( this ); }
-	
+	{ 
+		return static_cast< const IplImage* >( this->m_cpuIplImage.get() ); 
+	}
+
 	/** returns the value of a pixel */
 	template< class T >
-	T getPixel( unsigned x, unsigned y ) const
-	{ return reinterpret_cast< const T* >( imageData + y * widthStep )[ x ]; }
+	T getPixel( unsigned x, unsigned y ) // TODO: const now missing
+	{ 
+		checkCPUMat();
+
+		return reinterpret_cast< const T* >( m_cpuIplImage->imageData + y *m_cpuIplImage->widthStep )[ x ]; 
+	}
 
 	template< class T >
 	void setPixel( unsigned x, unsigned y, T val )
-	{ reinterpret_cast< T* >( imageData + y * widthStep )[ x ] = val; }
+	{ 
+		checkCPUMat();
+		reinterpret_cast< T* >(  m_cpuIplImage->imageData + y * m_cpuIplImage->widthStep )[ x ] = val; 
+	}
 
 	/**
 	 * Convert color space.
@@ -178,16 +202,16 @@ public:
 	boost::shared_ptr< Image > Clone() const;
 	
 	/** creates an image which is half the size */
-	boost::shared_ptr< Image > PyrDown() const;
+	boost::shared_ptr< Image > PyrDown();// TODO: const;
 	
 	/** creates an image with the given size */
-	boost::shared_ptr< Image > Scale( int width, int height ) const;
+	boost::shared_ptr< Image > Scale( int width, int height ); // TODO: const;
 
     /** creates an image with the given scale factor 0.0 < f <= 1.0 */
-	boost::shared_ptr< Image > Scale( double scale ) const;
+	boost::shared_ptr< Image > Scale( double scale ); // TODO: const;
 
 	/** Creates an image with adapted contrast and brightness */
-	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ) const;
+	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
 	/** inverts the image. Implemented only for 8 bit greyscale images */
 	void Invert();
@@ -203,6 +227,14 @@ public:
         return Dimension(width(), height());
     };
 
+	int channels( void ) const {
+		if(m_cpuMat){
+			return m_cpuMat->channels();
+		}else{
+			return m_gpuMat->channels();
+		}
+	}
+
 	int width( void ) const {
 		if(m_cpuMat){
 			return m_cpuMat->size().width;
@@ -214,6 +246,15 @@ public:
 	int height( void ) const {
 		if(m_cpuMat){
 			return m_cpuMat->size().height;
+		}else{
+			return m_gpuMat->size().height;
+		}
+	}
+
+	int depthe( void ) const {
+		if(m_cpuMat){
+			this->depth;
+			return m_cpuMat->depth();
 		}else{
 			return m_gpuMat->size().height;
 		}
@@ -237,6 +278,8 @@ public:
 
 
 private:
+	void checkCPUMat();
+	void checkGPUMat();
 	// does this object own the data imageData points to?
 	bool m_bOwned;
 
