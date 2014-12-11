@@ -251,12 +251,11 @@ public:
 		}
 	}
 
-	int depthe( void ) const {
+	int depth( void ) const {
 		if(m_cpuMat){
-			this->depth;
 			return m_cpuMat->depth();
 		}else{
-			return m_gpuMat->size().height;
+			return m_gpuMat->depth();
 		}
 	}
 

@@ -107,7 +107,7 @@ boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth
 
 void Image::Invert()
 {
-	if ( channels() != 1 || depth != IPL_DEPTH_8U )
+	if ( channels() != 1 || depth() != IPL_DEPTH_8U )
 		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
 
 	for ( int i=0; i < width(); i++ )
@@ -122,19 +122,19 @@ void Image::Invert()
 
 boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width(), height(), channels(), depth, origin) );
+    return ImagePtr( new Image( width(), height(), channels(), depth(), origin) );
 }
 
 boost::shared_ptr< Image > Image::Clone() const
 {
-	return boost::shared_ptr< Image >( new Image( cvCloneImage( *this ) ) );
+	return boost::shared_ptr< Image >( new Image( cvCloneImage( this->m_cpuIplImage.get() ) ) );
 }
 
 
 boost::shared_ptr< Image > Image::PyrDown()
 {
 	checkCPUMat();
-	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth, origin ) );
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin ) );
 	cvPyrDown( m_cpuIplImage.get(), *r );
 	return r;
 }
@@ -143,8 +143,8 @@ boost::shared_ptr< Image > Image::PyrDown()
 boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
 	checkCPUMat();
-	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth, origin ) );
-	cvResize( *this, *scaledImg );
+	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin ) );
+	cvResize( m_cpuIplImage.get(), *scaledImg );
 	return scaledImg;
 }
 
@@ -165,7 +165,7 @@ Image::Ptr Image::getGrayscale( void ) const
 {
     if ( !isGrayscale() ) {
         // TODO: Has the image, if not grayscale, really three channels then?
-        return CvtColor( CV_RGB2GRAY, 1, depth);
+        return CvtColor( CV_RGB2GRAY, 1, depth());
     } else {
         return Clone();
     }
@@ -189,18 +189,18 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	float* ranges[] = { range_0 };
 	int i;
 
-	IplImage * dest = cvCloneImage(this);
+	IplImage * dest = cvCloneImage(this->m_cpuIplImage.get());
 	
 	IplImage * GRAY;
 	if (this->channels() == 3)
 	{
-		GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
-		//GRAY = cvCreateImage(cvGetSize(m_cpuIplImage.get()), this->depth(), 1);
-		cvCvtColor(this,GRAY,CV_RGB2GRAY);
+		//GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
+		GRAY = cvCreateImage(cvGetSize(m_cpuIplImage.get()), this->depth(), 1);
+		cvCvtColor(m_cpuIplImage.get(),GRAY,CV_RGB2GRAY);
 	}
 	else
 	{
-		GRAY = cvCloneImage(this);
+		GRAY = cvCloneImage(m_cpuIplImage.get());
 	}
     lut_mat = cvCreateMatHeader( 1, 256, CV_8UC1 );
     cvSetData( lut_mat, lut, 0 );
@@ -242,9 +242,9 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
     }
 	if (this->channels() ==3)
 	{
-		IplImage * R = cvCreateImage(cvGetSize(this),this->depth,1);
-		IplImage * G = cvCreateImage(cvGetSize(this),this->depth,1);
-		IplImage * B = cvCreateImage(cvGetSize(this),this->depth,1);
+		IplImage * R = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
+		IplImage * G = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
+		IplImage * B = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
 		cvSplit(this,R,G,B,NULL);
 		cvLUT( R, R, lut_mat );
 		cvLUT( G, G, lut_mat );
