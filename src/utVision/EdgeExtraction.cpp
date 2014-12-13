@@ -40,21 +40,21 @@ namespace ublas = boost::numeric::ublas;
 
 namespace Ubitrack { namespace Vision { 
 
-int subpixSampleFast( const Image& src, const Math::Vector< float, 2 >& p )
+int subpixSampleFast( Image& src, const Math::Vector< float, 2 >& p )
 {
 	int x = static_cast< int >( floorf( p( 0 ) ) );
 	int y = static_cast< int >( floorf( p( 1 ) ) );
 	int dx = static_cast< int >( 256 * ( p( 0 ) - floorf( p( 0 ) ) ) );
 	int dy = static_cast< int >( 256 * ( p( 1 ) - floorf( p( 1 ) ) ) );
-	unsigned char* i = reinterpret_cast< unsigned char* >( src.imageData ) + y * src.widthStep + x;
+	unsigned char* i = reinterpret_cast< unsigned char* >( src.imageData() ) + y * src.widthStep() + x;
 	int a = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
-	i += src.widthStep;
+	i += src.widthStep();
 	int b = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8) ;
 	return a + ( ( dy * ( b - a ) ) >> 8 );
 }
 
 
-int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
+int subpixSampleSafe( Image& src, const Math::Vector< float, 2 >& p )
 {
 	int x = static_cast< int >( floorf( p( 0 ) ) );
 	int y = static_cast< int >( floorf( p( 1 ) ) );
@@ -72,15 +72,15 @@ int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
 		else if ( y >= src.height() )
 			y = src.height() - 1;
 			
-		return *( reinterpret_cast< unsigned char* >( src.imageData ) + y * src.widthStep + x );
+		return *( reinterpret_cast< unsigned char* >( src.imageData() ) + y * src.widthStep() + x );
 	}
 	
 	// do normal sampling
 	int dx = static_cast< int >( 256 * ( p( 0 ) - floorf( p( 0 ) ) ) );
 	int dy = static_cast< int >( 256 * ( p( 1 ) - floorf( p( 1 ) ) ) );
-	unsigned char* i = reinterpret_cast< unsigned char* >( src.imageData ) + y * src.widthStep + x;
+	unsigned char* i = reinterpret_cast< unsigned char* >( src.imageData() ) + y * src.widthStep() + x;
 	int a = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
-	i += src.widthStep;
+	i += src.widthStep();
 	int b = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
 	return a + ( ( dy * ( b - a ) ) >> 8 );
 }
@@ -98,7 +98,7 @@ int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+void sobelLineSubPix( Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
 	const Math::Vector< float, 2 >& direction, int nExtension )
 {
 	Math::Vector< float, 2 > n, p;
@@ -152,7 +152,7 @@ void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-void simpleLineGradient( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+void simpleLineGradient( Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
 	const Math::Vector< float, 2 >& direction, int nExtension )
 {
 	Math::Vector< float, 2 > p;

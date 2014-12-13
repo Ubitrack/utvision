@@ -129,7 +129,7 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 {
 	int sum = 0;
 	for(int i = 1; i< img.imageSize; i++)
-		sum += img.imageData[i];
+		sum += img.imageData()[i];
 
 	Math::Pose pose( initialPose );
 
