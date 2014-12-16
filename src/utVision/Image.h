@@ -193,13 +193,13 @@ public:
 	 * @param nChannels number of channels (1=grey, 3=rgb)
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 */
-	boost::shared_ptr< Image > CvtColor( int nCode, int nChannels, int nDepth = IPL_DEPTH_8U );
+	boost::shared_ptr< Image > CvtColor( int nCode, int nChannels, int nDepth = IPL_DEPTH_8U ) const;
 
     /** Allocates empty memory of the size of the image */
-	boost::shared_ptr< Image > AllocateNew();
+	boost::shared_ptr< Image > AllocateNew() const;
 
 	/** Creates a copy of this image */
-	boost::shared_ptr< Image > Clone();
+	boost::shared_ptr< Image > Clone() const;
 	
 	/** creates an image which is half the size */
 	boost::shared_ptr< Image > PyrDown();// TODO: const;
@@ -220,7 +220,7 @@ public:
     bool isGrayscale( void ) const;
 
     /** Convert to grayscale */
-    Ptr getGrayscale( void );
+    Ptr getGrayscale( void ) const;
 
     /** Returns the dimension of the image */
     Dimension dimension( void ) const {
@@ -257,22 +257,6 @@ public:
 		}else{
 			return m_gpuMat->depth();
 		}
-	}
-
-	int origin( void ) {
-		checkCPUMat();
-		return m_cpuIplImage->origin;
-	}
-
-	char* imageData( void ) {
-		checkCPUMat();
-		cv::UMat mat;
-		return m_cpuIplImage->imageData;
-	}
-
-	int widthStep( void ) {
-		checkCPUMat();
-		return m_cpuIplImage->widthStep;
 	}
 
     /**

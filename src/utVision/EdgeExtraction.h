@@ -194,7 +194,7 @@ T findEdge( const Image& image, const Math::Vector< T, 2 >& start, const Math::V
  * @param pSrc image to sample
  * @param point to sample
  */
-UTVISION_EXPORT int subpixSampleFast( Image& src, const Math::Vector< float, 2 >& p );
+UTVISION_EXPORT int subpixSampleFast( const Image& src, const Math::Vector< float, 2 >& p );
 	
 /**
  * Samples a point with subpixel precision and outlier checks.
@@ -202,7 +202,7 @@ UTVISION_EXPORT int subpixSampleFast( Image& src, const Math::Vector< float, 2 >
  * @param pSrc image to sample
  * @param point to sample
  */
-UTVISION_EXPORT int subpixSampleSafe( Image& src, const Math::Vector< float, 2 >& p );
+UTVISION_EXPORT int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p );
 
 } } // namespace Ubitrack::Vision
 

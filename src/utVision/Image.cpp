@@ -45,7 +45,6 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	//imageData = static_cast< char* >( pImageData );
 
 	// TODO: überprüfe
-	
 	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
 	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
@@ -58,7 +57,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
 	
 	// TODO: memory allocation/deallocation ok with that?
-	m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >( cvAlloc( imageSize ) );
+	imageDataOrigin = imageData = static_cast< char* >( cvAlloc( imageSize ) );
 	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
 }
 
@@ -97,11 +96,11 @@ Image::~Image()
 }
 
 
-boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth )
+boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
-	checkCPUMat();
-	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth, m_cpuIplImage->origin ) );
+	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
 	cvCvtColor( this, *r, nCode ); 
+	r->origin = origin; 
 	return r;
 }
 
@@ -110,10 +109,7 @@ void Image::Invert()
 {
 	if ( channels() != 1 || depth() != IPL_DEPTH_8U )
 		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
-	cv::UMat mat;
 
-	cvCvtColor(&mat, &mat, 1);
-	
 	for ( int i=0; i < width(); i++ )
 	{
 		for ( int j=0; j < height(); j++ )
@@ -124,12 +120,12 @@ void Image::Invert()
 	}
 }
 
-boost::shared_ptr< Image > Image::AllocateNew()
+boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width(), height(), channels(), depth(), origin()) );
+    return ImagePtr( new Image( width(), height(), channels(), depth(), origin) );
 }
 
-boost::shared_ptr< Image > Image::Clone()
+boost::shared_ptr< Image > Image::Clone() const
 {
 	return boost::shared_ptr< Image >( new Image( cvCloneImage( this->m_cpuIplImage.get() ) ) );
 }
@@ -138,7 +134,7 @@ boost::shared_ptr< Image > Image::Clone()
 boost::shared_ptr< Image > Image::PyrDown()
 {
 	checkCPUMat();
-	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin ) );
 	cvPyrDown( m_cpuIplImage.get(), *r );
 	return r;
 }
@@ -147,7 +143,7 @@ boost::shared_ptr< Image > Image::PyrDown()
 boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
 	checkCPUMat();
-	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin() ) );
+	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin ) );
 	cvResize( m_cpuIplImage.get(), *scaledImg );
 	return scaledImg;
 }
@@ -165,7 +161,7 @@ bool Image::isGrayscale() const
     return channels() == 1;
 }
 
-Image::Ptr Image::getGrayscale( void )
+Image::Ptr Image::getGrayscale( void ) const
 {
     if ( !isGrayscale() ) {
         // TODO: Has the image, if not grayscale, really three channels then?
@@ -292,7 +288,7 @@ void Image::checkCPUMat( ) {
 	if( m_cpuMat != nullptr && m_cpuIplImage != nullptr )
 		return;
 	m_gpuMat->download( *m_cpuMat );
-	*m_cpuIplImage = *m_cpuMat;
+	cvGetImage( m_cpuMat.get() , m_cpuIplImage.get() );
 }
 
 void Image::checkGPUMat( ) {
