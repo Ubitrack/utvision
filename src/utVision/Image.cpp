@@ -47,7 +47,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	// TODO: überprüfe
 	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
-	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
+	updateUMat();
 }
 
 
@@ -58,7 +58,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	
 	// TODO: memory allocation/deallocation ok with that?
 	imageDataOrigin = imageData = static_cast< char* >( cvAlloc( imageSize ) );
-	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
+	updateUMat();
 }
 
 
@@ -66,7 +66,7 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
 {
 	memcpy( m_cpuIplImage.get(), pIplImage, sizeof( IplImage ) );
-	*m_cpuMat = cv::cvarrToMat(m_cpuIplImage.get(), false);
+	*m_uMat = cv::cvarrToMat(m_cpuIplImage.get(), false).getUMat(cv::ACCESS_READ);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
@@ -76,31 +76,22 @@ Image::Image( cv::Mat & img )
 {
 	//IplImage imgIpl = img;
 	//memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
-	*m_cpuMat = img;
 	*m_cpuIplImage = img;
+	updateUMat();
 }
 
 
 Image::~Image()
 {
 	
-	if ( m_cpuMat )
-		m_cpuMat->release();
-
-	if ( m_bOwned )
-		cvFree( reinterpret_cast< void** >( &imageDataOrigin ) );
-
-	if ( m_gpuMat )
-		m_gpuMat->release();
-
 }
 
 
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
 	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
-	cvCvtColor( this, *r, nCode ); 
-	r->origin = origin; 
+	cvCvtColor( m_cpuIplImage.get(), *r, nCode ); 
+	r->m_cpuIplImage->origin = origin();
 	return r;
 }
 
@@ -122,7 +113,7 @@ void Image::Invert()
 
 boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width(), height(), channels(), depth(), origin) );
+    return ImagePtr( new Image( width(), height(), channels(), depth(), origin()) );
 }
 
 boost::shared_ptr< Image > Image::Clone() const
@@ -133,8 +124,7 @@ boost::shared_ptr< Image > Image::Clone() const
 
 boost::shared_ptr< Image > Image::PyrDown()
 {
-	checkCPUMat();
-	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin ) );
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
 	cvPyrDown( m_cpuIplImage.get(), *r );
 	return r;
 }
@@ -142,8 +132,7 @@ boost::shared_ptr< Image > Image::PyrDown()
 
 boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
-	checkCPUMat();
-	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin ) );
+	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin() ) );
 	cvResize( m_cpuIplImage.get(), *scaledImg );
 	return scaledImg;
 }
@@ -175,7 +164,6 @@ Image::Ptr Image::getGrayscale( void ) const
 // This function is copied from http://mehrez.kristou.org/opencv-change-contrast-and-brightness-of-an-image/
 boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness )
 {
-	checkCPUMat();
 	if(contrast > 100) contrast = 100;
 	if(contrast < -100) contrast = -100;
 	if(brightness > 100) brightness = 100;
@@ -245,7 +233,7 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 		IplImage * R = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
 		IplImage * G = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
 		IplImage * B = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
-		cvSplit(this,R,G,B,NULL);
+		cvSplit(m_cpuIplImage.get(),R,G,B,NULL);
 		cvLUT( R, R, lut_mat );
 		cvLUT( G, G, lut_mat );
 		cvLUT( B, B, lut_mat );
@@ -271,7 +259,7 @@ void Image::saveAsJpeg( const std::string filename, int compressionFactor ) cons
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imwrite( filename, cv::Mat( cv::cvarrToMat(*this) ), params );
+    cv::imwrite( filename, *m_uMat, params );
 }
 
 
@@ -281,20 +269,10 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imencode( ".jpg", cv::Mat( cv::cvarrToMat(*this) ), buffer, params );
+    cv::imencode( ".jpg", *m_uMat, buffer, params );
 }
 
-void Image::checkCPUMat( ) {
-	if( m_cpuMat != nullptr && m_cpuIplImage != nullptr )
-		return;
-	m_gpuMat->download( *m_cpuMat );
-	cvGetImage( m_cpuMat.get() , m_cpuIplImage.get() );
+void Image::updateUMat(){
+	*m_uMat = cv::cvarrToMat(m_cpuIplImage.get()).getUMat(cv::ACCESS_READ);
 }
-
-void Image::checkGPUMat( ) {
-	if( m_gpuMat != nullptr )
-		return;
-	m_gpuMat->upload( *m_cpuMat );
-}
-
 } } // namespace Ubitrack::Vision

@@ -39,7 +39,8 @@
 #include <opencv/cxcore.h>
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
-#include <opencv2/cuda.hpp>
+
+#include <opencv/cv.hpp>
 
 namespace Ubitrack { namespace Vision {
 
@@ -133,30 +134,22 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
-		if(m_cpuMat){
-			return static_cast< CvArr* > (m_cpuMat.get());
-		}else{
-			return static_cast< CvArr* > (m_gpuMat.get());
-		}
+		return static_cast< CvArr* > (m_cpuIplImage.get());
 	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*() const
 	{ 
-		if(m_cpuMat){
-			return static_cast< const CvArr* > (m_cpuMat.get());
-		}else{
-			return static_cast< const CvArr* > (m_gpuMat.get());
-		}
+		return static_cast< const CvArr* > (m_cpuIplImage.get());
 	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
-		checkCPUMat();
 		return static_cast< IplImage* >( this->m_cpuIplImage.get() ); 
 	}
 
+	
     /// COMMENTED OUT: FUNCTIONALITY HAS TO BE CLARIFIED
 	///** convert to cv::Mat */
 	//operator cv::Mat()
@@ -169,19 +162,25 @@ public:
 		return static_cast< const IplImage* >( this->m_cpuIplImage.get() ); 
 	}
 
+	operator cv::UMat*()
+	{
+		return static_cast< cv::UMat* > ( this->m_uMat.get() );
+	}
+
+	operator const cv::UMat*()
+	{
+		return static_cast< const cv::UMat* > ( this->m_uMat.get() );
+	}
 	/** returns the value of a pixel */
 	template< class T >
 	T getPixel( unsigned x, unsigned y ) // TODO: const now missing
 	{ 
-		checkCPUMat();
-
 		return reinterpret_cast< const T* >( m_cpuIplImage->imageData + y *m_cpuIplImage->widthStep )[ x ]; 
 	}
 
 	template< class T >
 	void setPixel( unsigned x, unsigned y, T val )
 	{ 
-		checkCPUMat();
 		reinterpret_cast< T* >(  m_cpuIplImage->imageData + y * m_cpuIplImage->widthStep )[ x ] = val; 
 	}
 
@@ -228,37 +227,24 @@ public:
     };
 
 	int channels( void ) const {
-		if(m_cpuMat){
-			return m_cpuMat->channels();
-		}else{
-			return m_gpuMat->channels();
-		}
+		return m_uMat->channels();
 	}
 
 	int width( void ) const {
-		if(m_cpuMat){
-			return m_cpuMat->size().width;
-		}else{
-			return m_gpuMat->size().width;
-		}
+		return m_uMat->size().width;
 	}
 
 	int height( void ) const {
-		if(m_cpuMat){
-			return m_cpuMat->size().height;
-		}else{
-			return m_gpuMat->size().height;
-		}
+		return m_uMat->size().height;
 	}
 
 	int depth( void ) const {
-		if(m_cpuMat){
-			return m_cpuMat->depth();
-		}else{
-			return m_gpuMat->depth();
-		}
+		return m_cpuIplImage->depth;
 	}
 
+	int origin( void ) const {
+		return m_cpuIplImage->origin;
+	}
     /**
      * @brief Saves an image as compressed JPEG
      * @param filename Filename of the image
@@ -277,15 +263,14 @@ public:
 
 
 private:
-	void checkCPUMat();
-	void checkGPUMat();
+	
+	void updateUMat();
 	// does this object own the data imageData points to?
 	bool m_bOwned;
 
-	boost::shared_ptr<cv::Mat> m_cpuMat;
+	
+	boost::shared_ptr<cv::UMat> m_uMat;
 	boost::shared_ptr<IplImage> m_cpuIplImage;
-
-	boost::shared_ptr<cv::cuda::GpuMat> m_gpuMat;
 	
 	friend class ::boost::serialization::access;
 	/** boost serialization helper. does not do any useful serialization... */
