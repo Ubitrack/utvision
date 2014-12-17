@@ -260,7 +260,7 @@ protected:
 
 			// compute normal direction
 			Math::Vector< T, 2 > normal( dir( 1 ), -dir( 0 ) );
-			if ( m_image.origin )
+			if ( m_image.origin() )
 				normal *= -1;
 
 			// experimental

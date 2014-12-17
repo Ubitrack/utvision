@@ -126,13 +126,13 @@ boost::shared_ptr< Image > Undistortion::undistort( const Image& image )
 		return image.Clone();
 		
 	// initialize the distortion map
-	initMap( image.width(), image.height(), image.origin );
+	initMap( image.width(), image.height(), image.origin() );
 	
 	// undistort
 	boost::shared_ptr< Image > pUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth() ) );
-	pUndistorted->origin = image.origin;
-	memcpy( pUndistorted->colorModel,  image.colorModel, 4 );
-	memcpy( pUndistorted->channelSeq,  image.channelSeq, 4 );
+	pUndistorted->iplImage()->origin = image.origin();
+	memcpy( pUndistorted->iplImage()->colorModel,  image.iplImage()->colorModel, 4 );
+	memcpy( pUndistorted->iplImage()->channelSeq,  image.iplImage()->channelSeq, 4 );
 	
 	 
 	cvRemap( image, *pUndistorted, *m_pMapX, *m_pMapY );

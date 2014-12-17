@@ -90,7 +90,7 @@ Image::~Image()
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
 	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
-	cvCvtColor( m_cpuIplImage.get(), *r, nCode ); 
+	cvCvtColor( m_cpuIplImage.get(), *r, nCode );
 	r->m_cpuIplImage->origin = origin();
 	return r;
 }

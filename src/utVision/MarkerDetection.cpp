@@ -260,7 +260,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 			if ( refineCorners( img, it ) ) //, pDebugImg ) )
 			{
 				// if image is top-down, exchange point 2 and 4 to assure counter-clock-wise order for squareHomography
-				if ( !img.origin )
+				if ( !img.origin() )
 				{
 					Math::Vector< float, 2 > temp( (it)[ 3 ] );
 					(it)[ 3 ] = (it)[ 1 ];
@@ -332,7 +332,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						Math::Util::vector_cast_assign( info.corners[ i ], Math::Vector< double, 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
 
 					// origin correction
-					if ( !img.origin )
+					if ( !img.origin() )
 						for ( unsigned i = 0; i < 4; i++ )
 							info.corners[ i ]( 1 ) = img.height() - 1 - info.corners[ i ]( 1 );
 
@@ -394,7 +394,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 
 							updateCorners( K, pose, info );
 							// Origin correction
-							if ( !img.origin )
+							if ( !img.origin() )
 								for ( unsigned i = 0; i < 4; i++ )
 									info.corners[ i ]( 1 ) = img.height() - 1 - info.corners[ i ]( 1 );
 
@@ -562,8 +562,8 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 	Math::Matrix< float, 3, 3 > K( _K );
 		
 	// flip image coordinates if origin==0 
-	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
-	Algorithm::correctOrigin( K, img.origin, img.height() );
+	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin() );
+	Algorithm::correctOrigin( K, img.origin(), img.height() );
 
 	// compute inverse camera matrix
 	Math::Matrix< float, 3, 3 > invK( invert_matrix( K ) );

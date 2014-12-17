@@ -162,15 +162,26 @@ public:
 		return static_cast< const IplImage* >( this->m_cpuIplImage.get() ); 
 	}
 
-	operator cv::UMat*()
+	operator cv::UMat*() const
 	{
 		return static_cast< cv::UMat* > ( this->m_uMat.get() );
 	}
 
-	operator const cv::UMat*()
+	operator const cv::UMat*() const
 	{
 		return static_cast< const cv::UMat* > ( this->m_uMat.get() );
 	}
+
+	cv::UMat* uMat() const
+	{
+		return static_cast< cv::UMat* > ( this->m_uMat.get() );
+	}
+
+	IplImage* iplImage() const
+	{
+		return static_cast< IplImage* >( this->m_cpuIplImage.get() ); 
+	}
+
 	/** returns the value of a pixel */
 	template< class T >
 	T getPixel( unsigned x, unsigned y ) // TODO: const now missing
