@@ -181,7 +181,7 @@ void Undistortion::initMap( int width, int height, int origin )
 	cvInitUndistortMap( pCvIntrinsics, pCvCoeffs, *m_pMapX, *m_pMapY );
 	
 	LOG4CPP_TRACE( logger, "origin=" << origin );
-	Math::Vector< double, 2 > startPixel( *reinterpret_cast< float* >( m_pMapX->imageData ), *reinterpret_cast< float* >( m_pMapY->imageData ) );
+	Math::Vector< double, 2 > startPixel( *reinterpret_cast< float* >( m_pMapX->iplImage()->imageData ), *reinterpret_cast< float* >( m_pMapY->iplImage()->imageData ) );
 	LOG4CPP_DEBUG( logger, "first pixel (0, 0) mapped from " << startPixel );
 		
 	// release data

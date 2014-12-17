@@ -52,8 +52,8 @@ namespace Ubitrack { namespace Vision {
  * destroy themselves when they run out of scope!
  */
 class UTVISION_EXPORT Image
-	: public IplImage
-	, private boost::noncopyable
+	: //public IplImage
+	 private boost::noncopyable
     //, public boost::enable_shared_from_this< Image >
 {
 public:

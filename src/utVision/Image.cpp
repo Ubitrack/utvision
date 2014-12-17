@@ -57,7 +57,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
 	
 	// TODO: memory allocation/deallocation ok with that?
-	imageDataOrigin = imageData = static_cast< char* >( cvAlloc( imageSize ) );
+	m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >( cvAlloc( m_cpuIplImage->imageSize ) );
 	updateUMat();
 }
 

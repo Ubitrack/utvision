@@ -49,7 +49,7 @@ namespace Ubitrack { namespace Vision {
 		bottomR.clear();
 
 		//decliaring variables
-		int width = image.widthStep;
+		int width = image.iplImage()->widthStep;
 		int hight = image.height();
 		int xSize = bottomRight(0) - topLeft(0) + 1;
 		int ySize = bottomRight(1) - topLeft(1) + 1;
@@ -67,9 +67,9 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < xSize; i++)
 			for(int j = 0; j < ySize; j++)
 			{	
-				int temp = (topLeft(1) + j)*image.widthStep + topLeft(0)+ i;
-				x[i] += ((unsigned char*)image.imageData)[temp];
-				y[j] += ((unsigned char*)image.imageData)[temp];
+				int temp = (topLeft(1) + j)*image.iplImage()->widthStep + topLeft(0)+ i;
+				x[i] += ((unsigned char*)image.iplImage()->imageData)[temp];
+				y[j] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 		for(int i = 0; i < xSize; i++)
 			x[i] = x[i]/ySize;
@@ -168,7 +168,7 @@ namespace Ubitrack { namespace Vision {
 		int yIndex = 0;
 		int xBufSize = 0;
 		int yBufSize = 0;
-		int width= image.widthStep;
+		int width= image.iplImage()->widthStep;
 		int hight = image.height(); 
 		int xSize = int(x.size());
 		int ySize = int(y.size());
@@ -213,7 +213,7 @@ namespace Ubitrack { namespace Vision {
 			for(int j = 0; j < xRec(3) - xRec(1); j++)
 			{	
 				int temp = (xRec(1)  + j)*image.width() +  xRec(0) + i;
-				newX[i] += ((unsigned char*)image.imageData)[temp];
+				newX[i] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 		
 		for(int i = 0; i < int(newX.size()); i++)
@@ -223,7 +223,7 @@ namespace Ubitrack { namespace Vision {
 			for(int j = 0; j < yRec(3) - yRec(1); j++)
 			{	
 				int temp = (yRec(1)  + j)*image.width() +  yRec(0) + i;
-				newY[j] += ((unsigned char*)image.imageData)[temp];
+				newY[j] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 
 		for(int i = 0; i < int(newY.size()); i++)
