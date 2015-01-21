@@ -103,9 +103,8 @@ Image::~Image()
 	//destroy it
 	LOG4CPP_INFO(logger, "destroy: " << m_debugImageId << "owned: " <<m_bOwned);
 	if(m_bOwned){
-		//m_uMat->deallocate();
-		//IplImage* img = m_cpuIplImage;
-		//cvReleaseImage(&img);
+		IplImage* img = m_cpuIplImage;
+		cvReleaseImage(&img);
 	}
 }
 
