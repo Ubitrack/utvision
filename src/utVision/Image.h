@@ -134,19 +134,19 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
-		return static_cast< CvArr* > (m_cpuIplImage.get());
+		return static_cast< CvArr* > ( m_cpuIplImage );
 	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*() const
 	{ 
-		return static_cast< const CvArr* > (m_cpuIplImage.get());
+		return static_cast< const CvArr* > ( m_cpuIplImage );
 	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
-		return static_cast< IplImage* >( this->m_cpuIplImage.get() ); 
+		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
 
 	
@@ -159,7 +159,7 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*() const
 	{ 
-		return static_cast< const IplImage* >( this->m_cpuIplImage.get() ); 
+		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
 	}
 
 	operator cv::UMat*() const
@@ -179,7 +179,7 @@ public:
 
 	IplImage* iplImage() const
 	{
-		return static_cast< IplImage* >( this->m_cpuIplImage.get() ); 
+		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
 
 	/** returns the value of a pixel */
@@ -281,7 +281,7 @@ private:
 
 	int m_debugImageId;
 	boost::shared_ptr<cv::UMat> m_uMat;
-	boost::shared_ptr<IplImage> m_cpuIplImage;
+	IplImage* m_cpuIplImage;
 	
 	friend class ::boost::serialization::access;
 	/** boost serialization helper. does not do any useful serialization... */

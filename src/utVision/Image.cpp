@@ -104,7 +104,7 @@ Image::~Image()
 	LOG4CPP_INFO(logger, "destroy: " << m_debugImageId << "owned: " <<m_bOwned);
 	if(m_bOwned){
 		//m_uMat->deallocate();
-		//IplImage* img = m_cpuIplImage.get();
+		//IplImage* img = m_cpuIplImage;
 		//cvReleaseImage(&img);
 	}
 }
@@ -113,7 +113,7 @@ Image::~Image()
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
 	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
-	cvCvtColor( m_cpuIplImage.get(), *r, nCode );
+	cvCvtColor( m_cpuIplImage, *r, nCode );
 	r->m_cpuIplImage->origin = origin();
 	return r;
 }
@@ -141,14 +141,14 @@ boost::shared_ptr< Image > Image::AllocateNew() const
 
 boost::shared_ptr< Image > Image::Clone() const
 {
-	return boost::shared_ptr< Image >( new Image( cvCloneImage( this->m_cpuIplImage.get() ) ) );
+	return boost::shared_ptr< Image >( new Image( cvCloneImage( this->m_cpuIplImage ) ) );
 }
 
 
 boost::shared_ptr< Image > Image::PyrDown()
 {
 	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
-	cvPyrDown( m_cpuIplImage.get(), *r );
+	cvPyrDown( m_cpuIplImage, *r );
 	return r;
 }
 
@@ -156,7 +156,7 @@ boost::shared_ptr< Image > Image::PyrDown()
 boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
 	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin() ) );
-	cvResize( m_cpuIplImage.get(), *scaledImg );
+	cvResize( m_cpuIplImage, *scaledImg );
 	return scaledImg;
 }
 
@@ -200,18 +200,18 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	float* ranges[] = { range_0 };
 	int i;
 
-	IplImage * dest = cvCloneImage(this->m_cpuIplImage.get());
+	IplImage * dest = cvCloneImage(this->m_cpuIplImage);
 	
 	IplImage * GRAY;
 	if (this->channels() == 3)
 	{
 		//GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
-		GRAY = cvCreateImage(cvGetSize(m_cpuIplImage.get()), this->depth(), 1);
-		cvCvtColor(m_cpuIplImage.get(),GRAY,CV_RGB2GRAY);
+		GRAY = cvCreateImage(cvGetSize(m_cpuIplImage), this->depth(), 1);
+		cvCvtColor(m_cpuIplImage,GRAY,CV_RGB2GRAY);
 	}
 	else
 	{
-		GRAY = cvCloneImage(m_cpuIplImage.get());
+		GRAY = cvCloneImage(m_cpuIplImage);
 	}
     lut_mat = cvCreateMatHeader( 1, 256, CV_8UC1 );
     cvSetData( lut_mat, lut, 0 );
@@ -253,10 +253,10 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
     }
 	if (this->channels() ==3)
 	{
-		IplImage * R = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
-		IplImage * G = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
-		IplImage * B = cvCreateImage(cvGetSize(m_cpuIplImage.get()),this->depth(),1);
-		cvSplit(m_cpuIplImage.get(),R,G,B,NULL);
+		IplImage * R = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		IplImage * G = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		IplImage * B = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		cvSplit(m_cpuIplImage,R,G,B,NULL);
 		cvLUT( R, R, lut_mat );
 		cvLUT( G, G, lut_mat );
 		cvLUT( B, B, lut_mat );
@@ -296,6 +296,6 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
 }
 
 void Image::updateUMat(){
-	*m_uMat = cv::cvarrToMat(m_cpuIplImage.get()).getUMat(cv::ACCESS_READ);
+	*m_uMat = cv::cvarrToMat(m_cpuIplImage).getUMat(cv::ACCESS_READ);
 }
 } } // namespace Ubitrack::Vision
