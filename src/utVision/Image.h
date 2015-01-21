@@ -279,7 +279,7 @@ private:
 	// does this object own the data imageData points to?
 	bool m_bOwned;
 
-	
+	int m_debugImageId;
 	boost::shared_ptr<cv::UMat> m_uMat;
 	boost::shared_ptr<IplImage> m_cpuIplImage;
 	

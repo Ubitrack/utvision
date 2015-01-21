@@ -34,56 +34,79 @@
 #include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <utUtil/Exception.h>
 #include "Image.h"
-
+#include <log4cpp/Category.hh>
+static int imageNumber = 0;
 namespace Ubitrack { namespace Vision {
-
+static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
 
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
+	, m_cpuIplImage(cvCreateImageHeader( cvSize( nWidth, nHeight ), nDepth, nChannels ))
+	, m_uMat(new cv::UMat())
+	, m_debugImageId(imageNumber)
 {
-	//cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
-	//imageData = static_cast< char* >( pImageData );
-
-	// TODO: überprüfe
-	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
+	imageNumber++;
+	LOG4CPP_INFO(logger, "init1: " << m_debugImageId);
+	m_cpuIplImage->origin = nOrigin;
+	m_cpuIplImage->align = nAlign;
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
+
 	updateUMat();
 }
 
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	: m_bOwned( true )
+	, m_cpuIplImage(cvCreateImage(CvSize(nWidth, nHeight), nDepth, nChannels))
+	, m_uMat(new cv::UMat())
+	, m_debugImageId(imageNumber)
 {
-	cvInitImageHeader( this->m_cpuIplImage.get(), cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
-	
+	imageNumber++;
+	LOG4CPP_INFO(logger, "init2  " << m_debugImageId);
+	m_cpuIplImage->origin = nOrigin;
 	// TODO: memory allocation/deallocation ok with that?
-	m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >( cvAlloc( m_cpuIplImage->imageSize ) );
+
 	updateUMat();
 }
 
 
 Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
+	, m_cpuIplImage(cvCreateImageHeader(cvGetSize(pIplImage), pIplImage->depth, pIplImage->nChannels))
+	, m_uMat(new cv::UMat())
+	, m_debugImageId(imageNumber)
 {
-	memcpy( m_cpuIplImage.get(), pIplImage, sizeof( IplImage ) );
-	*m_uMat = cv::cvarrToMat(m_cpuIplImage.get(), false).getUMat(cv::ACCESS_READ);
+	imageNumber++;
+	LOG4CPP_INFO(logger, "init3  " << m_debugImageId);
+	m_cpuIplImage->imageData = pIplImage->imageData;
+	updateUMat();
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
 
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
+	, m_cpuIplImage(new IplImage(img))
+	, m_uMat(new cv::UMat())
+	, m_debugImageId(imageNumber)
 {
+	imageNumber++;
+	LOG4CPP_INFO(logger, "init4  " << m_debugImageId);
 	//IplImage imgIpl = img;
 	//memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
-	*m_cpuIplImage = img;
 	updateUMat();
 }
 
 
 Image::~Image()
 {
-	
+	//destroy it
+	LOG4CPP_INFO(logger, "destroy: " << m_debugImageId << "owned: " <<m_bOwned);
+	if(m_bOwned){
+		//m_uMat->deallocate();
+		//IplImage* img = m_cpuIplImage.get();
+		//cvReleaseImage(&img);
+	}
 }
 
 
