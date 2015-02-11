@@ -47,6 +47,11 @@ public:
 	 * Initialize from two filenames.
 	 */
 	Undistortion( const std::string& intrinsicMatrixFile, const std::string& distortionFile );
+
+	/**
+	* Initialize from CameraIntrinsics file.
+	*/
+	Undistortion(const std::string& CameraIntrinsics);
 	
 	/**
 	 * Initialize from matrix+vector.

@@ -45,6 +45,38 @@ Undistortion::Undistortion( const std::string& intrinsicMatrixFile, const std::s
 	initParams( intrinsicMatrixFile, distortionFile );
 }
 
+Undistortion::Undistortion(const std::string& cameraIntrinsics){
+	Measurement::CameraIntrinsics measMat;
+	measMat.reset(new Math::CameraIntrinsics<double>());
+	Util::readCalibFile(cameraIntrinsics, measMat);
+
+	Math::CameraIntrinsics< double > camIntrinsics = *measMat;
+
+	Math::Vector< double, 8 > coeffs;
+	Math::Matrix< double, 3, 3 > intrinsics;
+
+	intrinsics = camIntrinsics.matrix;
+	//scale the matrix, depending on the calibartion size
+	intrinsics(0, 0) *= static_cast< double >(camIntrinsics.dimension(0));
+	intrinsics(0, 2) *= static_cast< double >(camIntrinsics.dimension(0));
+	intrinsics(1, 1) *= static_cast< double >(camIntrinsics.dimension(1));
+	intrinsics(1, 2) *= static_cast< double >(camIntrinsics.dimension(1));
+
+	Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
+	Math::CameraIntrinsics< double >::tangential_type tanDist = camIntrinsics.tangential_params;
+	
+	coeffs(0) = radDist[0];
+	coeffs(1) = radDist[1];
+	coeffs(2) = tanDist[0];
+	coeffs(3) = tanDist[1];
+	coeffs(4) = coeffs(5) = coeffs(6) = coeffs(7) = 0;
+	for (std::size_t i = 2; i < camIntrinsics.radial_size; ++i)
+		coeffs(i + 2) = radDist[i];
+
+	initParams(intrinsics, coeffs);
+
+}
+
 
 Undistortion::Undistortion( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion )
 {
@@ -148,8 +180,8 @@ void Undistortion::initMap( int width, int height, int origin )
 		return;
 		
 	LOG4CPP_INFO( logger, "Creating undistortion map" );
-	LOG4CPP_DEBUG( logger, "coeffs=" << m_coeffs );
-	LOG4CPP_DEBUG( logger, "intrinsic=" << m_intrinsics );
+	LOG4CPP_INFO(logger, "coeffs=" << m_coeffs);
+	LOG4CPP_INFO(logger, "intrinsic=" << m_intrinsics);
 	
 	// copy ublas to OpenCV parameters
 	CvMat* pCvCoeffs = cvCreateMat( 1, 8, CV_32FC1 );
