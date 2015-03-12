@@ -36,6 +36,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/utility.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/binary_object.hpp>
 #include <opencv/cxcore.h>
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
@@ -124,7 +125,7 @@ public:
 	/**
 	 * Create from Mat object
 	 */
-	explicit Image( cv::Mat & img );
+	explicit Image( cv::Mat & img );	
 
 	/** releases the image data if the data block is owned by this object. */
 	~Image();
@@ -224,10 +225,36 @@ private:
 	bool m_bOwned;
 	
 	friend class ::boost::serialization::access;
-	/** boost serialization helper. does not do any useful serialization... */
+	/** boost serialization helper from https://cheind.wordpress.com/2011/12/06/serialization-of-cvmat-objects-using-boost/ */
+	template<class Archive>
+	void save(Archive & ar, const unsigned int version) const
+	{	
+		ar & boost::serialization::make_binary_object(imageData, imageSize);
+	}
+
+	template<class Archive>
+	void load(Archive & ar, const unsigned int version)
+	{
+		
+		cvInitImageHeader(this, cvSize(width, height), depth, nChannels, origin);
+		imageDataOrigin = imageData = static_cast< char* >(cvAlloc(imageSize));
+
+		ar & boost::serialization::binary_object(imageData, imageSize);
+	}
+
 	template< class Archive >
-	void serialize( Archive& ar, const unsigned int )
-	{ char X( 'X' ); ar & X; }
+	void serialize(Archive& ar, const unsigned int file_version)
+	{
+		ar &  width;          
+		ar &  height;         
+		ar &  depth;      
+		ar & nChannels;
+		ar &  origin;      
+		
+	
+
+		boost::serialization::split_member(ar, *this, file_version);
+	}
 };
 
 typedef Image::Ptr ImagePtr;
@@ -249,3 +276,4 @@ typedef Measurement< Ubitrack::Vision::ConstImage > ConstImageMeasurement;
 
 
 #endif
+
