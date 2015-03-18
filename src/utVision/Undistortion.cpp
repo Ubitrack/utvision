@@ -119,7 +119,7 @@ boost::shared_ptr< Image > Undistortion::undistort( boost::shared_ptr< Image > p
 }
 
 
-boost::shared_ptr< Image > Undistortion::undistort( const Image& image )
+boost::shared_ptr< Image > Undistortion::undistort( Image& image )
 {
 	// shortcut if no distortion
 	if ( !hasDistortion() )

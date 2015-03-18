@@ -119,13 +119,13 @@ const float std2dPoints[ 4 ][ 2 ] =
 
 // forward declaration of private functions
 static void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double markerSize, CvScalar color, double error = -1.0 );
-bool checkRefinedMarker( const Math::Matrix< float, 3, 3 >& K ,Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
+bool checkRefinedMarker( const Math::Matrix< float, 3, 3 >& K ,Math::Pose checkPose, MarkerInfo& info, Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
 
 
 #ifdef HAVE_LAPACK
 
 Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int nCode, unsigned int nCodeSize, unsigned int nMarkerSize, MarkerInfo& info, 
-	Math::Matrix< float, 3, 3 > K,const Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
+	Math::Matrix< float, 3, 3 > K, Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
 {
 	int sum = 0;
 	for(int i = 1; i< img.iplImage()->imageSize; i++)
@@ -253,7 +253,7 @@ void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corn
 }
 
 
-void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
+void markerCalculations(CornerList &it, Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
 	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels) {
 	// refine corner positions
 		const bool bRefine = false;
@@ -447,7 +447,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 			}
 }
 
-void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
+void markerCalculationsRefine(unsigned long long int markerId,  Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
 	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels){
 		int nDiff, nVis;
 		float fRes;
@@ -550,7 +550,7 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 				drawCube( *pDebugImg, pose, K, info.fSize, CV_RGB( 0, 0, 255 ) );
 }
 
-void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
+void detectMarkers( Image& img, MarkerInfoMap& markerInfos, 
 	const Math::Matrix< float, 3, 3 >& _K,  Image* pDebugImg, bool bRefine, 
 	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels,
 	bool useAdaptiveThresholding, int binaryThresholdValue )
@@ -635,7 +635,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 
 
 /** extracts the marker from the image and checks how many pixels are correct */
-bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
+bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPose, MarkerInfo& info, Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
 {
 	Math::Matrix< double, 3, 4 > Rt( checkPose );
 	Math::Matrix< double, 3, 4 > KRt( ublas::prod( K, Rt ) );
@@ -803,7 +803,7 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
  * @param pDebugImg if not NULL, we will draw some debugging info into this image
  * @return number of detected points
  */
-int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
+int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, Image& greyImage,
 	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg = NULL )
 {
@@ -852,7 +852,7 @@ int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const
 }
 
 
-bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg )
+bool refineCorners( Image& img, CornerList& corners, Image* pDebugImg )
 {
 	int nAvgEdgeStrength = 0;
 
@@ -949,7 +949,7 @@ bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg )
 }
  
 
-boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize )
+boost::shared_ptr< Image > getMarkerImage( Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize )
 	{
 	// compute a suitable scaling matrix that maps 
 	// for x: -0.5 -> -1 and (nSize-0.5) -> +1
@@ -982,7 +982,7 @@ boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix<
 	}
 
 
-unsigned long long int readCode( const Image& markerImage, unsigned int iCodeSize, unsigned long long int uiMask )
+unsigned long long int readCode( Image& markerImage, unsigned int iCodeSize, unsigned long long int uiMask )
 {
 	// This method only works for square markers...
 	assert( markerImage.height() == markerImage.width() );

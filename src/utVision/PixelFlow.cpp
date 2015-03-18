@@ -40,7 +40,7 @@ namespace Ubitrack { namespace Vision {
 	{
 	}
 	
-	void PixelFlow::calcProjectionBuffer( const Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight )
+	void PixelFlow::calcProjectionBuffer( Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight )
 	{
 		//clearing previous data
 		x.clear();
@@ -158,7 +158,7 @@ namespace Ubitrack { namespace Vision {
 		}
 	}
 
-	void PixelFlow::computeFlow( const Image& image, Math::Vector< int, 2 >& result, int& difference, Image* pDebugImg)
+	void PixelFlow::computeFlow( Image& image, Math::Vector< int, 2 >& result, int& difference, Image* pDebugImg)
 	{
 		//decliaring variables
 		int xCut = 0;

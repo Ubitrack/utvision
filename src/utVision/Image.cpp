@@ -36,50 +36,77 @@
 #include "Image.h"
 #include <log4cpp/Category.hh>
 static int imageNumber = 0;
+#include <opencv2/core/ocl.hpp>
+static int allocCounter = 0;
 namespace Ubitrack { namespace Vision {
-static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
+
+
+static int imageNumber = 0;
+
 
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
 	, m_cpuIplImage(cvCreateImageHeader( cvSize( nWidth, nHeight ), nDepth, nChannels ))
-	, m_uMat(new cv::UMat())
 	, m_debugImageId(imageNumber)
+	, m_uploadState(OnCPUGPU)
 {
+	if(m_debugImageId == 0){
+		cv::ocl::setUseOpenCL(true);
+	}
 	imageNumber++;
-	LOG4CPP_INFO(logger, "init1: " << m_debugImageId);
+	allocCounter++;
+	//LOG4CPP_INFO( imageLogger, "init1" << " imageNumber" << m_debugImageId);
+	bool useOCL = cv::ocl::useOpenCL();
+	LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	m_cpuIplImage->origin = nOrigin;
 	m_cpuIplImage->align = nAlign;
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
 
-	updateUMat();
+	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 }
 
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	: m_bOwned( true )
-	, m_cpuIplImage(cvCreateImage(CvSize(nWidth, nHeight), nDepth, nChannels))
-	, m_uMat(new cv::UMat())
+	, m_cpuIplImage(cvCreateImage(cvSize(nWidth, nHeight), nDepth, nChannels))
 	, m_debugImageId(imageNumber)
+	, m_uploadState(OnCPUGPU)
 {
+	if(m_debugImageId == 0){
+		cv::ocl::setUseOpenCL(true);
+	}
+	bool useOCL = cv::ocl::useOpenCL();
+	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	imageNumber++;
-	LOG4CPP_INFO(logger, "init2  " << m_debugImageId);
+	allocCounter++;
+	//LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
 	m_cpuIplImage->origin = nOrigin;
-	// TODO: memory allocation/deallocation ok with that?
+	//int imgdepth = IPL2CV_DEPTH(nDepth);
+	//m_uMat = cv::UMat(nWidth, nHeight, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(imgdepth, nChannels));
+	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);;
 
-	updateUMat();
+	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 }
 
 
 Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
 	, m_cpuIplImage(cvCreateImageHeader(cvGetSize(pIplImage), pIplImage->depth, pIplImage->nChannels))
-	, m_uMat(new cv::UMat())
 	, m_debugImageId(imageNumber)
+	, m_uploadState(OnCPUGPU)
 {
+	if(m_debugImageId == 0){
+		cv::ocl::setUseOpenCL(true);
+	}
+	bool useOCL = cv::ocl::useOpenCL();
+	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	imageNumber++;
-	LOG4CPP_INFO(logger, "init3  " << m_debugImageId);
+	allocCounter++;
+	//m_cpuIplImage->origin = pIplImage->origin;
+	//LOG4CPP_INFO( imageLogger, "init3" << " imageNumber" << m_debugImageId << "b_ownd " << m_bOwned);
 	m_cpuIplImage->imageData = pIplImage->imageData;
-	updateUMat();
+
+	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
@@ -87,24 +114,37 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
 	, m_cpuIplImage(new IplImage(img))
-	, m_uMat(new cv::UMat())
 	, m_debugImageId(imageNumber)
+	, m_uploadState(OnCPUGPU)
 {
+	if(m_debugImageId == 0){
+		cv::ocl::setUseOpenCL(true);
+	}
+	bool useOCL = cv::ocl::useOpenCL();
+	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	imageNumber++;
-	LOG4CPP_INFO(logger, "init4  " << m_debugImageId);
-	//IplImage imgIpl = img;
-	//memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
-	updateUMat();
+	allocCounter++;
+	//LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
+	m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 
 Image::~Image()
 {
 	//destroy it
-	LOG4CPP_INFO(logger, "destroy: " << m_debugImageId << "owned: " <<m_bOwned);
+	allocCounter--;
+	//LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
 	if(m_bOwned){
-		IplImage* img = m_cpuIplImage;
-		cvReleaseImage(&img);
+		//if(m_debugImageId == 0)
+		//	return;
+		if(m_uploadState == OnGPU || m_uploadState == OnCPUGPU){
+			m_uMat.release();
+		}
+		if(m_uploadState == OnCPU || m_uploadState == OnCPUGPU){
+			IplImage* img = m_cpuIplImage;
+			cvReleaseImage(&img);
+		}
+		//cvReleaseImageHeader(&img);
 	}
 }
 
@@ -121,7 +161,7 @@ boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth
 void Image::Invert()
 {
 	if ( channels() != 1 || depth() != IPL_DEPTH_8U )
-		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
+		std::cout << "Operation only supported on 8-Bit grayscale images" << std::endl;
 
 	for ( int i=0; i < width(); i++ )
 	{
@@ -162,8 +202,9 @@ boost::shared_ptr< Image > Image::Scale( int width, int height )
 /** creates an image with the given scale factor 0.0 < f <= 1.0 */
 boost::shared_ptr< Image > Image::Scale( double scale )
 {
-    if (scale <= 0.0 || scale > 1.0)
-        UBITRACK_THROW( "Invalid scale factor" );
+    if (scale <= 0.0 || scale > 1.0){
+		std::cout << "invalided scale factor" << std::endl;
+	}
     return Scale( static_cast< int >( width() * scale ), static_cast< int > ( height() * scale ) );
 }
 
@@ -281,7 +322,7 @@ void Image::saveAsJpeg( const std::string filename, int compressionFactor ) cons
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imwrite( filename, *m_uMat, params );
+    cv::imwrite( filename, m_uMat, params );
 }
 
 
@@ -291,10 +332,36 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imencode( ".jpg", *m_uMat, buffer, params );
+    cv::imencode( ".jpg", m_uMat, buffer, params );
 }
 
-void Image::updateUMat(){
-	*m_uMat = cv::cvarrToMat(m_cpuIplImage).getUMat(cv::ACCESS_READ);
+void Image::checkOnGPU()
+{
+	//LOG4CPP_INFO( imageLogger, "checkOnGPU: " << m_debugImageId<< " state: " <<m_uploadState);
+	if(m_uploadState == OnCPU){
+		m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+		//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+		LOG4CPP_INFO( imageLogger, "uploading " << m_debugImageId);
+	}
+	m_uploadState = OnGPU;
 }
+
+void Image::checkOnCPU()
+{
+	//LOG4CPP_INFO( imageLogger, "checkOnCPU: " << m_debugImageId<< " state: " << m_uploadState);
+	if(m_uploadState == OnGPU){
+		//*m_cpuIplImage = m_uMat.getMat(0);
+		IplImage iplImage = m_uMat.getMat(0);
+		cvCopy(&iplImage, m_cpuIplImage);
+		LOG4CPP_INFO( imageLogger, "downloading " << m_debugImageId);
+	}
+	m_uploadState = OnCPU;
+}
+void Image::updateUMat(){
+	m_uMat = cv::cvarrToMat(m_cpuIplImage).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+	//m_Mat = boost::shared_ptr<cv::Mat>(new cv::Mat(cv::cvarrToMat(m_cpuIplImage, false)));
+	//m_uMat2 = m_Mat->getUMat(cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+	//*m_uMat = m_Mat->getUMat(cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+}
+
 } } // namespace Ubitrack::Vision

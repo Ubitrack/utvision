@@ -40,7 +40,7 @@ namespace ublas = boost::numeric::ublas;
 
 namespace Ubitrack { namespace Vision { 
 
-int subpixSampleFast( const Image& src, const Math::Vector< float, 2 >& p )
+int subpixSampleFast( Image& src, const Math::Vector< float, 2 >& p )
 {
 	int x = static_cast< int >( floorf( p( 0 ) ) );
 	int y = static_cast< int >( floorf( p( 1 ) ) );
@@ -54,7 +54,7 @@ int subpixSampleFast( const Image& src, const Math::Vector< float, 2 >& p )
 }
 
 
-int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
+int subpixSampleSafe( Image& src, const Math::Vector< float, 2 >& p )
 {
 	int x = static_cast< int >( floorf( p( 0 ) ) );
 	int y = static_cast< int >( floorf( p( 1 ) ) );
@@ -98,7 +98,7 @@ int subpixSampleSafe( const Image& src, const Math::Vector< float, 2 >& p )
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+void sobelLineSubPix( Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
 	const Math::Vector< float, 2 >& direction, int nExtension )
 {
 	Math::Vector< float, 2 > n, p;
@@ -152,7 +152,7 @@ void sobelLineSubPix( const Image& src, int* pDst, const Math::Vector< float, 2 
  * @param nExtension length of line in pixels
  * @param direction direction vector of the line (normalized)
  */
-void simpleLineGradient( const Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
+void simpleLineGradient( Image& src, int* pDst, const Math::Vector< float, 2 >& center, 
 	const Math::Vector< float, 2 >& direction, int nExtension )
 {
 	Math::Vector< float, 2 > p;

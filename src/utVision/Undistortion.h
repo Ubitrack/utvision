@@ -56,7 +56,7 @@ public:
 	/** 
 	 * Undistorts an image.
 	 */
-	boost::shared_ptr< Image > undistort( const Image& image );
+	boost::shared_ptr< Image > undistort( Image& image );
 
 	/** 
 	 * Undistorts an image.

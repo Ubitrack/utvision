@@ -41,9 +41,11 @@
 #include <utMeasurement/Measurement.h>
 
 #include <opencv/cv.hpp>
+#include <log4cpp/Category.hh>
 
 namespace Ubitrack { namespace Vision {
 
+	static log4cpp::Category& imageLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
 /**
  * @ingroup vision
  * A wrapper object for IplImages in a "Resource Acquisition Is Initialization" (RAII) fashion.
@@ -57,6 +59,7 @@ class UTVISION_EXPORT Image
     //, public boost::enable_shared_from_this< Image >
 {
 public:
+	
 	/**
 	 * Some abbreviations for shared pointers of Image
 	 */
@@ -134,18 +137,21 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
-		return static_cast< CvArr* > ( m_cpuIplImage );
+		checkOnCPU();
+		return static_cast< CvArr* > (m_cpuIplImage);
 	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
-	operator const CvArr*() const
+	operator const CvArr*()
 	{ 
-		return static_cast< const CvArr* > ( m_cpuIplImage );
+		checkOnCPU();
+		return static_cast< const CvArr* > (m_cpuIplImage);
 	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
+		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
 
@@ -157,28 +163,33 @@ public:
 
 
 	/** also convert to IplImage* for more consistent interface */
-	operator const IplImage*() const
+	operator const IplImage*()
 	{ 
+		checkOnCPU();
 		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
 	}
 
-	operator cv::UMat*() const
-	{
-		return static_cast< cv::UMat* > ( this->m_uMat.get() );
-	}
+	//operator cv::UMat*() const
+	//{
+	//	return static_cast< cv::UMat* > ( this->m_uMat.get() );
+	//}
 
-	operator const cv::UMat*() const
+	/*operator const cv::UMat*() const
 	{
 		return static_cast< const cv::UMat* > ( this->m_uMat.get() );
 	}
-
-	cv::UMat* uMat() const
+*/
+	cv::UMat& uMat()
 	{
-		return static_cast< cv::UMat* > ( this->m_uMat.get() );
+		checkOnGPU();
+		m_uploadState = OnGPU;
+		return m_uMat;
 	}
 
-	IplImage* iplImage() const
+
+	IplImage* iplImage()
 	{
+		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
 
@@ -238,15 +249,18 @@ public:
     };
 
 	int channels( void ) const {
-		return m_uMat->channels();
+		//return m_uMat.channels();
+		return m_cpuIplImage->nChannels;
 	}
 
 	int width( void ) const {
-		return m_uMat->size().width;
+		return m_cpuIplImage->width;
+		//return m_uMat.size().width;
 	}
 
 	int height( void ) const {
-		return m_uMat->size().height;
+		return m_cpuIplImage->height;
+		//return m_uMat.size().height;
 	}
 
 	int depth( void ) const {
@@ -274,15 +288,28 @@ public:
 
 
 private:
+	enum ImageUploadState{
+		OnCPU,
+		OnGPU,
+		OnCPUGPU
+	};
 	
+	void checkOnCPU();
+
+	void checkOnGPU();
+
 	void updateUMat();
 	// does this object own the data imageData points to?
+
+	ImageUploadState m_uploadState;
 	bool m_bOwned;
 
 	int m_debugImageId;
-	boost::shared_ptr<cv::UMat> m_uMat;
+	//boost::shared_ptr<cv::UMat> m_uMat;
+	cv::UMat m_uMat;
+	//boost::shared_ptr<IplImage> m_cpuIplImage;
 	IplImage* m_cpuIplImage;
-	
+	//boost::shared_ptr<cv::Mat> m_Mat;
 	friend class ::boost::serialization::access;
 	/** boost serialization helper. does not do any useful serialization... */
 	template< class Archive >
