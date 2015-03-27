@@ -68,6 +68,7 @@ if sys.platform == 'win32':
 libs = setupLibraryBuild(env, sources, 'utVision', 'vision')
 
 # f)
+utvision_options[ 'CPPDEFINES' ] = [ 'HAVE_UTVISION' ]
 utvision_all_options = utvision_options.copy()
 utvision_options[ 'LIBS' ] = []
 utvision_options[ 'LIBPATH' ] = []	
