@@ -7,6 +7,12 @@ env = masterEnv.Clone()
 env.AppendUnique( **mergeOptions( utcore_all_options, utvision_all_options ) )
 
 # automatically glob files from subdirectories
+if not have_opencv :
+	print "OpenCV is missing -- not building vision test framework"
+	success = False
+	Return('success')
+
+# automatically glob files from subdirectories
 subdirs = [ 'Vision' ]
 
 headers = []
@@ -25,7 +31,7 @@ sources += [ 'main.cpp', 'boost_unit_test_framework.cpp' ]
 runtests = env.Program( 'runtests', sources )
 
 # tests need an installed ubitrack
-env.Depends( runtests, 'install-all' )
+env.Depends( runtests, 'install-vision' )
 
 # also create a visual studio project for the library
 createVisualStudioProject(env, sources, headers, 'utVision-Tests')
