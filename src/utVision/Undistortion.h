@@ -35,6 +35,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
+#include <utMath/CameraIntrinsics.h>
 #include "Image.h"
 
 namespace Ubitrack { namespace Vision {
@@ -52,6 +53,8 @@ public:
 	* Initialize from CameraIntrinsics file.
 	*/
 	Undistortion(const std::string& CameraIntrinsics);
+
+	Undistortion(const Math::CameraIntrinsics<double> cameraIntrinsics);
 	
 	/**
 	 * Initialize from matrix+vector.

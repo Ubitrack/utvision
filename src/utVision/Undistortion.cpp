@@ -45,36 +45,63 @@ Undistortion::Undistortion( const std::string& intrinsicMatrixFile, const std::s
 	initParams( intrinsicMatrixFile, distortionFile );
 }
 
-Undistortion::Undistortion(const std::string& cameraIntrinsics){
+Undistortion::Undistortion(const std::string& cameraIntrinsicsString){
 	Measurement::CameraIntrinsics measMat;
 	measMat.reset(new Math::CameraIntrinsics<double>());
-	Util::readCalibFile(cameraIntrinsics, measMat);
+	Util::readCalibFile(cameraIntrinsicsString, measMat);
 
-	Math::CameraIntrinsics< double > camIntrinsics = *measMat;
+	Math::CameraIntrinsics< double > cameraIntrinsics = *measMat;
 
 	Math::Vector< double, 8 > coeffs;
 	Math::Matrix< double, 3, 3 > intrinsics;
 
-	intrinsics = camIntrinsics.matrix;
+	intrinsics = cameraIntrinsics.matrix;
 	//scale the matrix, depending on the calibartion size
-	intrinsics(0, 0) *= static_cast< double >(camIntrinsics.dimension(0));
-	intrinsics(0, 2) *= static_cast< double >(camIntrinsics.dimension(0));
-	intrinsics(1, 1) *= static_cast< double >(camIntrinsics.dimension(1));
-	intrinsics(1, 2) *= static_cast< double >(camIntrinsics.dimension(1));
+	intrinsics(0, 0) *= static_cast< double >(cameraIntrinsics.dimension(0));
+	intrinsics(0, 2) *= static_cast< double >(cameraIntrinsics.dimension(0));
+	intrinsics(1, 1) *= static_cast< double >(cameraIntrinsics.dimension(1));
+	intrinsics(1, 2) *= static_cast< double >(cameraIntrinsics.dimension(1));
 
-	Math::CameraIntrinsics< double >::radial_type radDist = camIntrinsics.radial_params;
-	Math::CameraIntrinsics< double >::tangential_type tanDist = camIntrinsics.tangential_params;
-	
+	Math::CameraIntrinsics< double >::radial_type radDist = cameraIntrinsics.radial_params;
+	Math::CameraIntrinsics< double >::tangential_type tanDist = cameraIntrinsics.tangential_params;
+
 	coeffs(0) = radDist[0];
 	coeffs(1) = radDist[1];
 	coeffs(2) = tanDist[0];
 	coeffs(3) = tanDist[1];
 	coeffs(4) = coeffs(5) = coeffs(6) = coeffs(7) = 0;
-	for (std::size_t i = 2; i < camIntrinsics.radial_size; ++i)
+	for (std::size_t i = 2; i < cameraIntrinsics.radial_size; ++i)
 		coeffs(i + 2) = radDist[i];
 
 	initParams(intrinsics, coeffs);
+	
+	
 
+}
+
+Undistortion::Undistortion(const Math::CameraIntrinsics<double> cameraIntrinsics) {
+	Math::Vector< double, 8 > coeffs;
+	Math::Matrix< double, 3, 3 > intrinsics;
+
+	intrinsics = cameraIntrinsics.matrix;
+	//scale the matrix, depending on the calibartion size
+	intrinsics(0, 0) *= static_cast< double >(cameraIntrinsics.dimension(0));
+	intrinsics(0, 2) *= static_cast< double >(cameraIntrinsics.dimension(0));
+	intrinsics(1, 1) *= static_cast< double >(cameraIntrinsics.dimension(1));
+	intrinsics(1, 2) *= static_cast< double >(cameraIntrinsics.dimension(1));
+
+	Math::CameraIntrinsics< double >::radial_type radDist = cameraIntrinsics.radial_params;
+	Math::CameraIntrinsics< double >::tangential_type tanDist = cameraIntrinsics.tangential_params;
+
+	coeffs(0) = radDist[0];
+	coeffs(1) = radDist[1];
+	coeffs(2) = tanDist[0];
+	coeffs(3) = tanDist[1];
+	coeffs(4) = coeffs(5) = coeffs(6) = coeffs(7) = 0;
+	for (std::size_t i = 2; i < cameraIntrinsics.radial_size; ++i)
+		coeffs(i + 2) = radDist[i];
+
+	initParams(intrinsics, coeffs);
 }
 
 
