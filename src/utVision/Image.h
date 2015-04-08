@@ -225,6 +225,7 @@ private:
 	bool m_bOwned;
 	
 	friend class ::boost::serialization::access;
+	
 	/** boost serialization helper from https://cheind.wordpress.com/2011/12/06/serialization-of-cvmat-objects-using-boost/ */
 	template<class Archive>
 	void save(Archive & ar, const unsigned int version) const
@@ -235,11 +236,12 @@ private:
 	template<class Archive>
 	void load(Archive & ar, const unsigned int version)
 	{
-		
+		#ifdef WIN32
 		cvInitImageHeader(this, cvSize(width, height), depth, nChannels, origin);
 		imageDataOrigin = imageData = static_cast< char* >(cvAlloc(imageSize));
 
 		ar & boost::serialization::binary_object(imageData, imageSize);
+		#endif
 	}
 
 	template< class Archive >
