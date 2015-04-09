@@ -81,13 +81,15 @@ using namespace Ubitrack::Math;
 	{
 		/// radial lens distortion usually is within a range of [-1;1]
 		Math::Vector< T, N > radVec;
-		for( std::size_t i = 0; i!= N; ++i )
+		radVec( 0 ) = Random::distribute_uniform< T >( -0.1, 0.1 );
+		radVec( 1 ) = Random::distribute_uniform< T >( -0.1, 0.1 );
+		for( std::size_t i = 2; i!= N; ++i )
 			radVec( i ) = Random::distribute_uniform< T >( -1, 1 );
 		
 		/// tangential lens distortion usually is within a much smaller range ( e.g. [-0.01;0.01] )
 		Math::Vector< T, 2 > tanVec;
-		tanVec( 0 ) = Random::distribute_uniform< T >( -0.1, 0.1 );
-		tanVec( 1 ) = Random::distribute_uniform< T >( -0.1, 0.1 );
+		tanVec( 0 ) = Random::distribute_uniform< T >( -0.01, 0.01 );
+		tanVec( 1 ) = Random::distribute_uniform< T >( -0.01, 0.01 );
 		
 		return CameraIntrinsics< T >( generateRandomMatrix( screenSize, focalMinMax ), radVec, tanVec );
 	}
@@ -114,7 +116,7 @@ using namespace Ubitrack::Math;
 	template< std::size_t Dist, typename T, std::size_t N > // Dist == number of radial distortion coefficients)
 	void undistortOpenCV( const CameraIntrinsics< T > &camIntrins, const std::vector< Math::Vector< T, N > >& distCameraPoints, std::vector< Math::Vector< T, N > > &opencv_results )
 	{
-		//assign the camera coefficients to opecnv format ( Dist == number of radial distortion coefficients)
+		//assign the camera coefficients to opencv format ( Dist == number of radial distortion coefficients)
 		cv::Matx< T, Dist+2, 1 > cvCoeffs; // and do not forget space for the other two ( tangential distortion )
 		cv::Matx< T, 3, 3 > cvMatrix;
 		Vision::Util::cv2::assign( camIntrins, cvCoeffs, cvMatrix );
