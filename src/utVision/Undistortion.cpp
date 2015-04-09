@@ -55,10 +55,12 @@ namespace {
 		const PrecisionType scaleX = image.width / static_cast< PrecisionType > ( intrinsics.dimension( 0 ) );
 		intrinsics.matrix ( 0, 0 ) *= scaleX;
 		intrinsics.matrix ( 0, 2 ) *= scaleX;
+		intrinsics.dimension ( 0 ) *= scaleX;
 		
 		const PrecisionType scaleY = image.height / static_cast< PrecisionType > ( intrinsics.dimension( 1 ) );
 		intrinsics.matrix ( 1, 1 ) *= scaleY;
 		intrinsics.matrix ( 1, 2 ) *= scaleY;
+		intrinsics.dimension ( 1 ) *= scaleY;
 		
 		intrinsics.reset(); // recalculate the inverse
 	}
