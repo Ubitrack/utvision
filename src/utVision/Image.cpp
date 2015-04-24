@@ -37,6 +37,10 @@
 #include <log4cpp/Category.hh>
 static int imageNumber = 0;
 #include <opencv2/core/ocl.hpp>
+
+//#define ALLOCATION_LOGGING
+//#define UPLOAD_DOWNLOAD_LOGGING
+
 static int allocCounter = 0;
 namespace Ubitrack { namespace Vision {
 
@@ -55,7 +59,9 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	}
 	imageNumber++;
 	allocCounter++;
-	//LOG4CPP_INFO( imageLogger, "init1" << " imageNumber" << m_debugImageId);
+#ifdef ALLOCATION_LOGGING
+	LOG4CPP_INFO( imageLogger, "init1" << " imageNumber" << m_debugImageId);
+#endif
 	bool useOCL = cv::ocl::useOpenCL();
 	LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	m_cpuIplImage->origin = nOrigin;
@@ -80,7 +86,9 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	imageNumber++;
 	allocCounter++;
-	//LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
+#ifdef ALLOCATION_LOGGING
+	LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
+#endif
 	m_cpuIplImage->origin = nOrigin;
 	//int imgdepth = IPL2CV_DEPTH(nDepth);
 	//m_uMat = cv::UMat(nWidth, nHeight, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(imgdepth, nChannels));
@@ -104,7 +112,9 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	imageNumber++;
 	allocCounter++;
 	//m_cpuIplImage->origin = pIplImage->origin;
-	//LOG4CPP_INFO( imageLogger, "init3" << " imageNumber" << m_debugImageId << "b_ownd " << m_bOwned);
+#ifdef ALLOCATION_LOGGING
+	LOG4CPP_INFO( imageLogger, "init3" << " imageNumber" << m_debugImageId << "b_ownd " << m_bOwned);
+#endif
 	m_cpuIplImage->imageData = pIplImage->imageData;
 
 	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
@@ -125,7 +135,9 @@ Image::Image( cv::Mat & img )
 	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	imageNumber++;
 	allocCounter++;
-	//LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
+#ifdef ALLOCATION_LOGGING
+	LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
+#endif
 	m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
@@ -134,8 +146,9 @@ Image::~Image()
 {
 	//destroy it
 	allocCounter--;
+#ifdef ALLOCATION_LOGGING
 	LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
-	
+#endif
 	if(m_bOwned){
 		if(m_uploadState == OnGPU || m_uploadState == OnCPUGPU){
 			m_uMat.release();
@@ -334,7 +347,9 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
 
 void Image::checkOnGPU()
 {
-	//LOG4CPP_INFO( imageLogger, "checkOnGPU: " << m_debugImageId<< " state: " <<m_uploadState);
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+	LOG4CPP_INFO( imageLogger, "checkOnGPU: " << m_debugImageId<< " state: " <<m_uploadState);
+#endif
 	if(m_uploadState == OnCPU){
 		m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 		//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
@@ -345,20 +360,17 @@ void Image::checkOnGPU()
 
 void Image::checkOnCPU()
 {
-	//LOG4CPP_INFO( imageLogger, "checkOnCPU: " << m_debugImageId<< " state: " << m_uploadState);
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+	LOG4CPP_INFO( imageLogger, "checkOnCPU: " << m_debugImageId<< " state: " << m_uploadState);
+#endif
 	if(m_uploadState == OnGPU){
-		//*m_cpuIplImage = m_uMat.getMat(0);
 		IplImage iplImage = m_uMat.getMat(0);
 		cvCopy(&iplImage, m_cpuIplImage);
+#ifdef UPLOAD_DOWNLOAD_LOGGING
 		LOG4CPP_INFO( imageLogger, "downloading " << m_debugImageId);
+#endif
 	}
 	m_uploadState = OnCPU;
-}
-void Image::updateUMat(){
-	m_uMat = cv::cvarrToMat(m_cpuIplImage).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
-	//m_Mat = boost::shared_ptr<cv::Mat>(new cv::Mat(cv::cvarrToMat(m_cpuIplImage, false)));
-	//m_uMat2 = m_Mat->getUMat(cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
-	//*m_uMat = m_Mat->getUMat(cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 } } // namespace Ubitrack::Vision

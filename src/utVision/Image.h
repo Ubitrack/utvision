@@ -43,6 +43,8 @@
 #include <opencv/cv.hpp>
 #include <log4cpp/Category.hh>
 
+//#define CONVERSION_LOGGING
+
 namespace Ubitrack { namespace Vision {
 
 	static log4cpp::Category& imageLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
@@ -137,7 +139,9 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
-		//LOG4CPP_INFO( imageLogger, "CvArr*" << m_debugImageId);
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "CvArr*" << m_debugImageId);
+#endif
 		checkOnCPU();
 		return static_cast< CvArr* > (m_cpuIplImage);
 	}
@@ -145,7 +149,9 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*()
 	{ 
-		//LOG4CPP_INFO( imageLogger, "const CvArr*" << m_debugImageId);
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "const CvArr*" << m_debugImageId);
+#endif
 		checkOnCPU();
 		return static_cast< const CvArr* > (m_cpuIplImage);
 	}
@@ -153,7 +159,9 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
-		//LOG4CPP_INFO( imageLogger, "IplImage*" << m_debugImageId);
+#ifdef CONVERSION_LOGGING		
+		LOG4CPP_INFO( imageLogger, "IplImage*" << m_debugImageId);
+#endif
 		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -168,7 +176,9 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*()
 	{ 
-		//LOG4CPP_INFO( imageLogger, "const IplImage*" << m_debugImageId);
+#ifdef CONVERSION_LOGGING		
+		LOG4CPP_INFO( imageLogger, "const IplImage*" << m_debugImageId);
+#endif
 		checkOnCPU();
 		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -185,7 +195,9 @@ public:
 */
 	cv::UMat& uMat()
 	{
-		//LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
+#endif
 		checkOnGPU();
 		m_uploadState = OnGPU;
 		return m_uMat;
@@ -194,7 +206,9 @@ public:
 
 	IplImage* iplImage()
 	{
-		//LOG4CPP_INFO( imageLogger, "iplImage()" << m_debugImageId);
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "iplImage()" << m_debugImageId);
+#endif
 		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -255,18 +269,15 @@ public:
     };
 
 	int channels( void ) const {
-		//return m_uMat.channels();
 		return m_cpuIplImage->nChannels;
 	}
 
 	int width( void ) const {
 		return m_cpuIplImage->width;
-		//return m_uMat.size().width;
 	}
 
 	int height( void ) const {
 		return m_cpuIplImage->height;
-		//return m_uMat.size().height;
 	}
 
 	int depth( void ) const {
@@ -303,11 +314,9 @@ private:
 	void checkOnCPU();
 
 	void checkOnGPU();
-
-	void updateUMat();
-	// does this object own the data imageData points to?
-
+	
 	ImageUploadState m_uploadState;
+// does this object own the data imageData points to?
 	bool m_bOwned;
 
 	
