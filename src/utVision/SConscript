@@ -47,7 +47,7 @@ for dir in subdirs:
 	sources += globSourceFiles( dir + '/*.cpp' )
 
 # c)	
-utvision_options = mergeOptions( opencv_options, utcore_all_options )
+utvision_options = mergeOptions( opencv_options, utcore_all_options, glut_options, cuda_options )
 utvision_options['CPPPATH'] += [os.path.join (getCurrentPath(), '..') ]
 
 env = masterEnv.Clone()

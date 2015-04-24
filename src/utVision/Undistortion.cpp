@@ -134,8 +134,14 @@ boost::shared_ptr< Image > Undistortion::undistort( Image& image )
 	memcpy( pUndistorted->iplImage()->colorModel,  image.iplImage()->colorModel, 4 );
 	memcpy( pUndistorted->iplImage()->channelSeq,  image.iplImage()->channelSeq, 4 );
 	
-	 
-	cvRemap( image, *pUndistorted, *m_pMapX, *m_pMapY );
+	//use the OpenCL Remap method
+	cv::UMat& dst = pUndistorted->uMat();
+	cv::UMat& src = image.uMat();
+	cv::UMat& mapX = m_pMapX->uMat();
+	cv::UMat& mapY = m_pMapY->uMat();
+	
+	cv::remap(src, dst, mapX, mapY, cv::INTER_LINEAR ); 
+	//cvRemap( image, *pUndistorted, *m_pMapX, *m_pMapY );
 		
 	// send result
 	return pUndistorted;
