@@ -137,6 +137,7 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
+		//LOG4CPP_INFO( imageLogger, "CvArr*" << m_debugImageId);
 		checkOnCPU();
 		return static_cast< CvArr* > (m_cpuIplImage);
 	}
@@ -144,6 +145,7 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*()
 	{ 
+		//LOG4CPP_INFO( imageLogger, "const CvArr*" << m_debugImageId);
 		checkOnCPU();
 		return static_cast< const CvArr* > (m_cpuIplImage);
 	}
@@ -151,6 +153,7 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
+		//LOG4CPP_INFO( imageLogger, "IplImage*" << m_debugImageId);
 		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -165,6 +168,7 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*()
 	{ 
+		//LOG4CPP_INFO( imageLogger, "const IplImage*" << m_debugImageId);
 		checkOnCPU();
 		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -181,6 +185,7 @@ public:
 */
 	cv::UMat& uMat()
 	{
+		//LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
 		checkOnGPU();
 		m_uploadState = OnGPU;
 		return m_uMat;
@@ -189,6 +194,7 @@ public:
 
 	IplImage* iplImage()
 	{
+		//LOG4CPP_INFO( imageLogger, "iplImage()" << m_debugImageId);
 		checkOnCPU();
 		return static_cast< IplImage* >( this->m_cpuIplImage ); 
 	}
@@ -286,7 +292,7 @@ public:
      */
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
-
+	int m_debugImageId;
 private:
 	enum ImageUploadState{
 		OnCPU,
@@ -304,7 +310,7 @@ private:
 	ImageUploadState m_uploadState;
 	bool m_bOwned;
 
-	int m_debugImageId;
+	
 	//boost::shared_ptr<cv::UMat> m_uMat;
 	cv::UMat m_uMat;
 	//boost::shared_ptr<IplImage> m_cpuIplImage;

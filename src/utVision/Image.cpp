@@ -74,6 +74,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 {
 	if(m_debugImageId == 0){
 		cv::ocl::setUseOpenCL(true);
+		cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);
 	}
 	bool useOCL = cv::ocl::useOpenCL();
 	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
@@ -133,18 +134,14 @@ Image::~Image()
 {
 	//destroy it
 	allocCounter--;
-	//LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
+	LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
+	
 	if(m_bOwned){
-		//if(m_debugImageId == 0)
-		//	return;
 		if(m_uploadState == OnGPU || m_uploadState == OnCPUGPU){
 			m_uMat.release();
 		}
-		if(m_uploadState == OnCPU || m_uploadState == OnCPUGPU){
-			IplImage* img = m_cpuIplImage;
-			cvReleaseImage(&img);
-		}
-		//cvReleaseImageHeader(&img);
+		IplImage* img = m_cpuIplImage;
+		cvReleaseImage(&img);
 	}
 }
 
