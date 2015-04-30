@@ -68,7 +68,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	m_cpuIplImage->align = nAlign;
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
 
-	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 
@@ -90,10 +91,6 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
 #endif
 	m_cpuIplImage->origin = nOrigin;
-	//int imgdepth = IPL2CV_DEPTH(nDepth);
-	//m_uMat = cv::UMat(nWidth, nHeight, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(imgdepth, nChannels));
-	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);;
-
 	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 }
 
@@ -117,7 +114,8 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 #endif
 	m_cpuIplImage->imageData = pIplImage->imageData;
 
-	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }

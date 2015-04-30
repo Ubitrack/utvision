@@ -118,21 +118,21 @@ boost::shared_ptr< Image > Undistortion::undistort( boost::shared_ptr< Image > p
 	return undistort( *pImage );
 }
 
-
+#include <opencv/highgui.h>
 boost::shared_ptr< Image > Undistortion::undistort( Image& image )
 {
 	// shortcut if no distortion
 	if ( !hasDistortion() )
 		return image.Clone();
-		
+	
 	// initialize the distortion map
 	initMap( image.width(), image.height(), image.origin() );
 	
 	// undistort
-	boost::shared_ptr< Image > pUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth() ) );
-	pUndistorted->iplImage()->origin = image.origin();
-	memcpy( pUndistorted->iplImage()->colorModel,  image.iplImage()->colorModel, 4 );
-	memcpy( pUndistorted->iplImage()->channelSeq,  image.iplImage()->channelSeq, 4 );
+	boost::shared_ptr< Image > pUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth(), image.origin() ) );
+	//pUndistorted->iplImage()->origin = image.origin();
+	//memcpy( pUndistorted->iplImage()->colorModel,  image.iplImage()->colorModel, 4 );
+	//memcpy( pUndistorted->iplImage()->channelSeq,  image.iplImage()->channelSeq, 4 );
 	
 	//use the OpenCL Remap method
 	cv::UMat& dst = pUndistorted->uMat();
@@ -141,6 +141,7 @@ boost::shared_ptr< Image > Undistortion::undistort( Image& image )
 	cv::UMat& mapY = m_pMapY->uMat();
 	
 	cv::remap(src, dst, mapX, mapY, cv::INTER_LINEAR ); 
+	
 	//cvRemap( image, *pUndistorted, *m_pMapX, *m_pMapY );
 		
 	// send result
