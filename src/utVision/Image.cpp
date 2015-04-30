@@ -353,7 +353,9 @@ void Image::checkOnGPU()
 	if(m_uploadState == OnCPU){
 		m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 		//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+#ifdef UPLOAD_DOWNLOAD_LOGGING
 		LOG4CPP_INFO( imageLogger, "uploading " << m_debugImageId);
+#endif
 	}
 	m_uploadState = OnGPU;
 }
