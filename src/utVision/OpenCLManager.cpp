@@ -26,9 +26,10 @@ OpenCLManager& OpenCLManager::singleton()
 	boost::mutex::scoped_lock l( singletonMutex );
 
 	//create a new singleton if necessary
-	if( !g_pOpenCLManager )
+	if( !g_pOpenCLManager ){
 		g_pOpenCLManager.reset( new OpenCLManager );
-
+		cv::ocl::setUseOpenCL(true);
+	}
 	return *g_pOpenCLManager;
 }
 

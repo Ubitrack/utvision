@@ -35,13 +35,18 @@
 #include <utUtil/Exception.h>
 #include "Image.h"
 #include <log4cpp/Category.hh>
-static int imageNumber = 0;
+
 #include <opencv2/core/ocl.hpp>
 
 //#define ALLOCATION_LOGGING
 //#define UPLOAD_DOWNLOAD_LOGGING
 
+#ifdef ALLOCATION_LOGGING
+static int imageNumber = 0;
 static int allocCounter = 0;
+#endif
+
+
 namespace Ubitrack { namespace Vision {
 
 
@@ -54,16 +59,12 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	, m_debugImageId(imageNumber)
 	, m_uploadState(OnCPUGPU)
 {
-	if(m_debugImageId == 0){
-		cv::ocl::setUseOpenCL(true);
-	}
+	
+#ifdef ALLOCATION_LOGGING
 	imageNumber++;
 	allocCounter++;
-#ifdef ALLOCATION_LOGGING
 	LOG4CPP_INFO( imageLogger, "init1" << " imageNumber" << m_debugImageId);
 #endif
-	bool useOCL = cv::ocl::useOpenCL();
-	LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
 	m_cpuIplImage->origin = nOrigin;
 	m_cpuIplImage->align = nAlign;
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
@@ -79,15 +80,9 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	, m_debugImageId(imageNumber)
 	, m_uploadState(OnCPUGPU)
 {
-	if(m_debugImageId == 0){
-		cv::ocl::setUseOpenCL(true);
-		cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);
-	}
-	bool useOCL = cv::ocl::useOpenCL();
-	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
+#ifdef ALLOCATION_LOGGING
 	imageNumber++;
 	allocCounter++;
-#ifdef ALLOCATION_LOGGING
 	LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
 #endif
 	m_cpuIplImage->origin = nOrigin;
@@ -101,15 +96,10 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	, m_debugImageId(imageNumber)
 	, m_uploadState(OnCPUGPU)
 {
-	if(m_debugImageId == 0){
-		cv::ocl::setUseOpenCL(true);
-	}
-	bool useOCL = cv::ocl::useOpenCL();
-	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
+	m_cpuIplImage->origin = pIplImage->origin;
+#ifdef ALLOCATION_LOGGING
 	imageNumber++;
 	allocCounter++;
-	//m_cpuIplImage->origin = pIplImage->origin;
-#ifdef ALLOCATION_LOGGING
 	LOG4CPP_INFO( imageLogger, "init3" << " imageNumber" << m_debugImageId << "b_ownd " << m_bOwned);
 #endif
 	m_cpuIplImage->imageData = pIplImage->imageData;
@@ -126,14 +116,9 @@ Image::Image( cv::Mat & img )
 	, m_debugImageId(imageNumber)
 	, m_uploadState(OnCPUGPU)
 {
-	if(m_debugImageId == 0){
-		cv::ocl::setUseOpenCL(true);
-	}
-	bool useOCL = cv::ocl::useOpenCL();
-	//LOG4CPP_INFO( imageLogger, "use OCL" << useOCL);
+#ifdef ALLOCATION_LOGGING
 	imageNumber++;
 	allocCounter++;
-#ifdef ALLOCATION_LOGGING
 	LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
 #endif
 	m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
@@ -143,8 +128,8 @@ Image::Image( cv::Mat & img )
 Image::~Image()
 {
 	//destroy it
-	allocCounter--;
 #ifdef ALLOCATION_LOGGING
+	allocCounter--;
 	LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
 #endif
 	if(m_bOwned){
