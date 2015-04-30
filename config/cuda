@@ -1,0 +1,96 @@
+import os
+import sys
+
+import SCons.Scanner.C
+
+def cuda_build_generator( source, target, env, for_signature ):
+	cmd = [ env[ 'NVCC' ], '-c', '-o', '$TARGET', '$NVCCFLAGS' ]
+	
+	# copy compiler options
+	for x in env[ 'CCFLAGS' ]:
+		cmd += [ '-Xcompiler', x ]
+		
+	# copy include directories
+	for x in env[ 'CPPPATH' ]:
+		cmd += [ '-I', str( Dir( x ) ) ]
+	
+	cmd += [ '$SOURCE' ]
+	return [ cmd ]
+
+# add configuration options
+Import( 'opts' )
+Import( '*')
+opts.Add( 'CUDA_PATH', 'Path to the cuda library and header files' )
+opts.Add( 'CUDA_INCLUDE', 'Path to the cuda header files' )
+opts.Add( 'CUDA_LIBS', 'Path to the cuda library files' )
+
+cuda_options = {}
+cuda_options[ 'LIBS' ] = [ 'cudart' ]
+nvccdefault = 'nvcc'
+
+if 'CUDA_PATH' in os.environ:
+	cuda_options[ 'CPPPATH' ] = [ os.path.join( os.environ['CUDA_PATH'], 'include' ) ]
+	
+	if platform == 'x86':
+		cuda_options[ 'LIBPATH' ] = [ os.path.join( os.environ['CUDA_PATH'], 'lib/Win32' ) ]
+	else:
+		cuda_options[ 'LIBPATH' ] = [ os.path.join( os.environ['CUDA_PATH'], 'lib/x64' ) ]
+	
+	nvccdefault = os.path.join( os.path.join( os.environ['CUDA_PATH'], 'bin') , 'nvcc' )
+	
+if 'CUDA_BIN_PATH' in os.environ:
+	nvccdefault = os.path.join( os.environ['CUDA_BIN_PATH'], 'nvcc' )
+if 'CUDA_INC_PATH' in os.environ:
+	cuda_options[ 'CPPPATH' ] = os.environ['CUDA_INC_PATH'].split( os.pathsep )
+if 'CUDA_LIB_PATH' in os.environ:
+	cuda_options[ 'LIBPATH' ] = os.environ['CUDA_LIB_PATH'].split( os.pathsep )
+
+if 'CUDA_PATH' in opts:
+	cuda_options[ 'CPPPATH' ] = [ os.path.join( opts[ 'CUDA_PATH' ], 'include' ) ]
+	cuda_options[ 'LIBPATH' ] = [ os.path.join( opts[ 'CUDA_PATH' ], 'lib' ) ]
+	nvccdefault = os.path.join( opts[ 'CUDA_PATH' ], 'bin', 'nvcc' )
+if 'CUDA_INCLUDE' in opts:
+	cuda_options[ 'CPPPATH' ] = opts[ 'CUDA_INCLUDE' ].split( os.pathsep )
+if 'CUDA_LIBS' in opts :
+	cuda_options[ 'LIBPATH' ] = opts[ 'CUDA_LIBS' ].split( os.pathsep )
+
+opts.Add( 'CUDA_NVCC', 'Path to the nvcc binary', nvccdefault )
+
+cuda_options[ 'LIBS' ] = [ 'cublas.lib','cublas_device.lib','cuda.lib','cudadevrt.lib','cudart.lib','cufft.lib','curand.lib','cusparse.lib','npp.lib','nvcuvenc.lib','nvcuvid.lib','OpenCL.lib' ]
+
+Import( 'masterEnv' )
+
+have_cuda = masterEnv.Detect( opts[ 'CUDA_NVCC' ] )
+
+if have_cuda:
+	# flags for nvcc
+	masterEnv[ 'NVCC' ] = opts[ 'CUDA_NVCC' ]
+	#-m32
+	masterEnv[ 'NVCCFLAGS' ] = ''
+	
+	# add builder for CUDA	
+	b = Builder( generator = cuda_build_generator,
+		suffix = masterEnv[ 'OBJSUFFIX' ],
+		src_suffix = ".cu",
+		source_scanner = SCons.Scanner.C.CScanner(),
+		single_source = True )
+	masterEnv[ 'BUILDERS' ][ 'Cuda' ] = b
+	
+	# copy TEMP environment variable
+	if  'TEMP' in os.environ:
+		masterEnv[ "ENV" ][ 'TEMP' ] = os.environ[ 'TEMP' ]
+
+	# check if we can link agains the Cuda libraries
+	cenv = masterEnv.Clone()
+	cenv.AppendUnique( **cuda_options )
+	conf = Configure( cenv )
+
+	if not conf.CheckLibWithHeader( "cudart", "cuda.h", "C" ):
+		have_cuda = False
+	conf.Finish()
+else:
+	print "Cuda compiler (nvcc) not found!"
+
+# export results
+Export( [ 'have_cuda', 'cuda_options' ] )
+
