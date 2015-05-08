@@ -122,12 +122,13 @@ namespace cv1 {
 		value.z = vec( 2 );
 		return value;
 	}
-	
+
 	/// attention, no real copy is generated CVMat will just point to the data of the ubitrack vector. see the header opencv2/core/types_c.hpp
 	template< typename PrecisionType, std::size_t N >
 	inline typename TypeMapping< Math::Vector< PrecisionType, N > >::opencv_1_type make_opencv( Math::Vector< PrecisionType, N > &vec )
 	{
-		return cvMat( N, 1, CV_MAKETYPE( PrecisionType, 1 ), reinterpret_cast< void* > ( vec.content() ) );
+		// (ueck) fixed compilation on OSX - first parameter is an int value representing the number of bytes of each element
+		return cvMat( N, 1, CV_MAKETYPE( sizeof(PrecisionType), 1 ), reinterpret_cast< void* > ( vec.content() ) );
 		//return cvMat( N, 1, typename cv::DataType< PrecisionType >::type, reinterpret_cast< void* > ( vec.content() ) );
 	}
 	
@@ -139,8 +140,9 @@ namespace cv1 {
 		for( std::size_t i = 0; i<M; ++i )
 			for( std::size_t j = 0; i<N; ++j )
 				*( pData + (j*M) + i ) = mat( i, j );
-		
-		return cvMat( M, N, CV_MAKETYPE( PrecisionType, 1 ), reinterpret_cast< void* > ( pData ) );
+
+		// (ueck) fixed compilation on OSX - first parameter is an int value representing the number of bytes of each element
+		return cvMat( M, N, CV_MAKETYPE( sizeof(PrecisionType), 1 ), reinterpret_cast< void* > ( pData ) );
 	}
 	
 	/// copy elements from Ubitrack's intrinsic class to the corresponding OpenCV 1.x data structures
