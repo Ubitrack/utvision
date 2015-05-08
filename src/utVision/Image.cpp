@@ -38,8 +38,8 @@
 
 #include <opencv2/core/ocl.hpp>
 
-//#define ALLOCATION_LOGGING
-//#define UPLOAD_DOWNLOAD_LOGGING
+#define ALLOCATION_LOGGING
+#define UPLOAD_DOWNLOAD_LOGGING
 
 #ifdef ALLOCATION_LOGGING
 static int imageNumber = 0;

@@ -23,13 +23,17 @@ static boost::scoped_ptr< OpenCLManager > g_pOpenCLManager;
 OpenCLManager& OpenCLManager::singleton()
 {
 	static boost::mutex singletonMutex;
+	
+	LOG4CPP_INFO( logger, "singleton()");
 	boost::mutex::scoped_lock l( singletonMutex );
 
 	//create a new singleton if necessary
 	if( !g_pOpenCLManager ){
+		LOG4CPP_INFO( logger, "singleton(): allocating a new");
 		g_pOpenCLManager.reset( new OpenCLManager );
 		cv::ocl::setUseOpenCL(true);
 	}
+	LOG4CPP_INFO( logger, "singleton(): return");
 	return *g_pOpenCLManager;
 }
 
@@ -38,8 +42,25 @@ void OpenCLManager::destroyOpenCLManager()
 	g_pOpenCLManager.reset( 0 );
 }
 
-OpenCLManager::OpenCLManager(void)
+void notifyOpenCLState(const char *errinfo, const void  *private_info, size_t  cb, void  *user_data)
 {
+	LOG4CPP_INFO( logger, "notifyOpenCLState");
+}
+
+bool OpenCLManager::isInitialized() const
+{
+	return m_isInitialized;
+}
+
+OpenCLManager::OpenCLManager() :
+	  m_isInitialized(false)
+{}
+
+void OpenCLManager::initialize()
+{
+	if(m_isInitialized){
+		return;
+	}
 	//Get all Platforms and select a GPU one
 	cl_uint numPlatforms;
 	clGetPlatformIDs (65536, NULL, &numPlatforms); 
@@ -83,8 +104,8 @@ OpenCLManager::OpenCLManager(void)
 		0};
  
 	cl_int status = 0;
-
-	m_clContext = clCreateContext(props,1, &selectedDeviceID, NULL, NULL, &err);
+	m_clContext = clCreateContextFromType(props, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
+	//m_clContext = clCreateContext(props,1, &selectedDeviceID, NULL, NULL, &err);
 	if(!m_clContext || err!= CL_SUCCESS)
 	{
 		LOG4CPP_INFO( logger,  "error at clCreateContext :" << err );
@@ -105,6 +126,8 @@ OpenCLManager::OpenCLManager(void)
     bool unifiedmemory = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(temp), &temp, &sz) == CL_SUCCESS &&
             sz == sizeof(temp) ? temp != 0 : false;
 	LOG4CPP_INFO( logger, "Host Unified Memory: " << unifiedmemory);
+	m_isInitialized = true;
+	LOG4CPP_INFO( logger, "initialized: " << isInitialized());
 }
 
 cl_context OpenCLManager::getContext() const

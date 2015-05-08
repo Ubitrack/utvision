@@ -740,14 +740,24 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 	for ( CvSeq* pContour = pContours; pContour; pContour = pContour->h_next ) 
 	{
 		CvRect boundingRect = cvBoundingRect( pContour );
-		float fDiameter = sqrtf( static_cast< float >( boundingRect.height * boundingRect.height + boundingRect.width * boundingRect.width ) );
-
+		
+		const float fDiameter = sqrtf( static_cast< float >( boundingRect.height * boundingRect.height + boundingRect.width * boundingRect.width ) );
+		
+		// CW@2015-04-02: starts to annoy me: several times a marker was not detected because it was to big (although I am using a really ibg image ;)
+		// introducing now relative size checks instead of absolute ones, hope that helps, otherwise please correct here
+		// taking the diagonal from vga resolution(==800) for building the bounds measured in pixels
+		static const float lowerBound = (30/800.0f); // ~=3,75 %
+		static const float upperBound = (650/800.0f); // ~= 81,25 %
+		static const float fDiagonal = sqrtf( std::pow( img.width(), 2.0f ) + std::pow( img.height(), 2.0f ) );
+		const float ratio = fDiameter / fDiagonal;
+		
+		
 		// discard too small contours
-		if ( fDiameter < 30 )
+		if ( ratio < lowerBound )
 			continue;
 
 		// discard too large contours
-		if ( fDiameter > 1000 )
+		if ( ratio > upperBound )
 			continue;
 	
 		// approximate contour by few corners

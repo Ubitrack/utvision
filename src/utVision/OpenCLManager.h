@@ -37,6 +37,8 @@
 #include <utVision.h>
 
 namespace Ubitrack { namespace Vision {
+	
+
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
 {
@@ -45,16 +47,22 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
+	void initialize();
+
 	/** get the OpenCLManager object */
 	static OpenCLManager& singleton();
 
 	static void destroyOpenCLManager();
 
+	bool isInitialized() const;
+
 	cl_context getContext() const;
 	cl_command_queue getCommandQueue() const;
 
+	
 private:
 
+	bool m_isInitialized;
 	cl_context m_clContext;
 
 	cl_command_queue m_clCommandQueue;

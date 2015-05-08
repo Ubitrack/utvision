@@ -36,6 +36,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/utility.hpp>
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/binary_object.hpp>
 #include <opencv/cxcore.h>
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
@@ -131,7 +132,7 @@ public:
 	/**
 	 * Create from Mat object
 	 */
-	explicit Image( cv::Mat & img );
+	explicit Image( cv::Mat & img );	
 
 	/** releases the image data if the data block is owned by this object. */
 	~Image();
@@ -326,10 +327,42 @@ private:
 	IplImage* m_cpuIplImage;
 	//boost::shared_ptr<cv::Mat> m_Mat;
 	friend class ::boost::serialization::access;
-	/** boost serialization helper. does not do any useful serialization... */
+	
+	/** boost serialization helper from https://cheind.wordpress.com/2011/12/06/serialization-of-cvmat-objects-using-boost/ */
+	template<class Archive>
+	void save(Archive & ar, const unsigned int version) const
+	{	
+		//checkOnCPU();
+		ar & boost::serialization::make_binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
+	}
+
+	template<class Archive>
+	void load(Archive & ar, const unsigned int version)
+	{
+		#ifdef WIN32
+		checkOnCPU();
+		cvInitImageHeader(m_cpuIplImage, cvSize(width(), height()), depth(), channels(), origin());
+		m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >(cvAlloc(m_cpuIplImage->imageSize));
+		ar & boost::serialization::binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
+		#endif
+	}
+
 	template< class Archive >
-	void serialize( Archive& ar, const unsigned int )
-	{ char X( 'X' ); ar & X; }
+	void serialize(Archive& ar, const unsigned int file_version)
+	{
+		int imageWidth = width();
+		int imageHeight = height();
+		int imageDepth = depth();
+		int imageChannels = channels();
+		int imageOrigin = origin();
+		ar &  imageWidth;          
+		ar &  imageHeight;         
+		ar &  imageDepth;      
+		ar & imageChannels;
+		ar &  imageOrigin;	
+
+		boost::serialization::split_member(ar, *this, file_version);
+	}
 };
 
 typedef Image::Ptr ImagePtr;
@@ -351,3 +384,4 @@ typedef Measurement< Ubitrack::Vision::ConstImage > ConstImageMeasurement;
 
 
 #endif
+

@@ -27,31 +27,83 @@
  * A class for encapsulating the image undistortion logic
  *
  * @author Daniel Pustka <daniel.pustka@in.tum.de>
+ * @author Christian Waechter <christian.waechter@in.tum.de> (refactoring)
  */
 
 #ifndef __UBITRACK_VISION_UNDISTORTION_H_INCLUDED__
 #define __UBITRACK_VISION_UNDISTORTION_H_INCLUDED__
 
+// std
+#include <string>
+
+// Boost
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+
+// Ubitrack
+#include "../utVision.h"	// UTVISION_EXPORT
 #include <utMath/Vector.h>
 #include <utMath/Matrix.h>
-#include "Image.h"
+#include <utMath/CameraIntrinsics.h>
+
+//forward declaration
+namespace Ubitrack { namespace Vision {
+	class Image;
+}}
 
 namespace Ubitrack { namespace Vision {
 
 class UTVISION_EXPORT Undistortion
 {
+	/// type used throughout the class used for representing distortion lens distortion parameters
+	typedef Math::CameraIntrinsics< double > intrinsics_type;
+	
+	/// new intrinsic parameters
+	intrinsics_type m_intrinsics;
+	
+	/// old distortion parameters (opencv style)
+	Math::Vector< double, 8 > m_coeffs;
+	
+	/// intrinsic camera matrix
+	Math::Matrix< double, 3, 3 > m_intrinsicMatrix;
+	
+	// undistortion maps
+	boost::scoped_ptr< Image > m_pMapX;
+	boost::scoped_ptr< Image > m_pMapY;
+	
 public:
+	/** standard constructor */
+	Undistortion();
 	
 	/**
-	 * Initialize from two filenames.
+	 * Initialize from new camera intrinsics 
+	 */
+	Undistortion( const intrinsics_type& intrinsics );
+	
+	/**
+	* Initialize from CameraIntrinsics file.
+	*/
+	Undistortion( const std::string& CameraIntrinsicsFile );
+	
+	/**
+	 * Initialize from two filenames, left to comply with old code
 	 */
 	Undistortion( const std::string& intrinsicMatrixFile, const std::string& distortionFile );
+
+	/// validates if the mapping is set correctly for the provided image
+	bool isValid( const Vision::Image& image ) const;
 	
-	/**
-	 * Initialize from matrix+vector.
-	 */
-	Undistortion( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
+	/// resets the intrinsic parameters from a provided intrinsics structure
+	void reset( const intrinsics_type& intrinsics );
+
+	/// resets the intrinsic parameters loading from a file
+	void reset( const std::string& intrinsicsFile );
+	
+	/** initialize parameters from two filenames */
+	void reset( const std::string& intrinsicMatrixFile, const std::string& distortionFile );
+
+	/** initialize from matrix+vector */
+	void reset( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
 	
 	/** 
 	 * Undistorts an image.
@@ -63,48 +115,32 @@ public:
 	 * Returns the original pointer if no distortion.
 	 */
 	boost::shared_ptr< Image > undistort( boost::shared_ptr< Image > pImage );
-
+	
 	/** returns the intrinsic matrix */
-	const Math::Matrix< double, 3, 3 >& getIntrinsics() const
-	{ return m_intrinsics; }
+	const Math::Matrix< double, 3, 3 >& getMatrix() const
+	{
+		return m_intrinsicMatrix;
+	}
 	
 	/** returns the radial distortion coefficients */
 	const Math::Vector< double, 8 >& getRadialCoeffs() const
-	{ return m_coeffs; }
+	{
+		return m_coeffs;
+	}
 	
-	/** is distortion active? */
-	bool hasDistortion() const
-	{ return m_coeffs( 0 ) != 0.0; }
+	/** returns the intrinsic matrix */
+	const intrinsics_type& getIntrinsics() const
+	{
+		return m_intrinsics;
+	}
 
-	/** returns the x-coordinate map */
-	const Image& getMapX() const
-	{ return *m_pMapX; }
-	
-	/** returns the y-coordinate map */
-	const Image& getMapY() const
-	{ return *m_pMapY; }
-
-	/** 
-	 * initialize the undistortion map. 
-	 * Usually is called implicitly by undistort(), only necessary if getMapX/Y() ist used.
-	 */
-	void initMap( int width, int height, int origin );
-	
 protected:
 
-	/** initialize parameters from two filenames */
-	void initParams( const std::string& intrinsicMatrixFile, const std::string& distortionFile );
+	/// resets the mapping to the provided image parameters
+	bool resetMapping( const int width, const int height, const intrinsics_type& intrinsics );
 
-	/** initialize from matrix+vector */
-	void initParams( const Math::Matrix< double, 3, 3 >& intrinsicMatrix, const Math::Vector< double, 8 >& distortion );
-
-	// distortion parameters
-	Math::Vector< double, 8 > m_coeffs;
-	Math::Matrix< double, 3, 3 > m_intrinsics;
-	
-	// undistortion maps
-	boost::scoped_ptr< Image > m_pMapX;
-	boost::scoped_ptr< Image > m_pMapY;
+	/// overloaded function to reset undistortion maps using data from connected components
+	bool resetMapping( const Vision::Image& image );	
 };
 
 } } // namespace Ubitrack::Vision
