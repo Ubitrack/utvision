@@ -271,7 +271,11 @@ Vision::Image::Ptr Undistortion::undistort( const Image& image )
 	Vision::Image::Ptr pImgUndistorted( new Image( image.width, image.height, image.nChannels, image.depth ) );
 	pImgUndistorted->origin = image.origin;
 	cvRemap( image, *pImgUndistorted, *m_pMapX, *m_pMapY );
-	
+
+	pImgUndistorted->channelSeq[0] = image.channelSeq[0];
+	pImgUndistorted->channelSeq[1] = image.channelSeq[1];
+	pImgUndistorted->channelSeq[2] = image.channelSeq[2];
+
 	return pImgUndistorted;
 }
 
