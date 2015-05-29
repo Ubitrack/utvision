@@ -35,7 +35,7 @@
 #include <CL/cl.h>
 #include <boost/utility.hpp>
 #include <utVision.h>
-
+#include <d3d11.h>
 namespace Ubitrack { namespace Vision {
 	
 
@@ -47,7 +47,8 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
-	void initialize();
+	void initializeOpenGL();
+	void initializeDirectX(ID3D11Device* pD3D11Device);
 
 	/** get the OpenCLManager object */
 	static OpenCLManager& singleton();
