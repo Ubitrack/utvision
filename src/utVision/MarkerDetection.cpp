@@ -713,7 +713,7 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 		}	
 
 	if ( nCorrectBoxes < iMarkerSize*iMarkerSize ) {
-		LOG4CPP_INFO( logger, "Wrong boxes detected" );
+		LOG4CPP_DEBUG( logger, "Wrong boxes detected" );
 		return false;
 	}
 	else
