@@ -132,7 +132,12 @@ public:
 	/**
 	 * Create from Mat object
 	 */
-	explicit Image( cv::Mat & img );	
+	explicit Image( cv::Mat & img );
+
+	/**
+	* Create from UMat object
+	*/
+	explicit Image(cv::UMat & img);
 
 	/** releases the image data if the data block is owned by this object. */
 	~Image();

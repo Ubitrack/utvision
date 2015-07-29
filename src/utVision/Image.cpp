@@ -38,8 +38,9 @@
 
 #include <opencv2/core/ocl.hpp>
 
-#define ALLOCATION_LOGGING
-#define UPLOAD_DOWNLOAD_LOGGING
+
+//#define ALLOCATION_LOGGING
+//#define UPLOAD_DOWNLOAD_LOGGING
 
 #ifdef ALLOCATION_LOGGING
 static int imageNumber = 0;
@@ -79,6 +80,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	, m_cpuIplImage(cvCreateImage(cvSize(nWidth, nHeight), nDepth, nChannels))
 	, m_debugImageId(imageNumber)
 	, m_uploadState(OnCPUGPU)
+	//, m_uMat(cv::USAGE_ALLOCATE_DEVICE_MEMORY)
 {
 #ifdef ALLOCATION_LOGGING
 	imageNumber++;
@@ -110,6 +112,23 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
 
+Image::Image(cv::UMat & img)
+	: m_bOwned( true )
+	, m_uploadState( OnCPUGPU )
+	, m_debugImageId(imageNumber)
+{
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO(imageLogger, "init4" << " imageNumber" << m_debugImageId);
+#endif
+	m_uMat = img;
+	IplImage iplImage = m_uMat.getMat(0);
+	//m_cpuIplImage = cvCloneImage(&iplImage);
+	m_cpuIplImage = cvCreateImage(cvSize(iplImage.width, iplImage.height), iplImage.depth, iplImage.nChannels);
+	cvCopy(&iplImage, m_cpuIplImage);
+}
+
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
 	, m_cpuIplImage(new IplImage(img))
@@ -133,9 +152,6 @@ Image::~Image()
 	LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
 #endif
 	if(m_bOwned){
-		if(m_uploadState == OnGPU || m_uploadState == OnCPUGPU){
-			m_uMat.release();
-		}
 		IplImage* img = m_cpuIplImage;
 		cvReleaseImage(&img);
 	}
@@ -173,7 +189,14 @@ boost::shared_ptr< Image > Image::AllocateNew() const
 
 boost::shared_ptr< Image > Image::Clone() const
 {
-	return boost::shared_ptr< Image >( new Image( cvCloneImage( this->m_cpuIplImage ) ) );
+	if (m_uploadState == ImageUploadState::OnCPU)
+	{
+		return boost::shared_ptr< Image >(new Image(cvCloneImage(this->m_cpuIplImage)));
+	}
+	else{
+		return boost::shared_ptr< Image >(new Image( this->m_uMat.clone() ));
+	}
+	
 }
 
 
