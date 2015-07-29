@@ -76,6 +76,8 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 using namespace tbb;
 #endif
 
+
+#include <opencv/highgui.h>
 //#define DO_TIMING
 
 #ifdef DO_TIMING
@@ -560,7 +562,7 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 	
 	
 	Math::Matrix< float, 3, 3 > K( _K );
-		
+
 	// flip image coordinates if origin==0 
 	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin() );
 	Algorithm::correctOrigin( K, img.origin(), img.height() );
@@ -574,8 +576,8 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 	
 	if ( !bRefine )
 	{
-		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
 
+		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
 		// threshold image
 		Image thresholded( img.width(), img.height(), 1 );
 		{
@@ -590,7 +592,6 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 			}
 		}
 
-		
 		MarkerList markers;
 		{
 			#ifdef DO_TIMING 
@@ -609,6 +610,7 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 				markerCalculations(*it, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 			}
 		}
+
 	}
 	else
 	{	
@@ -623,6 +625,7 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 			markerCalculationsRefine(it->first, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 		}
 	}
+
 	#ifdef DO_TIMING	
 	LOG4CPP_INFO( logger, g_blockTimer1);				
 	LOG4CPP_INFO( logger, g_blockTimer2);				
@@ -784,12 +787,11 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 		}
 
 		if (pDbgImg) {
-			cvDrawContours( pDbgImg, pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
+			cvDrawContours( pDbgImg->iplImage(), pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
 		}
 
 		ret.push_back( rect );
 	}
-
 	// cleanup	     
 	cvReleaseMemStorage( &pStorage );
 
