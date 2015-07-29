@@ -24,16 +24,13 @@ OpenCLManager& OpenCLManager::singleton()
 {
 	static boost::mutex singletonMutex;
 	
-	LOG4CPP_INFO( logger, "singleton()");
 	boost::mutex::scoped_lock l( singletonMutex );
 
 	//create a new singleton if necessary
 	if( !g_pOpenCLManager ){
-		LOG4CPP_INFO( logger, "singleton(): allocating a new");
 		g_pOpenCLManager.reset( new OpenCLManager );
 		cv::ocl::setUseOpenCL(true);
 	}
-	LOG4CPP_INFO( logger, "singleton(): return");
 	return *g_pOpenCLManager;
 }
 
