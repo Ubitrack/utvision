@@ -586,9 +586,19 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 			#endif
 			// The source image is copied as OpenCV from beta 5 on destroys it
 			if(useAdaptiveThresholding){
-				cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,( img.height() / 48 ) | 1 , 4.0 );
+				if (img.getImageState() == Image::ImageUploadState::OnGPU || img.getImageState() == Image::ImageUploadState::OnCPUGPU){
+					cv::adaptiveThreshold(img.uMat().clone(), thresholded.uMat(), 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, (img.height() / 48) | 1, 4.0);
+				}
+				else{
+					cvAdaptiveThreshold(*img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, (img.height() / 48) | 1, 4.0);
+				}				
 			} else {
-				cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);				
+				if (img.getImageState() == Image::ImageUploadState::OnGPU || img.getImageState() == Image::ImageUploadState::OnCPUGPU){
+					cv::threshold(img.uMat().clone(), thresholded.uMat(), binaryThresholdValue, 255, cv::THRESH_BINARY);
+				}
+				else{
+					cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);
+				}				
 			}
 		}
 
