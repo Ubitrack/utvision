@@ -58,7 +58,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	: m_bOwned( false )
 	, m_cpuIplImage(cvCreateImageHeader( cvSize( nWidth, nHeight ), nDepth, nChannels ))
 	, m_debugImageId(imageNumber)
-	, m_uploadState(OnCPUGPU)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
 	
 #ifdef ALLOCATION_LOGGING
@@ -71,7 +72,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
 
 	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
-	m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+
+	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 
@@ -96,7 +98,8 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
 	, m_cpuIplImage(cvCreateImageHeader(cvGetSize(pIplImage), pIplImage->depth, pIplImage->nChannels))
 	, m_debugImageId(imageNumber)
-	, m_uploadState(OnCPUGPU)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
 	m_cpuIplImage->origin = pIplImage->origin;
 #ifdef ALLOCATION_LOGGING
@@ -107,14 +110,15 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	m_cpuIplImage->imageData = pIplImage->imageData;
 
 	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
-	m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+	
+	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
 
 Image::Image(cv::UMat & img)
 	: m_bOwned( true )
-	, m_uploadState( OnCPUGPU )
+	, m_uploadState( OnGPU )
 	, m_debugImageId(imageNumber)
 {
 #ifdef ALLOCATION_LOGGING
@@ -123,24 +127,25 @@ Image::Image(cv::UMat & img)
 	LOG4CPP_INFO(imageLogger, "init4" << " imageNumber" << m_debugImageId);
 #endif
 	m_uMat = img;
-	IplImage iplImage = m_uMat.getMat(0);
-	//m_cpuIplImage = cvCloneImage(&iplImage);
-	m_cpuIplImage = cvCreateImage(cvSize(iplImage.width, iplImage.height), iplImage.depth, iplImage.nChannels);
-	cvCopy(&iplImage, m_cpuIplImage);
+	//IplImage iplImage = m_uMat.getMat(0);
+	////m_cpuIplImage = cvCloneImage(&iplImage);
+	//m_cpuIplImage = cvCreateImage(cvSize(iplImage.width, iplImage.height), iplImage.depth, iplImage.nChannels);
+	//cvCopy(&iplImage, m_cpuIplImage);
 }
 
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
 	, m_cpuIplImage(new IplImage(img))
 	, m_debugImageId(imageNumber)
-	, m_uploadState(OnCPUGPU)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
 #ifdef ALLOCATION_LOGGING
 	imageNumber++;
 	allocCounter++;
 	LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
 #endif
-	m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+	//m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 

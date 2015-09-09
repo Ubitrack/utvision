@@ -310,12 +310,18 @@ public:
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
 	int m_debugImageId;
-private:
+	
 	enum ImageUploadState{
 		OnCPU,
 		OnGPU,
 		OnCPUGPU
 	};
+
+	ImageUploadState getImageState() const{
+		return m_uploadState;
+	}
+private:
+
 	
 	void checkOnCPU();
 
