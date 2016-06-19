@@ -32,10 +32,17 @@
 #define __Ubitrack_OPENCL_MANAGER_INCLUDED__
 
 //opencl context
-#include <CL/cl.h>
+#ifdef __APPLE__
+    #include "OpenCL/opencl.h"
+#else
+    #include "CL/cl.h"
+#endif
 #include <boost/utility.hpp>
 #include <utVision.h>
+#ifdef WIN32 
 #include <d3d11.h>
+#endif
+
 namespace Ubitrack { namespace Vision {
 	
 
@@ -47,8 +54,12 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
+	// currently the implementation only works on Windows
+	// needs implementations for linux/osx !!!
+#ifdef WIN32
 	void initializeOpenGL();
 	void initializeDirectX(ID3D11Device* pD3D11Device);
+#endif
 
 	/** get the OpenCLManager object */
 	static OpenCLManager& singleton();

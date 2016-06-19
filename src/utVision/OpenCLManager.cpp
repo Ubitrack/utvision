@@ -8,8 +8,15 @@
 
 //OCL
 #include <opencv2/core/ocl.hpp>
-#include <CL/cl_gl.h>
-#include <CL/cl_d3d11_ext.h>
+
+#ifdef __APPLE__
+    #include "OpenCL/cl_gl.h"
+#else
+    #include "CL/cl_gl.h"
+	#ifdef WIN32
+		#include <CL/cl_d3d11_ext.h>
+	#endif
+#endif
 
 #include <log4cpp/Category.hh>
 
@@ -53,6 +60,7 @@ OpenCLManager::OpenCLManager() :
 	  m_isInitialized(false)
 {}
 
+#ifdef WIN32
 void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 {
 
@@ -289,6 +297,7 @@ void OpenCLManager::initializeOpenGL()
 	m_isInitialized = true;
 	LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }
+#endif
 
 cl_context OpenCLManager::getContext() const
 {

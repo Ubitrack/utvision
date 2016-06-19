@@ -199,7 +199,8 @@ boost::shared_ptr< Image > Image::Clone() const
 		return boost::shared_ptr< Image >(new Image(cvCloneImage(this->m_cpuIplImage)));
 	}
 	else{
-		return boost::shared_ptr< Image >(new Image( this->m_uMat.clone() ));
+		cv::UMat m = this->m_uMat.clone();
+        return boost::shared_ptr< Image >(new Image( m ));		
 	}
 	
 }

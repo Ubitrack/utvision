@@ -1,6 +1,7 @@
 #ifndef __COLORS_UBITRACK_H_INCLUDED__
 #define __COLORS_UBITRACK_H_INCLUDED__
 
+#include <opencv2/core/core_c.h>
 #include <opencv2/core/types_c.h>
 #include <utVision.h>
 
