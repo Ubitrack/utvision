@@ -45,6 +45,12 @@
 #include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.Undistortion" ) );
 
+//#define DO_TIMING
+#ifdef DO_TIMING
+	#include <utUtil/BlockTimer.h>
+	#include <opencv2/core/ocl.hpp>
+#endif
+
 namespace { 
 	
 	/// scales the intrinsic camera matrix parameters to used image resolution
@@ -52,12 +58,12 @@ namespace {
 	void inline correctForScale( const Ubitrack::Vision::Image& image, Ubitrack::Math::CameraIntrinsics< PrecisionType >& intrinsics )
 	{
 		// scale the intrinsic matrix up or down if image size is different ( does not work if image is cropped instead of scaled)
-		const PrecisionType scaleX = image.width / static_cast< PrecisionType > ( intrinsics.dimension( 0 ) );
+		const PrecisionType scaleX = image.width() / static_cast< PrecisionType > ( intrinsics.dimension( 0 ) );
 		intrinsics.matrix ( 0, 0 ) *= scaleX;
 		intrinsics.matrix ( 0, 2 ) *= scaleX;
 		intrinsics.dimension ( 0 ) *= scaleX;
 		
-		const PrecisionType scaleY = image.height / static_cast< PrecisionType > ( intrinsics.dimension( 1 ) );
+		const PrecisionType scaleY = image.height() / static_cast< PrecisionType > ( intrinsics.dimension( 1 ) );
 		intrinsics.matrix ( 1, 1 ) *= scaleY;
 		intrinsics.matrix ( 1, 2 ) *= scaleY;
 		intrinsics.dimension ( 1 ) *= scaleY;
@@ -81,11 +87,11 @@ namespace {
 	template< typename PrecisionType >	
 	void inline correctForOrigin( const Ubitrack::Vision::Image& image, Ubitrack::Math::CameraIntrinsics< PrecisionType >& intrinsics )
 	{
-		if ( image.origin )
+		if ( image.origin() )
 			return;
 		
 		{	// compensate if origin==0
-			intrinsics.matrix( 1, 2 ) = image.height - 1 - intrinsics.matrix( 1, 2 );
+			intrinsics.matrix( 1, 2 ) = image.height() - 1 - intrinsics.matrix( 1, 2 );
 			intrinsics.tangential_params( 1 ) *= -1.0;
 			
 			intrinsics.reset(); // recalculate the inverse
@@ -241,13 +247,13 @@ bool Undistortion::resetMapping( const Vision::Image& image )
 	intrinsics_type camIntrinsics = m_intrinsics;
 	
 	// image size different than intrinsics ? -> scale
-	correctForScale( image, camIntrinsics );
+	//correctForScale( image, camIntrinsics );
 	// always right-hand -> left-hand
 	correctForOpenCV( camIntrinsics );
 	// upside down? -> flip intrinsics and tangential param
 	correctForOrigin( image, camIntrinsics );
 	// set new lookup maps
-	if( !resetMapping( image.width, image.height, camIntrinsics ) )
+	if( !resetMapping( image.width(), image.height(), camIntrinsics ) )
 		return false;
 	
 	return isValid( image );
@@ -258,9 +264,11 @@ Vision::Image::Ptr Undistortion::undistort( Vision::Image::Ptr pImage )
 	return undistort( *pImage );
 }
 
-
-Vision::Image::Ptr Undistortion::undistort( const Image& image )
+Vision::Image::Ptr Undistortion::undistort( Image& image )
 {
+#ifdef DO_TIMING
+	static Ubitrack::Util::BlockTimer m_blockTimer( "undistortionTimer", "Ubitrack.Timing" );
+#endif
 	// check if old values are still valid for the image size, only reset mapping if not
 	if( !isValid( image ) )
 		if( !resetMapping( image ) )
@@ -268,13 +276,31 @@ Vision::Image::Ptr Undistortion::undistort( const Image& image )
 			
 	
 	// undistort
-	Vision::Image::Ptr pImgUndistorted( new Image( image.width, image.height, image.nChannels, image.depth ) );
-	pImgUndistorted->origin = image.origin;
-	cvRemap( image, *pImgUndistorted, *m_pMapX, *m_pMapY );
+	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth() ) );
 
-	pImgUndistorted->channelSeq[0] = image.channelSeq[0];
-	pImgUndistorted->channelSeq[1] = image.channelSeq[1];
-	pImgUndistorted->channelSeq[2] = image.channelSeq[2];
+	//pImgUndistorted->iplImage()->origin = image.origin();
+	//cvRemap( image.iplImage(), pImgUndistorted->iplImage(), *m_pMapX, *m_pMapY );
+
+#ifdef DO_TIMING
+	{
+	UBITRACK_TIME( m_blockTimer );
+#endif
+	cv::UMat& distortedUmat = image.uMat();
+	cv::UMat& undistortedUMat = pImgUndistorted->uMat();
+	cv::remap( distortedUmat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
+	
+#ifdef DO_TIMING
+	 cv::ocl::finish();
+	}
+	static int i = 0;
+	if(i == 10)
+	{
+		LOG4CPP_INFO( logger, "timer: " << m_blockTimer << std::endl );
+		LOG4CPP_INFO( logger, "res: " << image.width() << "x" << image.height() << std::endl );
+		i = 0;
+	}
+	i++;
+#endif
 
 	return pImgUndistorted;
 }
@@ -284,10 +310,10 @@ bool Undistortion::isValid( const Vision::Image& image ) const
 	if ( !m_pMapX || !m_pMapY )
 		return false;
 	
-	if( m_pMapX->width != image.width || m_pMapX->height != image.height )
+	if( m_pMapX->width() != image.width() || m_pMapX->height() != image.height() )
 		return false;
 	
-	if( m_pMapY->width != image.width || m_pMapY->height != image.height )
+	if( m_pMapY->width() != image.width() || m_pMapY->height() != image.height() )
 		return false;
 	
 	return true;

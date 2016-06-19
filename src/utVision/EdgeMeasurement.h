@@ -71,7 +71,7 @@ public:
 	 */
 	EdgeListMeasurementFunction( const std::vector< Math::Vector< T, 3 > >& p3d, 
 		const std::vector< Math::Vector< T, 3 > >& p3d2, const Math::Matrix< T, 3, 3 >& K, 
-		const Math::Matrix< T, 2, 2 >& scale, const Image& image, Image* pDebugImage = 0, T outlierThreshold = 1 )
+		const Math::Matrix< T, 2, 2 >& scale, Image& image, Image* pDebugImage = 0, T outlierThreshold = 1 )
 		: m_p3d( p3d )
 		, m_p3d2( p3d2 )
 		, m_K( K )
@@ -121,7 +121,7 @@ public:
 	}
 
 	template< class VT1, class VT2, class MT > 
-	void evaluateWithJacobian( VT1& result, const VT2& input, MT& J ) const
+	void evaluateWithJacobian( VT1& result, VT2& input, MT& J ) 
 	{
 		namespace ublas = boost::numeric::ublas;
 		m_goodEdgels = 0;
@@ -235,7 +235,7 @@ public:
 protected:
 	/** finds points on the edge */
 	template< class VT2 >
-	void findEdgePoints( const VT2& input ) const
+	void findEdgePoints( VT2& input )
 	{
 		// initialize points
 		m_edgePoints.resize( m_p3d.size() );
@@ -260,7 +260,7 @@ protected:
 
 			// compute normal direction
 			Math::Vector< T, 2 > normal( dir( 1 ), -dir( 0 ) );
-			if ( m_image.origin )
+			if ( m_image.origin() )
 				normal *= -1;
 
 			// experimental
@@ -293,7 +293,7 @@ protected:
 					CV_RGB( 128, 128, 0 ), 1, CV_AA, 4 );
 				cvCircle( *m_pDebugImage, 
 					cvPoint( cvRound( m_edgePoints[ i ]( 0 ) * 16 ), cvRound( m_edgePoints[ i ]( 1 ) * 16 ) ),
-					cvRound( m_pDebugImage->width / 1600.0 * 16 ),
+					cvRound( m_pDebugImage->width() / 1600.0 * 16 ),
 					m_intensities[ i ] >= g_minEdgeIntensity ? CV_RGB( 0, 255, 0 ) : CV_RGB( 255, 0, 0 ), 
 					-1, CV_AA, 4 );
 			}
@@ -308,7 +308,7 @@ protected:
 	const std::vector< Math::Vector< T, 3 > >& m_p3d2;
 	const Math::Matrix< T, 3, 3 >& m_K;
 	const Math::Matrix< T, 2, 2 >& m_scale;
-	const Image& m_image;
+	Image& m_image;
 	mutable Image* m_pDebugImage;
 	mutable T m_outlierThreshold;
 

@@ -40,7 +40,7 @@ namespace Ubitrack { namespace Vision {
 	{
 	}
 	
-	void PixelFlow::calcProjectionBuffer( const Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight )
+	void PixelFlow::calcProjectionBuffer( Image& image, const Math::Vector< int, 2 >& topLeft, const Math::Vector< int, 2 >& bottomRight )
 	{
 		//clearing previous data
 		x.clear();
@@ -49,8 +49,8 @@ namespace Ubitrack { namespace Vision {
 		bottomR.clear();
 
 		//decliaring variables
-		int width = image.widthStep;
-		int hight = image.height;
+		int width = image.iplImage()->widthStep;
+		int hight = image.height();
 		int xSize = bottomRight(0) - topLeft(0) + 1;
 		int ySize = bottomRight(1) - topLeft(1) + 1;
 			
@@ -67,9 +67,9 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < xSize; i++)
 			for(int j = 0; j < ySize; j++)
 			{	
-				int temp = (topLeft(1) + j)*image.widthStep + topLeft(0)+ i;
-				x[i] += ((unsigned char*)image.imageData)[temp];
-				y[j] += ((unsigned char*)image.imageData)[temp];
+				int temp = (topLeft(1) + j)*image.iplImage()->widthStep + topLeft(0)+ i;
+				x[i] += ((unsigned char*)image.iplImage()->imageData)[temp];
+				y[j] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 		for(int i = 0; i < xSize; i++)
 			x[i] = x[i]/ySize;
@@ -158,7 +158,7 @@ namespace Ubitrack { namespace Vision {
 		}
 	}
 
-	void PixelFlow::computeFlow( const Image& image, Math::Vector< int, 2 >& result, int& difference, Image* pDebugImg)
+	void PixelFlow::computeFlow( Image& image, Math::Vector< int, 2 >& result, int& difference, Image* pDebugImg)
 	{
 		//decliaring variables
 		int xCut = 0;
@@ -168,8 +168,8 @@ namespace Ubitrack { namespace Vision {
 		int yIndex = 0;
 		int xBufSize = 0;
 		int yBufSize = 0;
-		int width= image.widthStep;
-		int hight = image.height; 
+		int width= image.iplImage()->widthStep;
+		int hight = image.height(); 
 		int xSize = int(x.size());
 		int ySize = int(y.size());
 		Math::Vector< int, 4 > xRec;
@@ -212,8 +212,8 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < xRec(2) - xRec(0); i++)
 			for(int j = 0; j < xRec(3) - xRec(1); j++)
 			{	
-				int temp = (xRec(1)  + j)*image.width +  xRec(0) + i;
-				newX[i] += ((unsigned char*)image.imageData)[temp];
+				int temp = (xRec(1)  + j)*image.width() +  xRec(0) + i;
+				newX[i] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 		
 		for(int i = 0; i < int(newX.size()); i++)
@@ -222,8 +222,8 @@ namespace Ubitrack { namespace Vision {
 		for (int i = 0; i < yRec(2) - yRec(0); i++)
 			for(int j = 0; j < yRec(3) - yRec(1); j++)
 			{	
-				int temp = (yRec(1)  + j)*image.width +  yRec(0) + i;
-				newY[j] += ((unsigned char*)image.imageData)[temp];
+				int temp = (yRec(1)  + j)*image.width() +  yRec(0) + i;
+				newY[j] += ((unsigned char*)image.iplImage()->imageData)[temp];
 			}
 
 		for(int i = 0; i < int(newY.size()); i++)

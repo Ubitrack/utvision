@@ -41,8 +41,14 @@
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
 
+#include <opencv/cv.hpp>
+#include <log4cpp/Category.hh>
+
+//#define CONVERSION_LOGGING
+
 namespace Ubitrack { namespace Vision {
 
+	static log4cpp::Category& imageLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
 /**
  * @ingroup vision
  * A wrapper object for IplImages in a "Resource Acquisition Is Initialization" (RAII) fashion.
@@ -51,11 +57,12 @@ namespace Ubitrack { namespace Vision {
  * destroy themselves when they run out of scope!
  */
 class UTVISION_EXPORT Image
-	: public IplImage
-	, private boost::noncopyable
+	: //public IplImage
+	 private boost::noncopyable
     //, public boost::enable_shared_from_this< Image >
 {
 public:
+	
 	/**
 	 * Some abbreviations for shared pointers of Image
 	 */
@@ -125,23 +132,47 @@ public:
 	/**
 	 * Create from Mat object
 	 */
-	explicit Image( cv::Mat & img );	
+	explicit Image( cv::Mat & img );
+
+	/**
+	* Create from UMat object
+	*/
+	explicit Image(cv::UMat & img);
 
 	/** releases the image data if the data block is owned by this object. */
 	~Image();
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
-		{ return static_cast< IplImage* >( this ); }
+	{
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "CvArr*" << m_debugImageId);
+#endif
+		checkOnCPU();
+		return static_cast< CvArr* > (m_cpuIplImage);
+	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
-	operator const CvArr*() const
-	{ return static_cast< const IplImage* >( this ); }
+	operator const CvArr*()
+	{ 
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "const CvArr*" << m_debugImageId);
+#endif
+		checkOnCPU();
+		return static_cast< const CvArr* > (m_cpuIplImage);
+	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
-	{ return static_cast< IplImage* >( this ); }
+	{ 
+#ifdef CONVERSION_LOGGING		
+		LOG4CPP_INFO( imageLogger, "IplImage*" << m_debugImageId);
+#endif
+		checkOnCPU();
+		return static_cast< IplImage* >( this->m_cpuIplImage ); 
+	}
 
+	
     /// COMMENTED OUT: FUNCTIONALITY HAS TO BE CLARIFIED
 	///** convert to cv::Mat */
 	//operator cv::Mat()
@@ -149,17 +180,57 @@ public:
 
 
 	/** also convert to IplImage* for more consistent interface */
-	operator const IplImage*() const
-	{ return static_cast< const IplImage* >( this ); }
-	
+	operator const IplImage*()
+	{ 
+#ifdef CONVERSION_LOGGING		
+		LOG4CPP_INFO( imageLogger, "const IplImage*" << m_debugImageId);
+#endif
+		checkOnCPU();
+		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
+	}
+
+	//operator cv::UMat*() const
+	//{
+	//	return static_cast< cv::UMat* > ( this->m_uMat.get() );
+	//}
+
+	/*operator const cv::UMat*() const
+	{
+		return static_cast< const cv::UMat* > ( this->m_uMat.get() );
+	}
+*/
+	cv::UMat& uMat()
+	{
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
+#endif
+		checkOnGPU();
+		m_uploadState = OnGPU;
+		return m_uMat;
+	}
+
+
+	IplImage* iplImage()
+	{
+#ifdef CONVERSION_LOGGING
+		LOG4CPP_INFO( imageLogger, "iplImage()" << m_debugImageId);
+#endif
+		checkOnCPU();
+		return static_cast< IplImage* >( this->m_cpuIplImage ); 
+	}
+
 	/** returns the value of a pixel */
 	template< class T >
-	T getPixel( unsigned x, unsigned y ) const
-	{ return reinterpret_cast< const T* >( imageData + y * widthStep )[ x ]; }
+	T getPixel( unsigned x, unsigned y ) // TODO: const now missing
+	{ 
+		return reinterpret_cast< const T* >( m_cpuIplImage->imageData + y *m_cpuIplImage->widthStep )[ x ]; 
+	}
 
 	template< class T >
 	void setPixel( unsigned x, unsigned y, T val )
-	{ reinterpret_cast< T* >( imageData + y * widthStep )[ x ] = val; }
+	{ 
+		reinterpret_cast< T* >(  m_cpuIplImage->imageData + y * m_cpuIplImage->widthStep )[ x ] = val; 
+	}
 
 	/**
 	 * Convert color space.
@@ -178,16 +249,16 @@ public:
 	boost::shared_ptr< Image > Clone() const;
 	
 	/** creates an image which is half the size */
-	boost::shared_ptr< Image > PyrDown() const;
+	boost::shared_ptr< Image > PyrDown();// TODO: const;
 	
 	/** creates an image with the given size */
-	boost::shared_ptr< Image > Scale( int width, int height ) const;
+	boost::shared_ptr< Image > Scale( int width, int height ); // TODO: const;
 
     /** creates an image with the given scale factor 0.0 < f <= 1.0 */
-	boost::shared_ptr< Image > Scale( double scale ) const;
+	boost::shared_ptr< Image > Scale( double scale ); // TODO: const;
 
 	/** Creates an image with adapted contrast and brightness */
-	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ) const;
+	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
 	/** inverts the image. Implemented only for 8 bit greyscale images */
 	void Invert();
@@ -200,9 +271,28 @@ public:
 
     /** Returns the dimension of the image */
     Dimension dimension( void ) const {
-        return Dimension(width, height);
+        return Dimension(width(), height());
     };
 
+	int channels( void ) const {
+		return m_cpuIplImage->nChannels;
+	}
+
+	int width( void ) const {
+		return m_cpuIplImage->width;
+	}
+
+	int height( void ) const {
+		return m_cpuIplImage->height;
+	}
+
+	int depth( void ) const {
+		return m_cpuIplImage->depth;
+	}
+
+	int origin( void ) const {
+		return m_cpuIplImage->origin;
+	}
     /**
      * @brief Saves an image as compressed JPEG
      * @param filename Filename of the image
@@ -219,41 +309,68 @@ public:
      */
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
-
-private:
-	// does this object own the data imageData points to?
-	bool m_bOwned;
+	int m_debugImageId;
 	
+	enum ImageUploadState{
+		OnCPU,
+		OnGPU,
+		OnCPUGPU
+	};
+
+	ImageUploadState getImageState() const{
+		return m_uploadState;
+	}
+private:
+
+	
+	void checkOnCPU();
+
+	void checkOnGPU();
+	
+	ImageUploadState m_uploadState;
+// does this object own the data imageData points to?
+	bool m_bOwned;
+
+	
+	//boost::shared_ptr<cv::UMat> m_uMat;
+	cv::UMat m_uMat;
+	//boost::shared_ptr<IplImage> m_cpuIplImage;
+	IplImage* m_cpuIplImage;
+	//boost::shared_ptr<cv::Mat> m_Mat;
 	friend class ::boost::serialization::access;
 	
 	/** boost serialization helper from https://cheind.wordpress.com/2011/12/06/serialization-of-cvmat-objects-using-boost/ */
 	template<class Archive>
 	void save(Archive & ar, const unsigned int version) const
 	{	
-		ar & boost::serialization::make_binary_object(imageData, imageSize);
+		//checkOnCPU();
+		ar & boost::serialization::make_binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
 	}
 
 	template<class Archive>
 	void load(Archive & ar, const unsigned int version)
 	{
 		#ifdef WIN32
-		cvInitImageHeader(this, cvSize(width, height), depth, nChannels, origin);
-		imageDataOrigin = imageData = static_cast< char* >(cvAlloc(imageSize));
-
-		ar & boost::serialization::binary_object(imageData, imageSize);
+		checkOnCPU();
+		cvInitImageHeader(m_cpuIplImage, cvSize(width(), height()), depth(), channels(), origin());
+		m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >(cvAlloc(m_cpuIplImage->imageSize));
+		ar & boost::serialization::binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
 		#endif
 	}
 
 	template< class Archive >
 	void serialize(Archive& ar, const unsigned int file_version)
 	{
-		ar &  width;          
-		ar &  height;         
-		ar &  depth;      
-		ar & nChannels;
-		ar &  origin;      
-		
-	
+		int imageWidth = width();
+		int imageHeight = height();
+		int imageDepth = depth();
+		int imageChannels = channels();
+		int imageOrigin = origin();
+		ar &  imageWidth;          
+		ar &  imageHeight;         
+		ar &  imageDepth;      
+		ar & imageChannels;
+		ar &  imageOrigin;	
 
 		boost::serialization::split_member(ar, *this, file_version);
 	}

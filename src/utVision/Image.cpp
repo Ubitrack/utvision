@@ -31,68 +31,155 @@
 
 #include <opencv/cv.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <utUtil/Exception.h>
 #include "Image.h"
+#include <log4cpp/Category.hh>
+
+#include <opencv2/core/ocl.hpp>
+
+
+//#define ALLOCATION_LOGGING
+//#define UPLOAD_DOWNLOAD_LOGGING
+
+#ifdef ALLOCATION_LOGGING
+static int imageNumber = 0;
+static int allocCounter = 0;
+#endif
+
 
 namespace Ubitrack { namespace Vision {
 
 
+static int imageNumber = 0;
+
+
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
+	, m_cpuIplImage(cvCreateImageHeader( cvSize( nWidth, nHeight ), nDepth, nChannels ))
+	, m_debugImageId(imageNumber)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
-	cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin, nAlign );
-	imageData = static_cast< char* >( pImageData );
+	
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO( imageLogger, "init1" << " imageNumber" << m_debugImageId);
+#endif
+	m_cpuIplImage->origin = nOrigin;
+	m_cpuIplImage->align = nAlign;
+	m_cpuIplImage->imageData = static_cast< char* >( pImageData );
+
+	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+
+	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin )
 	: m_bOwned( true )
+	, m_cpuIplImage(cvCreateImage(cvSize(nWidth, nHeight), nDepth, nChannels))
+	, m_debugImageId(imageNumber)
+	, m_uploadState(OnCPUGPU)
+	//, m_uMat(cv::USAGE_ALLOCATE_DEVICE_MEMORY)
 {
-	cvInitImageHeader( this, cvSize( nWidth, nHeight ), nDepth, nChannels, nOrigin );
-	imageDataOrigin = imageData = static_cast< char* >( cvAlloc( imageSize ) );
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO( imageLogger,   "init2" << " imageNumber" << m_debugImageId);
+#endif
+	m_cpuIplImage->origin = nOrigin;
+	m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 }
 
 
 Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
+	, m_cpuIplImage(cvCreateImageHeader(cvGetSize(pIplImage), pIplImage->depth, pIplImage->nChannels))
+	, m_debugImageId(imageNumber)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
-	memcpy( static_cast< IplImage* >( this ), pIplImage, sizeof( IplImage ) );
+	m_cpuIplImage->origin = pIplImage->origin;
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO( imageLogger, "init3" << " imageNumber" << m_debugImageId << "b_ownd " << m_bOwned);
+#endif
+	m_cpuIplImage->imageData = pIplImage->imageData;
+
+	//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	
+	//m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
 }
 
+Image::Image(cv::UMat & img)
+	: m_bOwned( true )
+	, m_uploadState( OnGPU )
+	, m_debugImageId(imageNumber)
+{
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO(imageLogger, "init4" << " imageNumber" << m_debugImageId);
+#endif
+	m_uMat = img;
+	//IplImage iplImage = m_uMat.getMat(0);
+	////m_cpuIplImage = cvCloneImage(&iplImage);
+	//m_cpuIplImage = cvCreateImage(cvSize(iplImage.width, iplImage.height), iplImage.depth, iplImage.nChannels);
+	//cvCopy(&iplImage, m_cpuIplImage);
+}
+
 Image::Image( cv::Mat & img )
 	: m_bOwned( false )
+	, m_cpuIplImage(new IplImage(img))
+	, m_debugImageId(imageNumber)
+	//, m_uploadState(OnCPUGPU)
+	, m_uploadState(OnCPU)
 {
-	IplImage imgIpl = img;
-	memcpy( static_cast< IplImage* >( this ), &imgIpl, sizeof( IplImage ) );
+#ifdef ALLOCATION_LOGGING
+	imageNumber++;
+	allocCounter++;
+	LOG4CPP_INFO( imageLogger, "init4" << " imageNumber" << m_debugImageId );
+#endif
+	//m_uMat = img.getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
 }
 
 
 Image::~Image()
 {
-	if ( m_bOwned )
-		cvFree( reinterpret_cast< void** >( &imageDataOrigin ) );
+	//destroy it
+#ifdef ALLOCATION_LOGGING
+	allocCounter--;
+	LOG4CPP_INFO( imageLogger,  "destroy: imageNumber" << m_debugImageId << "owned: " <<m_bOwned << " uploadstate: "<< m_uploadState << "left: " << allocCounter);
+#endif
+	if(m_bOwned){
+		IplImage* img = m_cpuIplImage;
+		cvReleaseImage(&img);
+	}
 }
 
 
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
-	boost::shared_ptr< Image > r( new Image( width, height, nChannels, nDepth ) );
-	cvCvtColor( this, *r, nCode ); 
-	r->origin = origin; 
+	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
+	cvCvtColor( m_cpuIplImage, *r, nCode );
+	r->m_cpuIplImage->origin = origin();
 	return r;
 }
 
 
 void Image::Invert()
 {
-	if ( nChannels != 1 || depth != IPL_DEPTH_8U )
-		UBITRACK_THROW ("Operation only supported on 8-Bit grayscale images");
+	if ( channels() != 1 || depth() != IPL_DEPTH_8U )
+		std::cout << "Operation only supported on 8-Bit grayscale images" << std::endl;
 
-	for ( int i=0; i < width; i++ )
+	for ( int i=0; i < width(); i++ )
 	{
-		for ( int j=0; j < height; j++ )
+		for ( int j=0; j < height(); j++ )
 		{
 			unsigned char val = 255 - getPixel< unsigned char >( i, j );
 			setPixel< unsigned char >( i, j, val );
@@ -102,48 +189,56 @@ void Image::Invert()
 
 boost::shared_ptr< Image > Image::AllocateNew() const
 {
-    return ImagePtr( new Image( width, height, nChannels, depth, origin) );
+    return ImagePtr( new Image( width(), height(), channels(), depth(), origin()) );
 }
 
 boost::shared_ptr< Image > Image::Clone() const
 {
-	return boost::shared_ptr< Image >( new Image( cvCloneImage( *this ) ) );
+	if (m_uploadState == ImageUploadState::OnCPU)
+	{
+		return boost::shared_ptr< Image >(new Image(cvCloneImage(this->m_cpuIplImage)));
+	}
+	else{
+		return boost::shared_ptr< Image >(new Image( this->m_uMat.clone() ));
+	}
+	
 }
 
 
-boost::shared_ptr< Image > Image::PyrDown() const
+boost::shared_ptr< Image > Image::PyrDown()
 {
-	boost::shared_ptr< Image > r( new Image( width / 2, height / 2, nChannels, depth, origin ) );
-	cvPyrDown( *this, *r );
+	boost::shared_ptr< Image > r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
+	cvPyrDown( m_cpuIplImage, *r );
 	return r;
 }
 
 
-boost::shared_ptr< Image > Image::Scale( int width, int height ) const
+boost::shared_ptr< Image > Image::Scale( int width, int height )
 {
-	boost::shared_ptr< Image > scaledImg( new Image( width, height, nChannels, depth, origin ) );
-	cvResize( *this, *scaledImg );
+	boost::shared_ptr< Image > scaledImg( new Image( width, height, channels(), depth(), origin() ) );
+	cvResize( m_cpuIplImage, *scaledImg );
 	return scaledImg;
 }
 
 /** creates an image with the given scale factor 0.0 < f <= 1.0 */
-boost::shared_ptr< Image > Image::Scale( double scale ) const
+boost::shared_ptr< Image > Image::Scale( double scale )
 {
-    if (scale <= 0.0 || scale > 1.0)
-        UBITRACK_THROW( "Invalid scale factor" );
-    return Scale( static_cast< int >( width * scale ), static_cast< int > ( height * scale ) );
+    if (scale <= 0.0 || scale > 1.0){
+		std::cout << "invalided scale factor" << std::endl;
+	}
+    return Scale( static_cast< int >( width() * scale ), static_cast< int > ( height() * scale ) );
 }
 
 bool Image::isGrayscale() const
 {
-    return nChannels == 1;
+    return channels() == 1;
 }
 
 Image::Ptr Image::getGrayscale( void ) const
 {
     if ( !isGrayscale() ) {
         // TODO: Has the image, if not grayscale, really three channels then?
-        return CvtColor( CV_RGB2GRAY, 1, depth);
+        return CvtColor( CV_RGB2GRAY, 1, depth());
     } else {
         return Clone();
     }
@@ -151,7 +246,7 @@ Image::Ptr Image::getGrayscale( void ) const
 
 
 // This function is copied from http://mehrez.kristou.org/opencv-change-contrast-and-brightness-of-an-image/
-boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness ) const
+boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightness )
 {
 	if(contrast > 100) contrast = 100;
 	if(contrast < -100) contrast = -100;
@@ -166,17 +261,18 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
 	float* ranges[] = { range_0 };
 	int i;
 
-	IplImage * dest = cvCloneImage(this);
+	IplImage * dest = cvCloneImage(this->m_cpuIplImage);
 	
 	IplImage * GRAY;
-	if (this->nChannels == 3)
+	if (this->channels() == 3)
 	{
-		GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
-		cvCvtColor(this,GRAY,CV_RGB2GRAY);
+		//GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
+		GRAY = cvCreateImage(cvGetSize(m_cpuIplImage), this->depth(), 1);
+		cvCvtColor(m_cpuIplImage,GRAY,CV_RGB2GRAY);
 	}
 	else
 	{
-		GRAY = cvCloneImage(this);
+		GRAY = cvCloneImage(m_cpuIplImage);
 	}
     lut_mat = cvCreateMatHeader( 1, 256, CV_8UC1 );
     cvSetData( lut_mat, lut, 0 );
@@ -216,16 +312,16 @@ boost::shared_ptr< Image > Image::ContrastBrightness( int contrast, int brightne
             lut[i] = v;
         }
     }
-	if (this->nChannels ==3)
+	if (this->channels() ==3)
 	{
-		IplImage * R = cvCreateImage(cvGetSize(this),this->depth,1);
-		IplImage * G = cvCreateImage(cvGetSize(this),this->depth,1);
-		IplImage * B = cvCreateImage(cvGetSize(this),this->depth,1);
-		cvCvtPixToPlane(this,R,G,B,NULL);
+		IplImage * R = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		IplImage * G = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		IplImage * B = cvCreateImage(cvGetSize(m_cpuIplImage),this->depth(),1);
+		cvSplit(m_cpuIplImage,R,G,B,NULL);
 		cvLUT( R, R, lut_mat );
 		cvLUT( G, G, lut_mat );
 		cvLUT( B, B, lut_mat );
-		cvCvtPlaneToPix(R,G,B,NULL,dest);
+		cvMerge(R,G,B,NULL,dest);
 		cvReleaseImage(&R);
 		cvReleaseImage(&G);
 		cvReleaseImage(&B);
@@ -247,7 +343,7 @@ void Image::saveAsJpeg( const std::string filename, int compressionFactor ) cons
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imwrite( filename, cv::Mat( *this ), params );
+    cv::imwrite( filename, m_uMat, params );
 }
 
 
@@ -257,8 +353,37 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-    cv::imencode( ".jpg", cv::Mat( *this ), buffer, params );
+    cv::imencode( ".jpg", m_uMat, buffer, params );
 }
 
+void Image::checkOnGPU()
+{
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+	LOG4CPP_INFO( imageLogger, "checkOnGPU: " << m_debugImageId<< " state: " <<m_uploadState);
+#endif
+	if(m_uploadState == OnCPU){
+		m_uMat = cv::cvarrToMat(m_cpuIplImage, true).getUMat(cv::ACCESS_RW, cv::USAGE_ALLOCATE_DEVICE_MEMORY);
+		//m_uMat = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+		LOG4CPP_INFO( imageLogger, "uploading " << m_debugImageId);
+#endif
+	}
+	m_uploadState = OnGPU;
+}
+
+void Image::checkOnCPU()
+{
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+	LOG4CPP_INFO( imageLogger, "checkOnCPU: " << m_debugImageId<< " state: " << m_uploadState);
+#endif
+	if(m_uploadState == OnGPU){
+		IplImage iplImage = m_uMat.getMat(0);
+		cvCopy(&iplImage, m_cpuIplImage);
+#ifdef UPLOAD_DOWNLOAD_LOGGING
+		LOG4CPP_INFO( imageLogger, "downloading " << m_debugImageId);
+#endif
+	}
+	m_uploadState = OnCPU;
+}
 
 } } // namespace Ubitrack::Vision

@@ -76,6 +76,8 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 using namespace tbb;
 #endif
 
+
+#include <opencv/highgui.h>
 //#define DO_TIMING
 
 #ifdef DO_TIMING
@@ -119,17 +121,17 @@ const float std2dPoints[ 4 ][ 2 ] =
 
 // forward declaration of private functions
 static void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double markerSize, CvScalar color, double error = -1.0 );
-bool checkRefinedMarker( const Math::Matrix< float, 3, 3 >& K ,Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
+bool checkRefinedMarker( const Math::Matrix< float, 3, 3 >& K ,Math::Pose checkPose, MarkerInfo& info, Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize );
 
 
 #ifdef HAVE_LAPACK
 
 Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int nCode, unsigned int nCodeSize, unsigned int nMarkerSize, MarkerInfo& info, 
-	Math::Matrix< float, 3, 3 > K,const Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
+	Math::Matrix< float, 3, 3 > K, Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
 {
 	int sum = 0;
-	for(int i = 1; i< img.imageSize; i++)
-		sum += img.imageData[i];
+	for(int i = 1; i< img.iplImage()->imageSize; i++)
+		sum += img.iplImage()->imageData[i];
 
 	Math::Pose pose( initialPose );
 
@@ -244,23 +246,23 @@ void calculateMarkerBoundingRectangle( const Vision::Image& img, CornerList corn
 	int incrHeight = int((botRight(1) - topLeft(1))*percentage/2);
 	
 	//calculating the incrise of x buffer right and then from left
-	botRight(0) = std::min( botRight(0) + incrLength, img.width );
+	botRight(0) = std::min( botRight(0) + incrLength, img.width() );
 	topLeft(0) = std::max( topLeft(0) - incrLength, 0 );
 
 	//calculating the incrize of the y buffer from top and below
-	botRight(1) = std::min( botRight(1) + incrHeight, img.height );
+	botRight(1) = std::min( botRight(1) + incrHeight, img.height() );
 	topLeft(1) = std::max( topLeft(1) - incrHeight, 0 );
 }
 
 
-void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
+void markerCalculations(CornerList &it, Image& img, Image* pDebugImg,MarkerInfoMap& markerInfos,
 	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels) {
 	// refine corner positions
 		const bool bRefine = false;
 			if ( refineCorners( img, it ) ) //, pDebugImg ) )
 			{
 				// if image is top-down, exchange point 2 and 4 to assure counter-clock-wise order for squareHomography
-				if ( !img.origin )
+				if ( !img.origin() )
 				{
 					Math::Vector< float, 2 > temp( (it)[ 3 ] );
 					(it)[ 3 ] = (it)[ 1 ];
@@ -280,7 +282,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 					// Maybe make configurable in the future
 					int scale = 5;
 				
-					int markersPerCol = img.height / ( pMarker->height * scale );
+					int markersPerCol = img.height() / ( pMarker->height * scale );
 					int xStart = ( iShownMarker / markersPerCol ) * ( pMarker->height * scale );
 					int yStart = ( iShownMarker % markersPerCol ) * ( pMarker->height * scale );
 					iShownMarker++;
@@ -312,7 +314,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
                     {
                         for ( size_t i = 0; i < it.size(); ++i) {
                         cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
-				            cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 0, 255, 255 ), -1, CV_AA, 4 );
+				            cvRound( pDebugImg->width() / 500.0 * 16 ), CV_RGB( 0, 255, 255 ), -1, CV_AA, 4 );
                         }
                     }
                 }
@@ -332,15 +334,15 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 						Math::Util::vector_cast_assign( info.corners[ i ], Math::Vector< double, 2 >( (it)[ ( i + nRotate ) % 4 ]( 0 ), (it)[ ( i + nRotate ) % 4 ]( 1 ) ) );
 
 					// origin correction
-					if ( !img.origin )
+					if ( !img.origin() )
 						for ( unsigned i = 0; i < 4; i++ )
-							info.corners[ i ]( 1 ) = img.height - 1 - info.corners[ i ]( 1 );
+							info.corners[ i ]( 1 ) = img.height() - 1 - info.corners[ i ]( 1 );
 
                     if ( pDebugImg )
                     {
                         for ( size_t i = 0; i < it.size(); ++i) {
                         cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
-				            cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
+				            cvRound( pDebugImg->width() / 500.0 * 16 ), CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
                         }
                     }
 
@@ -394,9 +396,9 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 
 							updateCorners( K, pose, info );
 							// Origin correction
-							if ( !img.origin )
+							if ( !img.origin() )
 								for ( unsigned i = 0; i < 4; i++ )
-									info.corners[ i ]( 1 ) = img.height - 1 - info.corners[ i ]( 1 );
+									info.corners[ i ]( 1 ) = img.height() - 1 - info.corners[ i ]( 1 );
 
 							LOG4CPP_TRACE( logger, "Refined corner positions: [" << info.corners[0] << ", " << info.corners[1] << ", " << info.corners[2] << ", " << info.corners[3] << "]" );
 						}
@@ -447,7 +449,7 @@ void markerCalculations(CornerList &it, const Image& img, Image* pDebugImg,Marke
 			}
 }
 
-void markerCalculationsRefine(unsigned long long int markerId,  const Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
+void markerCalculationsRefine(unsigned long long int markerId,  Image& img, Vision::Image* pDebugImg,MarkerInfoMap& markerInfos, 
 	const Math::Matrix< float, 3, 3 >& K,const Math::Matrix< float, 3, 3 >& invK, unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels){
 		int nDiff, nVis;
 		float fRes;
@@ -550,7 +552,7 @@ void markerCalculationsRefine(unsigned long long int markerId,  const Image& img
 				drawCube( *pDebugImg, pose, K, info.fSize, CV_RGB( 0, 0, 255 ) );
 }
 
-void detectMarkers( const Image& img, MarkerInfoMap& markerInfos, 
+void detectMarkers( Image& img, MarkerInfoMap& markerInfos, 
 	const Math::Matrix< float, 3, 3 >& _K,  Image* pDebugImg, bool bRefine, 
 	unsigned int iCodeSize, unsigned int iMarkerSize, unsigned long long int uiMask, bool useInnerEdgels,
 	bool useAdaptiveThresholding, int binaryThresholdValue )
@@ -560,10 +562,10 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 	
 	
 	Math::Matrix< float, 3, 3 > K( _K );
-		
+
 	// flip image coordinates if origin==0 
-	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin );
-	Algorithm::correctOrigin( K, img.origin, img.height );
+	LOG4CPP_DEBUG( logger, "image origin flag = " << img.origin() );
+	Algorithm::correctOrigin( K, img.origin(), img.height() );
 
 	// compute inverse camera matrix
 	Math::Matrix< float, 3, 3 > invK( invert_matrix( K ) );
@@ -574,23 +576,32 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 	
 	if ( !bRefine )
 	{
-		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
 
+		LOG4CPP_TRACE( logger, "detectMarkers(): detection/refinement" );	
 		// threshold image
-		Image thresholded( img.width, img.height, 1 );
+		Image thresholded( img.width(), img.height(), 1 );
 		{
 			#ifdef DO_TIMING
 			UBITRACK_TIME( g_blockTimer1 );
 			#endif
 			// The source image is copied as OpenCV from beta 5 on destroys it
 			if(useAdaptiveThresholding){
-				cvAdaptiveThreshold( *img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY,( img.height / 48 ) | 1 , 4.0 );
+				if (img.getImageState() == Image::ImageUploadState::OnGPU || img.getImageState() == Image::ImageUploadState::OnCPUGPU){
+					cv::adaptiveThreshold(img.uMat().clone(), thresholded.uMat(), 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, (img.height() / 48) | 1, 4.0);
+				}
+				else{
+					cvAdaptiveThreshold(*img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, (img.height() / 48) | 1, 4.0);
+				}				
 			} else {
-				cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);				
+				if (img.getImageState() == Image::ImageUploadState::OnGPU || img.getImageState() == Image::ImageUploadState::OnCPUGPU){
+					cv::threshold(img.uMat().clone(), thresholded.uMat(), binaryThresholdValue, 255, cv::THRESH_BINARY);
+				}
+				else{
+					cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);
+				}				
 			}
 		}
 
-		
 		MarkerList markers;
 		{
 			#ifdef DO_TIMING 
@@ -609,6 +620,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 				markerCalculations(*it, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 			}
 		}
+
 	}
 	else
 	{	
@@ -623,6 +635,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 			markerCalculationsRefine(it->first, img, pDebugImg, markerInfos, K, invK, iCodeSize, iMarkerSize, uiMask, useInnerEdgels);
 		}
 	}
+
 	#ifdef DO_TIMING	
 	LOG4CPP_INFO( logger, g_blockTimer1);				
 	LOG4CPP_INFO( logger, g_blockTimer2);				
@@ -635,7 +648,7 @@ void detectMarkers( const Image& img, MarkerInfoMap& markerInfos,
 
 
 /** extracts the marker from the image and checks how many pixels are correct */
-bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPose, MarkerInfo& info, const Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
+bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPose, MarkerInfo& info, Image& img, unsigned long long int nCode, Image* pDebugImg, unsigned int iMarkerSize, unsigned int iCodeSize )
 {
 	Math::Matrix< double, 3, 4 > Rt( checkPose );
 	Math::Matrix< double, 3, 4 > KRt( ublas::prod( K, Rt ) );
@@ -653,17 +666,17 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 	test2 /= test2( 2 );
 
 	boost::shared_ptr< Image > pMarkerImg = getMarkerImage(img, h, iMarkerSize);
-	const unsigned char* pData = reinterpret_cast< const unsigned char* >( pMarkerImg->imageData ); 
+	const unsigned char* pData = reinterpret_cast< const unsigned char* >( pMarkerImg->iplImage()->imageData ); 
 
 	// show marker image in debug mode
 	if ( pDebugImg )
 	{
-		int xStart = img.width - 1 - ( pMarkerImg->height * (iMarkerSize-1) );
-		int yStart = img.height - 1 - ( pMarkerImg->height * (iMarkerSize-1) );
+		int xStart = img.width() - 1 - ( pMarkerImg->height() * (iMarkerSize-1) );
+		int yStart = img.height() - 1 - ( pMarkerImg->height() * (iMarkerSize-1) );
 		for ( unsigned int x = 0; x < iMarkerSize; x++ )
 			for ( unsigned int y = 0; y < iMarkerSize; y++ )
 			{
-				unsigned c = ( (unsigned char*)pMarkerImg->imageData )[ y * pMarkerImg->widthStep + x ];
+				unsigned c = ( (unsigned char*)pMarkerImg->iplImage()->imageData )[ y * pMarkerImg->iplImage()->widthStep + x ];
 				cvRectangle( *pDebugImg, 
 					cvPoint( xStart + (iMarkerSize-1) * x, yStart + (iMarkerSize-1) * y ), 
 					cvPoint( xStart + (iMarkerSize-1) * (x+1), yStart + (iMarkerSize-1) * (y+1) ),
@@ -675,15 +688,15 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 	int whiteCellsBorder =0;
 	
 	// compute average pixel
-	for(int x  = 0; x < pMarkerImg->width; x++)
+	for(int x  = 0; x < pMarkerImg->width(); x++)
 	{
-		for(int y = 0; y < pMarkerImg->height; y++)
+		for(int y = 0; y < pMarkerImg->height(); y++)
 		{
-			int t = pData[y*pMarkerImg->widthStep + x];
+			int t = pData[y*pMarkerImg->iplImage()->widthStep + x];
 			avg += t;  
 		}
 	}
-	avg = int(avg/(pMarkerImg->width * pMarkerImg->height));
+	avg = int(avg/(pMarkerImg->width() * pMarkerImg->height()));
 	
 	// find the black and white points
 	unsigned int nCorrectBoxes = 0;
@@ -693,12 +706,12 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 		{
 			if ( nCode & ( ((unsigned long long int)1) << ( ( iMarkerSize - 2*nBorderSize - y ) * ( iMarkerSize - 2*nBorderSize ) + ( iMarkerSize - 2*nBorderSize - x ) ) ))
 			{
-				if (pData[ y * pMarkerImg->widthStep + x ] <= avg )
+				if (pData[ y * pMarkerImg->iplImage()->widthStep + x ] <= avg )
 					nCorrectBoxes++;
 			}
 			else
 			{
-				if (pData[ y * pMarkerImg->widthStep + x ] > avg )
+				if (pData[ y * pMarkerImg->iplImage()->widthStep + x ] > avg )
 					nCorrectBoxes++;
 			}
 		}
@@ -708,7 +721,7 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 		{
 			if( ( (0 <= x && x < nBorderSize) || ((iMarkerSize-nBorderSize) <= x && x < iMarkerSize)
 					|| (0 <= y && y < nBorderSize) || ((iMarkerSize-nBorderSize) <= y && y < iMarkerSize) ) 
-					&& pData[ y * pMarkerImg->widthStep + x ] <= avg )
+					&& pData[ y * pMarkerImg->iplImage()->widthStep + x ] <= avg )
 				nCorrectBoxes++;
 		}	
 
@@ -748,7 +761,7 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 		// taking the diagonal from vga resolution(==800) for building the bounds measured in pixels
 		static const float lowerBound = (30/800.0f); // ~=3,75 %
 		static const float upperBound = (650/800.0f); // ~= 81,25 %
-		static const float fDiagonal = sqrtf( std::pow( img.width, 2.0f ) + std::pow( img.height, 2.0f ) );
+		static const float fDiagonal = sqrtf( std::pow( img.width(), 2.0f ) + std::pow( img.height(), 2.0f ) );
 		const float ratio = fDiameter / fDiagonal;
 		
 		
@@ -784,12 +797,11 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 		}
 
 		if (pDbgImg) {
-			cvDrawContours( pDbgImg, pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
+			cvDrawContours( pDbgImg->iplImage(), pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
 		}
 
 		ret.push_back( rect );
 	}
-
 	// cleanup	     
 	cvReleaseMemStorage( &pStorage );
 
@@ -813,7 +825,7 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
  * @param pDebugImg if not NULL, we will draw some debugging info into this image
  * @return number of detected points
  */
-int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
+int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, Image& greyImage,
 	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg = NULL )
 {
@@ -855,14 +867,14 @@ int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const
 		// debugging
 		if ( pDebugImg )
 			cvCircle( *pDebugImg, cvPoint( cvRound( pPoints[ iPoint ].x * 16 ), cvRound( pPoints[ iPoint ].y * 16 ) ),
-				cvRound( pDebugImg->width / 1600.0 * 16 ), nMax < g_nMinimalEdgeStrength ? CV_RGB( 255, 0, 0 ) : CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
+				cvRound( pDebugImg->width() / 1600.0 * 16 ), nMax < g_nMinimalEdgeStrength ? CV_RGB( 255, 0, 0 ) : CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
 	}
 
 	return iPoint;
 }
 
 
-bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg )
+bool refineCorners( Image& img, CornerList& corners, Image* pDebugImg )
 {
 	int nAvgEdgeStrength = 0;
 
@@ -959,7 +971,7 @@ bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg )
 }
  
 
-boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize )
+boost::shared_ptr< Image > getMarkerImage( Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize )
 	{
 	// compute a suitable scaling matrix that maps 
 	// for x: -0.5 -> -1 and (nSize-0.5) -> +1
@@ -992,69 +1004,69 @@ boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix<
 	}
 
 
-unsigned long long int readCode( const Image& markerImage, unsigned int iCodeSize, unsigned long long int uiMask )
+unsigned long long int readCode( Image& markerImage, unsigned int iCodeSize, unsigned long long int uiMask )
 {
 	// This method only works for square markers...
-	assert( markerImage.height == markerImage.width );
-
-	LOG4CPP_TRACE( logger, "readCode(): markerImage.width: " << markerImage.width 
-		<< ", markerImage.height: " << markerImage.height  
+	assert( markerImage.height() == markerImage.width() );
+	
+	LOG4CPP_TRACE( logger, "readCode(): markerImage.width: " << markerImage.width() 
+		<< ", markerImage.height: " << markerImage.height()  
 		<< ", iCodeSize: " << iCodeSize 
-		<< ", markerImage.widthStep: " <<  markerImage.widthStep 
-		<< ", markerImage.width: " << markerImage.width );
+		<< ", markerImage.widthStep: " <<  markerImage.iplImage()->widthStep 
+		<< ", markerImage.width: " << markerImage.width() );
 
 	// find threshold
 	int nAvg = 0;
-	const unsigned char* pData = reinterpret_cast< const unsigned char* >( markerImage.imageData ); 
-	for ( int y = 0; y < markerImage.width; y++ )	
+	const unsigned char* pData = reinterpret_cast< const unsigned char* >( markerImage.iplImage()->imageData ); 
+	for ( int y = 0; y < markerImage.width(); y++ )	
 		{
-		for ( int x = 0; x < markerImage.width; x++ )	
+		for ( int x = 0; x < markerImage.width(); x++ )	
 			nAvg += *pData++;
-		pData += markerImage.widthStep - markerImage.width;
+		pData += markerImage.iplImage()->widthStep - markerImage.width();
 		}
 		
-	nAvg /= markerImage.width * markerImage.height;
+	nAvg /= markerImage.width() * markerImage.height();
 	
 	// check if border is black
 	int nBlackBorderPixels = 0;
-	pData = reinterpret_cast< const unsigned char* >( markerImage.imageData ); 
-	unsigned int nBorderThickness = (markerImage.width - iCodeSize) / 2;
+	pData = reinterpret_cast< const unsigned char* >( markerImage.iplImage()->imageData ); 
+	unsigned int nBorderThickness = (markerImage.width() - iCodeSize) / 2;
 	// Iterate border thickness
 	for ( unsigned int j = 0; j < nBorderThickness; j++ ) {
 		// Iterate all horizontal border pixels
-		for ( int i = 0; i < markerImage.width; i++ )
+		for ( int i = 0; i < markerImage.width(); i++ )
 		{
 			// upper border
-			if ( pData[ j * markerImage.widthStep + i ] <= nAvg )
+			if ( pData[ j * markerImage.iplImage()->widthStep + i ] <= nAvg )
 				nBlackBorderPixels++;
 			// lower border
-			if ( pData[ markerImage.widthStep * ( markerImage.height - 1 - j) + i ] <= nAvg )
+			if ( pData[ markerImage.iplImage()->widthStep * ( markerImage.height() - 1 - j) + i ] <= nAvg )
 				nBlackBorderPixels++;
 		}
 		// Iterate remaining vertical border pixels
-		for ( unsigned int i = nBorderThickness; i < markerImage.height - nBorderThickness; i++ )
+		for ( unsigned int i = nBorderThickness; i < markerImage.height() - nBorderThickness; i++ )
 		{
 			// left
-			if ( pData[ i * markerImage.widthStep + j ] <= nAvg )
+			if ( pData[ i * markerImage.iplImage()->widthStep + j ] <= nAvg )
 				nBlackBorderPixels++;
 			// right
-			if ( pData[ i * markerImage.widthStep + markerImage.width - 1 - j ] <= nAvg )
+			if ( pData[ i * markerImage.iplImage()->widthStep + markerImage.width() - 1 - j ] <= nAvg )
 				nBlackBorderPixels++;
 		}
 	}
 		
-	if ( nBlackBorderPixels < 2 * markerImage.width + 2 * ( markerImage.height - 2 ) - g_nMaxWhiteBorderPixels ) {
+	if ( nBlackBorderPixels < 2 * markerImage.width() + 2 * ( markerImage.height() - 2 ) - g_nMaxWhiteBorderPixels ) {
 		LOG4CPP_TRACE( logger, "readCode(): black border corrupt" );
 		return 0;
 	}
 		
 	// compute marker code
 	unsigned long long int nMarkerCode = 0;
-	unsigned int uiBorderWidth = (markerImage.width - iCodeSize) / 2;
-	for ( unsigned int y = uiBorderWidth; y < (markerImage.width - uiBorderWidth); y++ )	
-		for ( unsigned int x = uiBorderWidth; x < (markerImage.width - uiBorderWidth); x++ )
-			if ( pData[ y * markerImage.widthStep + x ] <= nAvg )
-				nMarkerCode |= ((unsigned long long int)1) << ( (markerImage.width - uiBorderWidth - y - 1) * iCodeSize + (markerImage.width - uiBorderWidth - x - 1) );
+	unsigned int uiBorderWidth = (markerImage.width() - iCodeSize) / 2;
+	for ( unsigned int y = uiBorderWidth; y < (markerImage.width() - uiBorderWidth); y++ )	
+		for ( unsigned int x = uiBorderWidth; x < (markerImage.width() - uiBorderWidth); x++ )
+			if ( pData[ y * markerImage.iplImage()->widthStep + x ] <= nAvg )
+				nMarkerCode |= ((unsigned long long int)1) << ( (markerImage.width() - uiBorderWidth - y - 1) * iCodeSize + (markerImage.width() - uiBorderWidth - x - 1) );
 					
 	LOG4CPP_TRACE( logger, "readCode(): raw code: 0x" << std::hex << nMarkerCode );
 

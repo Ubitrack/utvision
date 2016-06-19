@@ -171,7 +171,7 @@ typedef std::map< unsigned long long int, MarkerInfo > MarkerInfoMap;
  * @param uiMask regions of the marker's bit pattern that belong to the ID (1) or not (0)
  * @param useInnerEdgels incorporate inner edgelets into pose refinement. May be unstable.
  */
-UTVISION_EXPORT void detectMarkers( const Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
+UTVISION_EXPORT void detectMarkers( Image& img, std::map< unsigned long long int, MarkerInfo >& markers, 
 	const Math::Matrix< float, 3, 3 >& K, Image* pDebugImg = 0, bool bRefine = false, unsigned int iCodeSize = 4, 
 	unsigned int iMarkerSize = 6, unsigned long long int uiMask = 0xFFFF, bool useInnerEdgels = true,
 	bool useAdaptiveThresholding = true, int binaryThresholdValue = 120 );
@@ -200,7 +200,7 @@ UTVISION_EXPORT MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Poi
  * @param pDebugImg. If not NULL, some information will be drawn into this image for debugging
  * @return true if edges were considered strong enough for this to be a real marker
  */
-UTVISION_EXPORT bool refineCorners( const Image& img, CornerList& corners, Image* pDebugImg = NULL );
+UTVISION_EXPORT bool refineCorners( Image& img, CornerList& corners, Image* pDebugImg = NULL );
 
 /**
  * @ingroup vision
@@ -210,7 +210,7 @@ UTVISION_EXPORT bool refineCorners( const Image& img, CornerList& corners, Image
  * @param homography a homography as computed by Ubitrack::Algorithm::squareHomograph
  * @param nSize sidelength of the resulting image in pixels
  */
-UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize );
+UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( Image& img, const Math::Matrix< float, 3, 3 > homography, int nSize );
 
 /**
  * @ingroup vision
@@ -221,7 +221,7 @@ UTVISION_EXPORT boost::shared_ptr< Image > getMarkerImage( const Image& img, con
  * @param uiMask regions of the marker's bit pattern that belong to the ID (1) or not (0)
  * @return unnormalized marker code, 0 if marker code could not be read
  */
-UTVISION_EXPORT unsigned long long int readCode( const Image& img, unsigned int uiCodeSize, unsigned long long int uiMask );
+UTVISION_EXPORT unsigned long long int readCode( Image& img, unsigned int uiCodeSize, unsigned long long int uiMask );
 
 /**
  * @ingroup vision
@@ -281,7 +281,7 @@ UTVISION_EXPORT Math::Pose alternateMarkerPose( const Math::Pose& p );
  * @return number of detected points
  */
  
-UTVISION_EXPORT int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, const Image& greyImage,
+UTVISION_EXPORT int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, Image& greyImage,
 	const Math::Vector< float, 2 >& point1, const Math::Vector< float, 2 >& point2, int nSearchPixels, 
 	Image* pDebugImg );
 
