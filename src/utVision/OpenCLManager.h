@@ -59,6 +59,9 @@ public:
 #ifdef WIN32
 	void initializeOpenGL();
 	void initializeDirectX(ID3D11Device* pD3D11Device);
+#else
+	// @todo Needs implementation for non windows platforms !!!
+	void initializeOpenGL() {};
 #endif
 
 	/** get the OpenCLManager object */
