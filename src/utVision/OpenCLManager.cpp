@@ -225,9 +225,15 @@ int OpenCLManager::isExtensionSupported(const char* support_str, const char* ext
 
 void OpenCLManager::initializeOpenGL()
 {
+    // prevent initialize to be executed multiple times
+    boost::mutex::scoped_lock lock(m_mutex);
+
     if (m_isInitialized) {
         return;
     }
+
+    cl_int err;
+    size_t returned_size;
 
     //Get all Platforms and select a GPU one
     cl_uint numPlatforms;
@@ -237,75 +243,15 @@ void OpenCLManager::initializeOpenGL()
     cl_platform_id* platformIDs;
     platformIDs = new cl_platform_id[numPlatforms];
 
-    cl_int err = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
+    err = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
     if (err!=CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clGetPlatformIDs :" << err);
     }
 
+    // @todo is there a reason why we should enable selecting a different platform ?
     cl_uint selectedPlatform = 0;
     cl_platform_id selectedPlatformID = platformIDs[selectedPlatform];
     delete[] platformIDs;
-
-    // Select a GPU device
-    // find fastest GPU device based on performance metric (e.g. good on laptops with multiple GPUs)
-    cl_device_id deviceIDs[10];
-    cl_uint num_devices = 0;
-    err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, 10, deviceIDs, &num_devices);
-    if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "error at clGetDeviceIDs :" << err);
-    }
-
-    cl_device_id selectedDeviceID;
-    cl_uint max_performance_metric = 0;
-    bool found_device = false;
-
-    for (unsigned int i=0; i<num_devices; i++) {
-        cl_uint device_max_compute_units = 0;
-        cl_uint device_max_frequency = 0;
-
-        err = clGetDeviceInfo(	deviceIDs[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &device_max_compute_units, NULL);
-        if (err!=CL_SUCCESS) {
-            LOG4CPP_ERROR(logger, "error at clGetDeviceInfo :" << err);
-        }
-
-        err = clGetDeviceInfo(	deviceIDs[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &device_max_frequency, NULL);
-        if (err!=CL_SUCCESS) {
-            LOG4CPP_ERROR(logger, "error at clGetDeviceInfo :" << err);
-        }
-
-        if (max_performance_metric < (device_max_compute_units*device_max_frequency)) {
-            max_performance_metric = device_max_compute_units*device_max_frequency;
-            selectedDeviceID = deviceIDs[i];
-            found_device = true;
-        }
-
-    }
-    if (!found_device) {
-        LOG4CPP_ERROR(logger, "No OpenCL GPU device found !!!");
-        return;
-    }
-
-    char cDeviceNameBuffer[1024];
-    clGetDeviceInfo(selectedDeviceID, CL_DEVICE_NAME, sizeof(char)*1024, cDeviceNameBuffer, NULL);
-    LOG4CPP_INFO(logger, ": Device Name: " << cDeviceNameBuffer);
-
-    // Get string containing supported device extensions
-    size_t ext_size = 1024;
-    char* ext_string = (char*) malloc(ext_size);
-    err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_EXTENSIONS, ext_size, ext_string, &ext_size);
-
-    // Search for GL support in extension string (space delimited)
-    int supported = isExtensionSupported(CL_GL_SHARING_EXT, ext_string, ext_size);
-    if (supported) {
-        // Device supports context sharing with OpenGL
-        LOG4CPP_INFO(logger, "Found GL Sharing Support!");
-    }
-    else {
-
-        // @todo Decide what to do if no OpenCL-OpenGL sharing is available -> fallback to default
-        LOG4CPP_ERROR(logger, "Device does not support GL Sharing Support!");
-        return;
-    }
 
 #ifdef WIN32
     // Create CL context properties, add WGL context & handle to DC
@@ -330,13 +276,15 @@ void OpenCLManager::initializeOpenGL()
     // Get current CGL Context and CGL Share group
     CGLContextObj kCGLContext = CGLGetCurrentContext();
     CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
-    // Create CL context properties, add handle & share-group enum
+
     cl_context_properties properties[] = {
             CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-            (cl_context_properties) kCGLShareGroup, 0
+            (cl_context_properties)kCGLShareGroup, 0
     };
-    // Create a context with device in the CGL share group
-    m_clContext = clCreateContext(properties, 0, 0, NULL, 0, &err);
+
+    // Create a context from a CGL share group
+    //
+    m_clContext = clCreateContext(properties, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
 
 #else
 
@@ -361,12 +309,80 @@ void OpenCLManager::initializeOpenGL()
 
     if (!m_clContext || err!=CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clCreateContext :" << err);
+        return;
     }
+
+    unsigned int device_count;
+    cl_device_id device_ids[16];
+
+    err = clGetContextInfo(m_clContext, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, &returned_size);
+    if(err)
+    {
+        LOG4CPP_ERROR(logger, "Error: Failed to retrieve compute devices for context!");
+        return;
+    }
+
+    device_count = returned_size / sizeof(cl_device_id);
+
+    cl_device_id selectedDeviceID = 0;
+    int i = 0;
+    int device_found = 0;
+    cl_device_type device_type;
+    for(i = 0; i < device_count; i++)
+    {
+        clGetDeviceInfo(device_ids[i], CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
+        if(device_type == CL_DEVICE_TYPE_GPU)
+        {
+            selectedDeviceID = device_ids[i];
+            device_found = 1;
+            break;
+        }
+    }
+
+    if(!device_found)
+    {
+        LOG4CPP_ERROR(logger, "Error: Failed to locate compute device!");
+        return;
+    }
+
+    // log info about the selected device
+    char cDeviceNameBuffer[1024];
+    char cDeviceVendorBuffer[1024];
+    cl_uint device_max_compute_units = 0;
+    cl_uint device_max_frequency = 0;
+    cl_uint device_vendor_id = 0;
+
+    err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &device_max_compute_units, NULL);
+    if (err!=CL_SUCCESS) {
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_COMPUTE_UNITS:" << err);
+    }
+
+    err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &device_max_frequency, NULL);
+    if (err!=CL_SUCCESS) {
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_CLOCK_FREQUENCY:" << err);
+    }
+
+    err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_VENDOR_ID, sizeof(cl_uint), &device_vendor_id, NULL);
+    if (err!=CL_SUCCESS) {
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR_ID:" << err);
+    }
+
+    err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_VENDOR, sizeof(char)*1024, cDeviceVendorBuffer, NULL);
+    if (err!=CL_SUCCESS) {
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR:" << err);
+    }
+
+    clGetDeviceInfo(selectedDeviceID, CL_DEVICE_NAME, sizeof(char)*1024, cDeviceNameBuffer, NULL);
+    LOG4CPP_INFO(logger, "Selected OpenCL Device: " << cDeviceNameBuffer
+            << " vendor " << cDeviceVendorBuffer << " vendor-id " << device_vendor_id
+            << " compute_units " << device_max_compute_units << " max_frequency " << device_max_frequency);
+
 
     cl_int status = 0;
     m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
     if (!m_clCommandQueue || err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "error at clCreateCommandQueue :" << err);
+        LOG4CPP_ERROR(logger, "Error creating OCL CommandQueue: " << err);
+        return;
     }
 
     cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);

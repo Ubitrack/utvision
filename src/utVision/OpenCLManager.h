@@ -43,6 +43,8 @@
 #include <d3d11.h>
 #endif
 
+#include <boost/thread/mutex.hpp>
+
 namespace Ubitrack { namespace Vision {
 	
 
@@ -78,6 +80,8 @@ private:
 	cl_context m_clContext;
 
 	cl_command_queue m_clCommandQueue;
+    boost::mutex m_mutex;
+
 };
 
 }}// namespace Vision::Ubitrack
