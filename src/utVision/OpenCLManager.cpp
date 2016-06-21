@@ -248,9 +248,9 @@ void OpenCLManager::initializeOpenGL()
 
     // Select a GPU device
     // find fastest GPU device based on performance metric (e.g. good on laptops with multiple GPUs)
-    cl_device_id* deviceIDs;
+    cl_device_id deviceIDs[10];
     cl_uint num_devices = 0;
-    err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, NULL, deviceIDs, &num_devices);
+    err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, 10, deviceIDs, &num_devices);
     if (err!=CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clGetDeviceIDs :" << err);
     }
