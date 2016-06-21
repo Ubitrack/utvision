@@ -242,17 +242,47 @@ void OpenCLManager::initializeOpenGL()
         LOG4CPP_ERROR(logger, "error at clGetPlatformIDs :" << err);
     }
 
-    // @todo enable selection of GPU device at some point..
     cl_uint selectedPlatform = 0;
-
     cl_platform_id selectedPlatformID = platformIDs[selectedPlatform];
     delete[] platformIDs;
 
-    cl_device_id selectedDeviceID;
-    //Select a GPU device
-    err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, 1, &selectedDeviceID, NULL);
+    // Select a GPU device
+    // find fastest GPU device based on performance metric (e.g. good on laptops with multiple GPUs)
+    cl_device_id* deviceIDs;
+    cl_uint num_devices = 0;
+    err = clGetDeviceIDs(selectedPlatformID, CL_DEVICE_TYPE_GPU, NULL, deviceIDs, &num_devices);
     if (err!=CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clGetDeviceIDs :" << err);
+    }
+
+    cl_device_id selectedDeviceID;
+    cl_uint max_performance_metric = 0;
+    bool found_device = false;
+
+    for (unsigned int i=0; i<num_devices; i++) {
+        cl_uint device_max_compute_units = 0;
+        cl_uint device_max_frequency = 0;
+
+        err = clGetDeviceInfo(	deviceIDs[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &device_max_compute_units, NULL);
+        if (err!=CL_SUCCESS) {
+            LOG4CPP_ERROR(logger, "error at clGetDeviceInfo :" << err);
+        }
+
+        err = clGetDeviceInfo(	deviceIDs[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &device_max_frequency, NULL);
+        if (err!=CL_SUCCESS) {
+            LOG4CPP_ERROR(logger, "error at clGetDeviceInfo :" << err);
+        }
+
+        if (max_performance_metric < (device_max_compute_units*device_max_frequency)) {
+            max_performance_metric = device_max_compute_units*device_max_frequency;
+            selectedDeviceID = deviceIDs[i];
+            found_device = true;
+        }
+
+    }
+    if (!found_device) {
+        LOG4CPP_ERROR(logger, "No OpenCL GPU device found !!!");
+        return;
     }
 
     char cDeviceNameBuffer[1024];
