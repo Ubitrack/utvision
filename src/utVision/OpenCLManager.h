@@ -26,7 +26,7 @@
  * @file
  * OpenCLManager manages the OpenCL Context and CommandQueue as singleton
  *
- * @author Martin Schwörer <schwoere@in.tum.de>
+ * @author Martin Schwï¿½rer <schwoere@in.tum.de>
  */
 #ifndef __Ubitrack_OPENCL_MANAGER_INCLUDED__
 #define __Ubitrack_OPENCL_MANAGER_INCLUDED__
@@ -54,14 +54,11 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
-	// currently the implementation only works on Windows
-	// needs implementations for linux/osx !!!
+	int isExtensionSupported(const char* support_str, const char* ext_string, size_t ext_buffer_size);
+    void initializeOpenGL();
+
 #ifdef WIN32
-	void initializeOpenGL();
 	void initializeDirectX(ID3D11Device* pD3D11Device);
-#else
-	// @todo Needs implementation for non windows platforms !!!
-	void initializeOpenGL() {};
 #endif
 
 	/** get the OpenCLManager object */
