@@ -56,8 +56,7 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
-	int isExtensionSupported(const char* support_str, const char* ext_string, size_t ext_buffer_size);
-    void initializeOpenGL();
+	void initializeOpenGL();
 
 #ifdef WIN32
 	void initializeDirectX(ID3D11Device* pD3D11Device);

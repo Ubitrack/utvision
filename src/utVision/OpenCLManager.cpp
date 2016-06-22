@@ -13,9 +13,12 @@
     #include <OpenGL/OpenGL.h>
     #include "OpenCL/cl_gl.h"
 #else
+    #include "GL/gl.h"
     #include "CL/cl_gl.h"
     #ifdef WIN32
         #include <CL/cl_d3d11_ext.h>
+    #else
+        #include "GL/glx.h"
     #endif
 #endif
 
@@ -203,26 +206,6 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 }
 #endif // WIN32
 
-int OpenCLManager::isExtensionSupported(const char* support_str, const char* ext_string, size_t ext_buffer_size)
-{
-    size_t offset = 0;
-    const char* space_substr = strnstr(ext_string+offset, " ", ext_buffer_size-offset);
-    size_t space_pos = space_substr ? space_substr-ext_string : 0;
-    while (space_pos<ext_buffer_size) {
-        if (strncmp(support_str, ext_string+offset, space_pos)==0) {
-            // Device supports requested extension!
-            LOG4CPP_INFO(logger, "Info: Found extension support: " << support_str);
-            return 1;
-        }
-        // Keep searching -- skip to next token string
-        offset = space_pos+1;
-        space_substr = strnstr(ext_string+offset, " ", ext_buffer_size-offset);
-        space_pos = space_substr ? space_substr-ext_string : 0;
-    }
-    LOG4CPP_WARN(logger, "Warning: Extension not supported: " << support_str);
-    return 0;
-}
-
 void OpenCLManager::initializeOpenGL()
 {
     // prevent initialize to be executed multiple times
@@ -269,7 +252,7 @@ void OpenCLManager::initializeOpenGL()
     // Create a context using the supported devices
     int count = size / sizeof(cl_device_id);
     //m_clContext = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
-    m_clContext = clCreateContext(properties, devices, count, NULL, 0, &err);
+    m_clContext = clCreateContext(properties, count, devices, NULL, 0, &err);
 
 #elif __APPLE__
 
@@ -303,7 +286,7 @@ void OpenCLManager::initializeOpenGL()
     // Create a context using the supported devices
     int count = size / sizeof(cl_device_id);
     //m_clContext = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
-    m_clContext = clCreateContext(properties, devices, count, NULL, 0, &err);
+    m_clContext = clCreateContext(properties, count, devices, NULL, 0, &err);
 
 #endif
 
