@@ -387,4 +387,8 @@ void Image::checkOnCPU()
 	m_uploadState = OnCPU;
 }
 
+bool Image::isOnGPU() {
+	return m_uploadState == OnCPUGPU || m_uploadState == OnGPU;
+}
+
 } } // namespace Ubitrack::Vision

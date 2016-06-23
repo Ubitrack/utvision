@@ -278,19 +278,17 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 	// undistort
 	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth() ) );
 
-	//pImgUndistorted->iplImage()->origin = image.origin();
-	//cvRemap( image.iplImage(), pImgUndistorted->iplImage(), *m_pMapX, *m_pMapY );
-
+	if (image.isOnGPU())	{
 #ifdef DO_TIMING
-	{
+		{
 	UBITRACK_TIME( m_blockTimer );
 #endif
-	cv::UMat& distortedUmat = image.uMat();
-	cv::UMat& undistortedUMat = pImgUndistorted->uMat();
-	cv::remap( distortedUmat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
-	
+		cv::UMat& distortedUmat = image.uMat();
+		cv::UMat& undistortedUMat = pImgUndistorted->uMat();
+		cv::remap( distortedUmat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
+
 #ifdef DO_TIMING
-	 cv::ocl::finish();
+		cv::ocl::finish();
 	}
 	static int i = 0;
 	if(i == 10)
@@ -301,6 +299,10 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 	}
 	i++;
 #endif
+	} else {
+		pImgUndistorted->iplImage()->origin = image.origin();
+		cvRemap( image.iplImage(), pImgUndistorted->iplImage(), *m_pMapX, *m_pMapY );
+	}
 
 	return pImgUndistorted;
 }

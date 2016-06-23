@@ -320,6 +320,12 @@ public:
 	ImageUploadState getImageState() const{
 		return m_uploadState;
 	}
+
+	/**
+	 * @brief Check if image is in GPU memory
+	 */
+	bool isOnGPU();
+
 private:
 
 	

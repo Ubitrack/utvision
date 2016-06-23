@@ -1,12 +1,14 @@
 //wglGetCurrentContext, wglGetCurrentDC
 #include <GL/glut.h>
 
+
 #include "OpenCLManager.h"
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/thread/condition.hpp>
 
 //OCL
+#ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
 
 #ifdef __APPLE__
@@ -20,6 +22,8 @@
     #else
         #include "GL/glx.h"
     #endif
+#endif
+
 #endif
 
 #include <log4cpp/Category.hh>
@@ -46,8 +50,11 @@ OpenCLManager& OpenCLManager::singleton()
 
     //create a new singleton if necessary
     if (!g_pOpenCLManager) {
+        LOG4CPP_INFO(logger, "Create Instance of OpenCLManager");
         g_pOpenCLManager.reset(new OpenCLManager);
+#ifdef HAVE_OPENCL
         cv::ocl::setUseOpenCL(true);
+#endif
     }
     return *g_pOpenCLManager;
 }
@@ -60,7 +67,7 @@ void OpenCLManager::destroyOpenCLManager()
 void notifyOpenCLState(const char* errinfo, const void* private_info, size_t cb, void* user_data)
 {
     // @todo OCLManager should log should log errinfo
-    LOG4CPP_INFO(logger, "notifyOpenCLState");
+    LOG4CPP_INFO(logger, "OpenCL Error: " << errinfo);
 }
 
 bool OpenCLManager::isInitialized() const
@@ -68,10 +75,28 @@ bool OpenCLManager::isInitialized() const
     return m_isInitialized;
 }
 
+bool OpenCLManager::isEnabled() const
+{
+#ifdef HAVE_OPENCL
+    return true;
+#else
+    return false;
+#endif
+}
+
 OpenCLManager::OpenCLManager()
         :
-        m_isInitialized(false) { }
+        m_isInitialized(false)
+{
 
+}
+
+OpenCLManager::~OpenCLManager(void)
+{
+
+}
+
+#ifdef HAVE_OPENCL
 #ifdef WIN32
 void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 {
@@ -205,6 +230,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }
 #endif // WIN32
+#endif
 
 void OpenCLManager::initializeOpenGL()
 {
@@ -214,6 +240,10 @@ void OpenCLManager::initializeOpenGL()
     if (m_isInitialized) {
         return;
     }
+
+#ifdef HAVE_OPENCL
+
+    LOG4CPP_INFO(logger, "OpenCLManager begin Initialization for OpenGL Context Sharing");
 
     cl_int err;
     size_t returned_size;
@@ -229,6 +259,7 @@ void OpenCLManager::initializeOpenGL()
     err = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
     if (err!=CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clGetPlatformIDs :" << err);
+        return;
     }
 
     // @todo is there a reason why we should enable selecting a different platform ?
@@ -256,6 +287,7 @@ void OpenCLManager::initializeOpenGL()
 
 #elif __APPLE__
 
+    LOG4CPP_DEBUG(logger, "Acquire OpenGL Context for OpenCL Sharing");
     // Get current CGL Context and CGL Share group
     CGLContextObj kCGLContext = CGLGetCurrentContext();
     CGLShareGroupObj kCGLShareGroup = CGLGetShareGroup(kCGLContext);
@@ -267,7 +299,7 @@ void OpenCLManager::initializeOpenGL()
 
     // Create a context from a CGL share group
     //
-    m_clContext = clCreateContext(properties, 0, 0, clLogMessagesToStdoutAPPLE, 0, 0);
+    m_clContext = clCreateContext(properties, 0, 0, notifyOpenCLState, 0, 0);
 
 #else
 
@@ -290,7 +322,7 @@ void OpenCLManager::initializeOpenGL()
 
 #endif
 
-    if (!m_clContext || err!=CL_SUCCESS) {
+    if (!m_clContext || err != CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clCreateContext :" << err);
         return;
     }
@@ -379,8 +411,12 @@ void OpenCLManager::initializeOpenGL()
     LOG4CPP_INFO(logger, "Host Unified Memory: " << unifiedmemory);
     m_isInitialized = true;
     LOG4CPP_INFO(logger, "initialized OpenCL: " << isInitialized());
+#else // HAVE_OPENCL
+    LOG4CPP_WARN( logger, "OpenCL is DISABLED!");
+#endif
 }
 
+#ifdef HAVE_OPENCL
 cl_context OpenCLManager::getContext() const
 {
     return m_clContext;
@@ -390,11 +426,7 @@ cl_command_queue OpenCLManager::getCommandQueue() const
 {
     return m_clCommandQueue;
 }
-
-OpenCLManager::~OpenCLManager(void)
-{
-
-}
+#endif
 
 } // namespace Vision
 } // namespace ubitrack

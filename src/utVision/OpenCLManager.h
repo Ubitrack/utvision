@@ -32,18 +32,24 @@
 #define __Ubitrack_OPENCL_MANAGER_INCLUDED__
 
 //opencl context
+#ifdef HAVE_OPENCL
+
 #ifdef __APPLE__
     #include "OpenCL/opencl.h"
 #else
     #include "CL/cl.h"
 #endif
-#include <boost/utility.hpp>
-#include <utVision.h>
-#ifdef WIN32 
-#include <d3d11.h>
+
 #endif
 
 #include <boost/thread/mutex.hpp>
+#include <boost/utility.hpp>
+#include <utVision.h>
+
+#ifdef WIN32
+#include <d3d11.h>
+#endif
+
 
 namespace Ubitrack { namespace Vision {
 	
@@ -56,30 +62,43 @@ public:
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
-	void initializeOpenGL();
+    /** get the OpenCLManager object **/
+    static OpenCLManager& singleton();
+
+    /** destroy OpenCLManager singleton **/
+    static void destroyOpenCLManager();
+
+
+    /** check if OpenCLManager is initialized **/
+    bool isInitialized() const;
+
+    /** check if OpenCLManager is enabled **/
+    bool isEnabled() const;
+
+    /** initalize OpenCLManager for OpenGL **/
+    void initializeOpenGL();
+
+#ifdef HAVE_OPENCL
+
+    cl_context getContext() const;
+    cl_command_queue getCommandQueue() const;
 
 #ifdef WIN32
 	void initializeDirectX(ID3D11Device* pD3D11Device);
 #endif
 
-	/** get the OpenCLManager object */
-	static OpenCLManager& singleton();
+#endif
 
-	static void destroyOpenCLManager();
-
-	bool isInitialized() const;
-
-	cl_context getContext() const;
-	cl_command_queue getCommandQueue() const;
-
-	
 private:
 
 	bool m_isInitialized;
-	cl_context m_clContext;
+    boost::mutex m_mutex;
+
+#ifdef HAVE_OPENCL
+    cl_context m_clContext;
 
 	cl_command_queue m_clCommandQueue;
-    boost::mutex m_mutex;
+#endif
 
 };
 
