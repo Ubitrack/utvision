@@ -311,7 +311,7 @@ public:
 
 	int m_debugImageId;
 	
-	enum ImageUploadState{
+	enum ImageUploadState {
 		OnCPU,
 		OnGPU,
 		OnCPUGPU

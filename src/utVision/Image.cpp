@@ -194,7 +194,7 @@ boost::shared_ptr< Image > Image::AllocateNew() const
 
 boost::shared_ptr< Image > Image::Clone() const
 {
-	if (m_uploadState == ImageUploadState::OnCPU)
+	if (m_uploadState == OnCPU)
 	{
 		return boost::shared_ptr< Image >(new Image(cvCloneImage(this->m_cpuIplImage)));
 	}
