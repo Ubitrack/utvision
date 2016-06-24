@@ -165,6 +165,10 @@ Image::~Image()
 
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
+	// @todo we need checks for imageState here and probably on more places ..
+	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
+		std::cout << "WARNING: Resizing GPU image with CPU image storage !!!" << std::endl;
+	}
 	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
 	cvCvtColor( m_cpuIplImage, *r, nCode );
 	r->m_cpuIplImage->origin = origin();

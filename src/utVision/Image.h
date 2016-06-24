@@ -324,7 +324,9 @@ public:
 	/**
 	 * @brief Check if image is in GPU memory
 	 */
-	bool isOnGPU();
+    bool isOnGPU();
+
+    // @todo we need an image format enumeration and property for image messages
 
 private:
 
