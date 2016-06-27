@@ -205,6 +205,7 @@ public:
 		LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
 #endif
 		checkOnGPU();
+		// @ todo .. this might be wrong in the sense that the following assignment does not care if the image is already available on CPU ...
 		m_uploadState = OnGPU;
 		return m_uMat;
 	}

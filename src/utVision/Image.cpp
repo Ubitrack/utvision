@@ -165,13 +165,18 @@ Image::~Image()
 
 boost::shared_ptr< Image > Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
-	// @todo we need checks for imageState here and probably on more places ..
-	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
-		std::cout << "WARNING: Resizing GPU image with CPU image storage !!!" << std::endl;
-	}
+	// @todo the current image class is a kind of a mess really .. 
+	// origin, imgFormat, pixelType should be annotations to the image class and only used from there
+	// data storage should be managed in iplImage or uMat 
 	boost::shared_ptr< Image > r( new Image( width(), height(), nChannels, nDepth ) );
-	cvCvtColor( m_cpuIplImage, *r, nCode );
-	r->m_cpuIplImage->origin = origin();
+	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
+		cv::cvtColor( m_uMat, r->uMat(), nCode );
+		// how does origin or channelSeq translate to uMat's ??
+		//r->m_cpuIplImage->origin = origin();
+	} else {
+		cvCvtColor( m_cpuIplImage, *r, nCode );
+		r->m_cpuIplImage->origin = origin();		
+	}
 	return r;
 }
 
