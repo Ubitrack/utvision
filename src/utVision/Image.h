@@ -33,6 +33,7 @@
 #define __UBITRACK_VISION_IMAGE_H_INCLUDED__
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/utility.hpp>
 #include <boost/serialization/access.hpp>
@@ -94,7 +95,26 @@ public:
     };
 
 
-	/**
+	enum ImageFormatEnum {
+	  IMGFMT_UNDEFINED = 0,
+	  IMGFMT_RGB = 1,
+	  IMGFMT_RGBA = 2,
+	  IMGFMT_BGR = 3,
+	  IMGFMT_BGRA = 4,
+	  IMGFMT_LUMINANCE = 5,
+	  IMGFMT_DEPTH = 6,
+	  IMGFMT_RAW = 7
+	};
+
+
+    enum ImageUploadState {
+      OnCPU,
+      OnGPU,
+      OnCPUGPU
+    };
+
+
+    /**
 	 * Creates a reference to an existing image array.
 	 * The resulting \c Image object does not own the data.
 	 *
@@ -118,7 +138,7 @@ public:
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 * @param nOrigin 0 if pixels start in top-left corner, 1 if in bottom-left
 	 */
-	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = IPL_DEPTH_8U, int nOrigin = 0 );
+	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = IPL_DEPTH_8U, int nOrigin = 0, ImageUploadState nState = OnCPU);
 
 	/**
 	 * Create from pointer to IplImage.
@@ -145,31 +165,22 @@ public:
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator CvArr*()
 	{
-#ifdef CONVERSION_LOGGING
-		LOG4CPP_INFO( imageLogger, "CvArr*" << m_debugImageId);
-#endif
 		checkOnCPU();
-		return static_cast< CvArr* > (m_cpuIplImage);
+		return static_cast< CvArr* > (m_cpuIplImage.get());
 	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*()
 	{ 
-#ifdef CONVERSION_LOGGING
-		LOG4CPP_INFO( imageLogger, "const CvArr*" << m_debugImageId);
-#endif
 		checkOnCPU();
-		return static_cast< const CvArr* > (m_cpuIplImage);
+		return static_cast< const CvArr* > (m_cpuIplImage.get());
 	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
-#ifdef CONVERSION_LOGGING		
-		LOG4CPP_INFO( imageLogger, "IplImage*" << m_debugImageId);
-#endif
 		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuIplImage ); 
+		return static_cast< IplImage* >( this->m_cpuIplImage.get() );
 	}
 
 	
@@ -182,42 +193,21 @@ public:
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*()
 	{ 
-#ifdef CONVERSION_LOGGING		
-		LOG4CPP_INFO( imageLogger, "const IplImage*" << m_debugImageId);
-#endif
 		checkOnCPU();
-		return static_cast< const IplImage* >( this->m_cpuIplImage ); 
+		return static_cast< const IplImage* >( this->m_cpuIplImage.get() );
 	}
 
-	//operator cv::UMat*() const
-	//{
-	//	return static_cast< cv::UMat* > ( this->m_uMat.get() );
-	//}
-
-	/*operator const cv::UMat*() const
-	{
-		return static_cast< const cv::UMat* > ( this->m_uMat.get() );
-	}
-*/
 	cv::UMat& uMat()
 	{
-#ifdef CONVERSION_LOGGING
-		LOG4CPP_INFO( imageLogger, "umat()" << m_debugImageId);
-#endif
 		checkOnGPU();
-		// @ todo .. this might be wrong in the sense that the following assignment does not care if the image is already available on CPU ...
-		m_uploadState = OnGPU;
-		return m_uMat;
+		return *m_uMat;
 	}
 
 
 	IplImage* iplImage()
 	{
-#ifdef CONVERSION_LOGGING
-		LOG4CPP_INFO( imageLogger, "iplImage()" << m_debugImageId);
-#endif
 		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuIplImage ); 
+		return static_cast< IplImage* >( this->m_cpuIplImage.get() );
 	}
 
 	/** returns the value of a pixel */
@@ -261,12 +251,15 @@ public:
 	/** Creates an image with adapted contrast and brightness */
 	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
+
+    // @todo ImageClass should be read-only - This method changes the CPU buffer by inverting it!!!!
 	/** inverts the image. Implemented only for 8 bit greyscale images */
 	void Invert();
 
     /** Has the image only one channel?  */
     bool isGrayscale( void ) const;
 
+    // @todo shouldn't getGrayscale return a new Image instead of an IplImage ??
     /** Convert to grayscale */
     Ptr getGrayscale( void ) const;
 
@@ -276,24 +269,25 @@ public:
     };
 
 	int channels( void ) const {
-		return m_cpuIplImage->nChannels;
+		return m_channels;
 	}
 
 	int width( void ) const {
-		return m_cpuIplImage->width;
+		return m_width;
 	}
 
 	int height( void ) const {
-		return m_cpuIplImage->height;
+		return m_height;
 	}
 
 	int depth( void ) const {
-		return m_cpuIplImage->depth;
+		return m_bitsPerPixel;
 	}
 
 	int origin( void ) const {
-		return m_cpuIplImage->origin;
+		return m_origin;
 	}
+
     /**
      * @brief Saves an image as compressed JPEG
      * @param filename Filename of the image
@@ -310,14 +304,10 @@ public:
      */
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
-	int m_debugImageId;
-	
-	enum ImageUploadState {
-		OnCPU,
-		OnGPU,
-		OnCPUGPU
-	};
 
+    /**
+     * @brief get current ImageState
+     */
 	ImageUploadState getImageState() const{
 		return m_uploadState;
 	}
@@ -327,6 +317,11 @@ public:
 	 */
     bool isOnGPU();
 
+    /**
+     * @brief Check if image is in CPU memory
+     */
+    bool isOnCPU();
+
     // @todo we need an image format enumeration and property for image messages
 
 private:
@@ -335,17 +330,37 @@ private:
 	void checkOnCPU();
 
 	void checkOnGPU();
-	
+
+    // the current imageState
 	ImageUploadState m_uploadState;
-// does this object own the data imageData points to?
+
+    // does this object own the data imageData points to?
 	bool m_bOwned;
 
-	
-	//boost::shared_ptr<cv::UMat> m_uMat;
-	cv::UMat m_uMat;
-	//boost::shared_ptr<IplImage> m_cpuIplImage;
-	IplImage* m_cpuIplImage;
-	//boost::shared_ptr<cv::Mat> m_Mat;
+    // the image width in pixels
+    int m_width;
+
+    // the image height in pixels
+    int m_height;
+
+    // the number of channels per pixel
+    int m_channels;
+
+    // the number of bits per pixel (for one channel)
+    int m_bitsPerPixel;
+
+    // the origin of the image
+    int m_origin;
+
+    // the image format, e.g. IMGFMT_RGB, ..
+    //ImageFormatEnum m_format;
+
+    // the GPU buffer
+	boost::scoped_ptr<cv::UMat> m_uMat;
+
+    // the CPU buffer
+	boost::scoped_ptr<IplImage> m_cpuIplImage;
+
 	friend class ::boost::serialization::access;
 	
 	/** boost serialization helper from https://cheind.wordpress.com/2011/12/06/serialization-of-cvmat-objects-using-boost/ */
