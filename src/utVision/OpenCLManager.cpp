@@ -23,8 +23,7 @@
         #include "GL/glx.h"
     #endif
 #endif
-
-#endif
+#endif // HAVE_OPENCL
 
 #include <log4cpp/Category.hh>
 

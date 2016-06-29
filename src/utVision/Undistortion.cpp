@@ -276,7 +276,8 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 			
 	
 	// undistort
-	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(), image.depth() ) );
+	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(),
+			image.depth(), image.origin(), image.getImageState() ) );
 
 	if (image.isOnGPU())	{
 #ifdef DO_TIMING

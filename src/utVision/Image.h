@@ -166,61 +166,41 @@ public:
 	operator CvArr*()
 	{
 		checkOnCPU();
-		return static_cast< CvArr* > (m_cpuIplImage.get());
+		return static_cast< CvArr* > (m_cpuImage);
 	}
 
 	/** convert to CvArr* for usage in some OpenCV functions */
 	operator const CvArr*()
 	{ 
 		checkOnCPU();
-		return static_cast< const CvArr* > (m_cpuIplImage.get());
+		return static_cast< const CvArr* > (m_cpuImage);
 	}
 
 	/** also convert to IplImage* for more consistent interface */
 	operator IplImage*()
 	{ 
 		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuIplImage.get() );
+		return static_cast< IplImage* >( this->m_cpuImage);
 	}
-
-	
-    /// COMMENTED OUT: FUNCTIONALITY HAS TO BE CLARIFIED
-	///** convert to cv::Mat */
-	//operator cv::Mat()
-	//{ return cv::Mat (&IplImage());	}
-
 
 	/** also convert to IplImage* for more consistent interface */
 	operator const IplImage*()
 	{ 
 		checkOnCPU();
-		return static_cast< const IplImage* >( this->m_cpuIplImage.get() );
+		return static_cast< const IplImage* >( this->m_cpuImage);
 	}
 
 	cv::UMat& uMat()
 	{
 		checkOnGPU();
-		return *m_uMat;
+		return *m_gpuImage;
 	}
 
 
 	IplImage* iplImage()
 	{
 		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuIplImage.get() );
-	}
-
-	/** returns the value of a pixel */
-	template< class T >
-	T getPixel( unsigned x, unsigned y ) // TODO: const now missing
-	{ 
-		return reinterpret_cast< const T* >( m_cpuIplImage->imageData + y *m_cpuIplImage->widthStep )[ x ]; 
-	}
-
-	template< class T >
-	void setPixel( unsigned x, unsigned y, T val )
-	{ 
-		reinterpret_cast< T* >(  m_cpuIplImage->imageData + y * m_cpuIplImage->widthStep )[ x ] = val; 
+		return static_cast< IplImage* >( this->m_cpuImage);
 	}
 
 	/**
@@ -251,10 +231,6 @@ public:
 	/** Creates an image with adapted contrast and brightness */
 	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
-
-    // @todo ImageClass should be read-only - This method changes the CPU buffer by inverting it!!!!
-	/** inverts the image. Implemented only for 8 bit greyscale images */
-	void Invert();
 
     /** Has the image only one channel?  */
     bool isGrayscale( void ) const;
@@ -308,27 +284,30 @@ public:
     /**
      * @brief get current ImageState
      */
-	ImageUploadState getImageState() const{
+	ImageUploadState getImageState() const {
 		return m_uploadState;
 	}
 
 	/**
 	 * @brief Check if image is in GPU memory
 	 */
-    bool isOnGPU();
+    bool isOnGPU() const {
+        return m_uploadState == OnCPUGPU || m_uploadState == OnGPU;
+    }
 
     /**
      * @brief Check if image is in CPU memory
      */
-    bool isOnCPU();
-
-    // @todo we need an image format enumeration and property for image messages
+    bool isOnCPU() const {
+        return m_uploadState == OnCPUGPU || m_uploadState == OnCPU;
+    }
 
 private:
 
-	
+	// ensure that image is on CPU (copy if needed)
 	void checkOnCPU();
 
+    // ensure that image is on GPU (copy if needed)
 	void checkOnGPU();
 
     // the current imageState
@@ -355,11 +334,14 @@ private:
     // the image format, e.g. IMGFMT_RGB, ..
     //ImageFormatEnum m_format;
 
-    // the GPU buffer
-	boost::scoped_ptr<cv::UMat> m_uMat;
 
-    // the CPU buffer
-	boost::scoped_ptr<IplImage> m_cpuIplImage;
+    // the GPU buffer
+	cv::UMat* m_gpuImage;
+
+    // the CPU buffer (should be cv::Mat)
+	IplImage* m_cpuImage;
+
+    // maybe we need a mutex to guard allocation of buffers ?
 
 	friend class ::boost::serialization::access;
 	
@@ -368,7 +350,7 @@ private:
 	void save(Archive & ar, const unsigned int version) const
 	{	
 		//checkOnCPU();
-		ar & boost::serialization::make_binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
+		ar & boost::serialization::make_binary_object(m_cpuImage->imageData, m_cpuImage->imageSize);
 	}
 
 	template<class Archive>
@@ -376,9 +358,9 @@ private:
 	{
 		#ifdef WIN32
 		checkOnCPU();
-		cvInitImageHeader(m_cpuIplImage, cvSize(width(), height()), depth(), channels(), origin());
-		m_cpuIplImage->imageDataOrigin = m_cpuIplImage->imageData = static_cast< char* >(cvAlloc(m_cpuIplImage->imageSize));
-		ar & boost::serialization::binary_object(m_cpuIplImage->imageData, m_cpuIplImage->imageSize);
+		cvInitImageHeader(m_cpuImage, cvSize(width(), height()), depth(), channels(), origin());
+		m_cpuImage->imageDataOrigin = m_cpuImage->imageData = static_cast< char* >(cvAlloc(m_cpuImage->imageSize));
+		ar & boost::serialization::binary_object(m_cpuImage->imageData, m_cpuImage->imageSize);
 		#endif
 	}
 
