@@ -49,8 +49,8 @@ namespace Ubitrack { namespace Vision {
 
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
-	, m_cpuImage(nullptr)
-	, m_gpuImage(nullptr)
+	, m_cpuImage(0)
+	, m_gpuImage(0)
 	, m_uploadState(OnCPU)
 	, m_width(nWidth)
 	, m_height(nHeight)
@@ -69,8 +69,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, ImageUploadState nState)
 	: m_bOwned( true )
-	, m_cpuImage(nullptr)
-	, m_gpuImage(nullptr)
+	, m_cpuImage(0)
+	, m_gpuImage(0)
 	, m_uploadState(nState)
 	, m_width(nWidth)
 	, m_height(nHeight)
@@ -114,8 +114,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 
 Image::Image( IplImage* pIplImage, bool bDestroy )
 	: m_bOwned( bDestroy )
-	, m_cpuImage(nullptr)
-	, m_gpuImage(nullptr)
+	, m_cpuImage(0)
+	, m_gpuImage(0)
 	, m_uploadState(OnCPU)
 	, m_width(pIplImage->width)
 	, m_height(pIplImage->height)
@@ -132,8 +132,8 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 
 Image::Image(cv::UMat & img)
 	: m_bOwned( true )
-	, m_cpuImage(nullptr)
-	, m_gpuImage(nullptr)
+	, m_cpuImage(0)
+	, m_gpuImage(0)
 	, m_uploadState( OnGPU )
 	, m_width(img.cols)
 	, m_height(img.rows)
@@ -163,8 +163,8 @@ Image::Image(cv::UMat & img)
 
 Image::Image( cv::Mat & img )
 	: m_bOwned( true )
-	, m_cpuImage(nullptr)
-	, m_gpuImage(nullptr)
+	, m_cpuImage(0)
+	, m_gpuImage(0)
 	, m_uploadState(OnCPU)
 {
 
@@ -192,16 +192,18 @@ Image::Image( cv::Mat & img )
 
 Image::~Image()
 {
-
 	//destroy the buffers
-	if(m_bOwned){
-		if (m_cpuImage) {
+	if (m_cpuImage) {
+		if(m_bOwned) {
 			IplImage* img = m_cpuImage;
 			cvReleaseImage(&img);
+		} else {
+			IplImage* img = m_cpuImage;
+			cvReleaseImageHeader( &img );
 		}
-		if (m_gpuImage) {
-			delete m_gpuImage;
-		}
+	}
+	if (m_gpuImage) {
+		delete m_gpuImage;
 	}
 }
 
