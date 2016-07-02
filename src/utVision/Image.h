@@ -95,15 +95,17 @@ public:
     };
 
 
-	enum ImageFormatEnum {
-	  IMGFMT_UNDEFINED = 0,
-	  IMGFMT_RGB = 1,
-	  IMGFMT_RGBA = 2,
-	  IMGFMT_BGR = 3,
-	  IMGFMT_BGRA = 4,
-	  IMGFMT_LUMINANCE = 5,
-	  IMGFMT_DEPTH = 6,
-	  IMGFMT_RAW = 7
+	enum PixelFormat {
+	  UNKNOWN_PIXELFORMAT = 0,
+	  LUMINANCE,
+	  RGB,
+	  BGR,
+	  RGBA,
+	  BGRA,
+	  YUV422,
+	  YUV411,
+	  RAW,
+	  DEPTH
 	};
 
 
@@ -163,37 +165,6 @@ public:
 	/** releases the image data if the data block is owned by this object. */
 	~Image();
 
-
-	/** convert to CvArr* for usage in some OpenCV functions */
-//	operator CvArr*()
-//	{
-//		checkOnCPU();
-//		return static_cast< CvArr* > (&m_cpuImage);
-//	}
-
-	/** convert to CvArr* for usage in some OpenCV functions */
-//	operator const CvArr*()
-//	{
-//		checkOnCPU();
-//		return static_cast< const CvArr* > (&m_cpuImage);
-//	}
-
-	/** also convert to IplImage* for more consistent interface */
-//	operator IplImage*()
-//	{
-//		checkOnCPU();
-//		IplImage img = m_cpuImage;
-//		return static_cast< IplImage* >( &img);
-//	}
-
-	/** also convert to IplImage* for more consistent interface */
-//	operator const IplImage*()
-//	{
-//		checkOnCPU();
-//		IplImage img = m_cpuImage;
-//		return static_cast< const IplImage* >( &img);
-//	}
-
 	cv::Mat& Mat()
 	{
 		checkOnCPU();
@@ -207,15 +178,6 @@ public:
 		return m_gpuImage;
 	}
 
-
-//	boost::shared_ptr<IplImage> iplImage()
-//	{
-//		checkOnCPU();
-//		// memory leak !!!
-//		boost::shared_ptr<IplImage> img(new IplImage(m_cpuImage));
-//		return img;
-//
-//	}
 
 	/**
 	 * Convert color space.
@@ -243,7 +205,7 @@ public:
 	Ptr Scale( double scale ); // TODO: const;
 
 	/** Creates an image with adapted contrast and brightness */
-	Ptr ContrastBrightness( int contrast, int brightness ); // TODO:  const;
+//	Ptr ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
 
     /** Has the image only one channel?  */
@@ -257,6 +219,7 @@ public:
         return Dimension(width(), height());
     };
 
+	// getters
 	int channels( void ) const {
 		return m_channels;
 	}
@@ -273,8 +236,41 @@ public:
 		return m_bitsPerPixel;
 	}
 
+	int bitsPerPixel( void ) const {
+		return m_bitsPerPixel;
+	}
+
 	int origin( void ) const {
 		return m_origin;
+	}
+
+	PixelFormat pixelFormat( void ) const {
+		return m_format;
+	}
+
+	// setters
+	void set_channels( int v ) {
+		m_channels = v;
+	}
+
+	void set_width( int v ) {
+		m_width = v;
+	}
+
+	void set_height( int v ) {
+		m_height = v;
+	}
+
+	void set_bitsPerPixel( int v ) {
+		m_bitsPerPixel = v;
+	}
+
+	void set_origin( int v ) {
+		m_origin = v;
+	}
+
+	void set_pixelFormat( PixelFormat v ) {
+		m_format = v;
 	}
 
     /**
@@ -293,6 +289,13 @@ public:
      */
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
+
+	/**
+     * @brief Copy image format related properties from first argument
+     * @param img
+     * @param compressionFactor Sets the quality of the compression from 0...100. Default is 95.
+     */
+	void copyImageFormatFrom(const Image& img);
 
     /**
      * @brief get current ImageState
@@ -344,8 +347,8 @@ private:
     // the origin of the image
     int m_origin;
 
-    // the image format, e.g. IMGFMT_RGB, ..
-    //ImageFormatEnum m_format;
+    // the image format, e.g. RGB, ..
+    PixelFormat m_format;
 
 
     // the GPU buffer

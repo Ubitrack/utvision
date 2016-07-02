@@ -55,6 +55,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	, m_channels(nChannels)
 	, m_bitsPerPixel(nDepth)
 	, m_origin(nOrigin)
+	, m_format(nChannels == 1 ? LUMINANCE : RGB)
 {
 
 	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()),
@@ -70,6 +71,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 	, m_channels(nChannels)
 	, m_bitsPerPixel(nDepth)
 	, m_origin(nOrigin)
+	, m_format(nChannels == 1 ? LUMINANCE : RGB)
 {
 
 	if (isOnGPU()) {
@@ -112,6 +114,7 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	, m_channels(pIplImage->nChannels)
 	, m_bitsPerPixel(pIplImage->depth)
 	, m_origin(pIplImage->origin)
+	, m_format(pIplImage->nChannels == 1 ? LUMINANCE : RGB)
 {
 	m_cpuImage = cv::cvarrToMat(pIplImage);
 	if ( bDestroy )
@@ -125,6 +128,7 @@ Image::Image(cv::UMat & img)
 	, m_height(img.rows)
 	, m_bitsPerPixel(img.depth())
 	, m_origin(0)
+	, m_format(img.channels() == 1 ? LUMINANCE : RGB)
 {
 	if (img.dims == 2) {
 		m_channels = 1;
@@ -143,6 +147,7 @@ Image::Image( cv::Mat & img )
 	, m_height(img.rows)
 	, m_bitsPerPixel(img.depth())
 	, m_origin(0)
+	, m_format(img.channels() == 1 ? LUMINANCE : RGB)
 {
 	if (img.dims == 2) {
 		m_channels = 1;
@@ -160,6 +165,12 @@ Image::~Image()
 	//destroy the buffers
 }
 
+
+void Image::copyImageFormatFrom(const Image& img) {
+	m_bitsPerPixel = img.depth();
+	m_origin = img.origin();
+	m_format = img.pixelFormat();
+}
 
 Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
