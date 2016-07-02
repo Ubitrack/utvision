@@ -114,7 +114,19 @@ public:
     };
 
 
-    /**
+	/**
+	 * Creates a new image and allocates memory for it.
+	 *
+	 * @param nWidth width of image in pixels
+	 * @param nHeight height of image in pixels
+	 * @param nChannels number of channels (1=grey, 3=rgb)
+	 * @param nDepth information about pixel representation (see OpenCV docs)
+	 * @param nOrigin 0 if pixels start in top-left corner, 1 if in bottom-left
+	 */
+	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = IPL_DEPTH_8U,
+			int nOrigin = 0, ImageUploadState nState = OnCPU);
+
+	/**
 	 * Creates a reference to an existing image array.
 	 * The resulting \c Image object does not own the data.
 	 *
@@ -128,17 +140,6 @@ public:
 	 */
 	Image( int nWidth, int nHeight, int nChannels, void* pImageData,
 		int nDepth = IPL_DEPTH_8U, int nOrigin = 0, int nAlign = 4 );
-
-	/**
-	 * Creates a new image and allocates memory for it.
-	 *
-	 * @param nWidth width of image in pixels
-	 * @param nHeight height of image in pixels
-	 * @param nChannels number of channels (1=grey, 3=rgb)
-	 * @param nDepth information about pixel representation (see OpenCV docs)
-	 * @param nOrigin 0 if pixels start in top-left corner, 1 if in bottom-left
-	 */
-	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = IPL_DEPTH_8U, int nOrigin = 0, ImageUploadState nState = OnCPU);
 
 	/**
 	 * Create from pointer to IplImage.
@@ -162,46 +163,59 @@ public:
 	/** releases the image data if the data block is owned by this object. */
 	~Image();
 
+
 	/** convert to CvArr* for usage in some OpenCV functions */
-	operator CvArr*()
+//	operator CvArr*()
+//	{
+//		checkOnCPU();
+//		return static_cast< CvArr* > (&m_cpuImage);
+//	}
+
+	/** convert to CvArr* for usage in some OpenCV functions */
+//	operator const CvArr*()
+//	{
+//		checkOnCPU();
+//		return static_cast< const CvArr* > (&m_cpuImage);
+//	}
+
+	/** also convert to IplImage* for more consistent interface */
+//	operator IplImage*()
+//	{
+//		checkOnCPU();
+//		IplImage img = m_cpuImage;
+//		return static_cast< IplImage* >( &img);
+//	}
+
+	/** also convert to IplImage* for more consistent interface */
+//	operator const IplImage*()
+//	{
+//		checkOnCPU();
+//		IplImage img = m_cpuImage;
+//		return static_cast< const IplImage* >( &img);
+//	}
+
+	cv::Mat& Mat()
 	{
 		checkOnCPU();
-		return static_cast< CvArr* > (m_cpuImage);
+		return m_cpuImage;
 	}
 
-	/** convert to CvArr* for usage in some OpenCV functions */
-	operator const CvArr*()
-	{ 
-		checkOnCPU();
-		return static_cast< const CvArr* > (m_cpuImage);
-	}
-
-	/** also convert to IplImage* for more consistent interface */
-	operator IplImage*()
-	{ 
-		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuImage);
-	}
-
-	/** also convert to IplImage* for more consistent interface */
-	operator const IplImage*()
-	{ 
-		checkOnCPU();
-		return static_cast< const IplImage* >( this->m_cpuImage);
-	}
 
 	cv::UMat& uMat()
 	{
 		checkOnGPU();
-		return *m_gpuImage;
+		return m_gpuImage;
 	}
 
 
-	IplImage* iplImage()
-	{
-		checkOnCPU();
-		return static_cast< IplImage* >( this->m_cpuImage);
-	}
+//	boost::shared_ptr<IplImage> iplImage()
+//	{
+//		checkOnCPU();
+//		// memory leak !!!
+//		boost::shared_ptr<IplImage> img(new IplImage(m_cpuImage));
+//		return img;
+//
+//	}
 
 	/**
 	 * Convert color space.
@@ -211,31 +225,30 @@ public:
 	 * @param nChannels number of channels (1=grey, 3=rgb)
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 */
-	boost::shared_ptr< Image > CvtColor( int nCode, int nChannels, int nDepth = IPL_DEPTH_8U ) const;
+	Ptr CvtColor( int nCode, int nChannels, int nDepth = IPL_DEPTH_8U ) const;
 
     /** Allocates empty memory of the size of the image */
-	boost::shared_ptr< Image > AllocateNew() const;
+	Ptr AllocateNew() const;
 
 	/** Creates a copy of this image */
-	boost::shared_ptr< Image > Clone() const;
+	Ptr Clone() const;
 	
 	/** creates an image which is half the size */
-	boost::shared_ptr< Image > PyrDown();// TODO: const;
+	Ptr PyrDown();// TODO: const;
 	
 	/** creates an image with the given size */
-	boost::shared_ptr< Image > Scale( int width, int height ); // TODO: const;
+	Ptr Scale( int width, int height ); // TODO: const;
 
     /** creates an image with the given scale factor 0.0 < f <= 1.0 */
-	boost::shared_ptr< Image > Scale( double scale ); // TODO: const;
+	Ptr Scale( double scale ); // TODO: const;
 
 	/** Creates an image with adapted contrast and brightness */
-	boost::shared_ptr< Image > ContrastBrightness( int contrast, int brightness ); // TODO:  const;
+	Ptr ContrastBrightness( int contrast, int brightness ); // TODO:  const;
 
 
     /** Has the image only one channel?  */
     bool isGrayscale( void ) const;
 
-    // @todo shouldn't getGrayscale return a new Image instead of an IplImage ??
     /** Convert to grayscale */
     Ptr getGrayscale( void ) const;
 
@@ -336,10 +349,10 @@ private:
 
 
     // the GPU buffer
-	cv::UMat* m_gpuImage;
+	cv::UMat m_gpuImage;
 
-    // the CPU buffer (should be cv::Mat)
-	IplImage* m_cpuImage;
+    // the CPU buffer
+	cv::Mat  m_cpuImage;
 
     // maybe we need a mutex to guard allocation of buffers ?
 
@@ -350,17 +363,18 @@ private:
 	void save(Archive & ar, const unsigned int version) const
 	{	
 		//checkOnCPU();
-		ar & boost::serialization::make_binary_object(m_cpuImage->imageData, m_cpuImage->imageSize);
+		ar & boost::serialization::make_binary_object(m_cpuImage.data, m_cpuImage.total() * m_cpuImage.elemSize());
 	}
 
 	template<class Archive>
 	void load(Archive & ar, const unsigned int version)
 	{
+		// @todo why can image measurements only be loaded in windows ??
 		#ifdef WIN32
 		checkOnCPU();
 		cvInitImageHeader(m_cpuImage, cvSize(width(), height()), depth(), channels(), origin());
-		m_cpuImage->imageDataOrigin = m_cpuImage->imageData = static_cast< char* >(cvAlloc(m_cpuImage->imageSize));
-		ar & boost::serialization::binary_object(m_cpuImage->imageData, m_cpuImage->imageSize);
+		m_cpuImage->imageDataOrigin = m_cpuImage->imageData = static_cast< char* >(cvAlloc( m_cpuImage.total() * m_cpuImage.elemSize()));
+		ar & boost::serialization::binary_object(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());
 		#endif
 	}
 

@@ -130,8 +130,8 @@ Math::Pose edgeBasedRefinement (Math::Pose initialPose, unsigned long long int n
 	Math::Matrix< float, 3, 3 > K, Image& img, CornerList it, Image* pDebugImg, bool bRefine, unsigned long long int uiMask, bool computeInnerEdgels )
 {
 	int sum = 0;
-	for(int i = 1; i< img.iplImage()->imageSize; i++)
-		sum += img.iplImage()->imageData[i];
+	for(int i = 1; i< img.Mat().total()*img.Mat().elemSize(); i++)
+		sum += img.Mat().data[i];
 
 	Math::Pose pose( initialPose );
 
@@ -290,14 +290,14 @@ void markerCalculations(CornerList &it, Image& img, Image* pDebugImg,MarkerInfoM
 						for ( unsigned int y = 0; y < iMarkerSize; y++ )
 						{
 							unsigned c = ( (unsigned char*)pMarker->imageData )[ y * pMarker->widthStep + x ];
-							cvRectangle( *pDebugImg, 
+							cvRectangle( &(pDebugImg->Mat()), 
 								cvPoint( xStart + scale * x, yStart + scale * y ), 
 								cvPoint( xStart + scale * (x+1), yStart + scale * (y+1) ),
 								nCode ? CV_RGB( c, c, c ) : CV_RGB( c, (c*c)>>8, (c*c)>>8 ), CV_FILLED );
 						}
                     }
                     for ( size_t i = 0; i < it->size(); ++i) {
-                        cvCircle( *pDebugImg, cvPoint( cvRound( it->at( i )(0) * 16 ), cvRound( it->at( i )(1) * 16 ) ),
+                        cvCircle( &(pDebugImg->Mat()), cvPoint( cvRound( it->at( i )(0) * 16 ), cvRound( it->at( i )(1) * 16 ) ),
                             cvRound( pDebugImg->width / 500.0 * 16 ), CV_RGB( 255, 127, 39 ), -1, CV_AA, 4 );
                     }
                 }*/
@@ -313,7 +313,7 @@ void markerCalculations(CornerList &it, Image& img, Image* pDebugImg,MarkerInfoM
                     if ( pDebugImg )
                     {
                         for ( size_t i = 0; i < it.size(); ++i) {
-                        cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
+                        cvCircle( &(pDebugImg->Mat()), cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
 				            cvRound( pDebugImg->width() / 500.0 * 16 ), CV_RGB( 0, 255, 255 ), -1, CV_AA, 4 );
                         }
                     }
@@ -341,7 +341,7 @@ void markerCalculations(CornerList &it, Image& img, Image* pDebugImg,MarkerInfoM
                     if ( pDebugImg )
                     {
                         for ( size_t i = 0; i < it.size(); ++i) {
-                        cvCircle( *pDebugImg, cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
+                        cvCircle( &(pDebugImg->Mat()), cvPoint( cvRound( it.at( i )(0) * 16 ), cvRound( it.at( i )(1) * 16 ) ),
 				            cvRound( pDebugImg->width() / 500.0 * 16 ), CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
                         }
                     }
@@ -590,15 +590,15 @@ void detectMarkers( Image& img, MarkerInfoMap& markerInfos,
 					cv::adaptiveThreshold(img.uMat().clone(), thresholded.uMat(), 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, (img.height() / 48) | 1, 4.0);
 				}
 				else{
-					cvAdaptiveThreshold(*img.Clone(), thresholded, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, (img.height() / 48) | 1, 4.0);
-				}				
+					cv::adaptiveThreshold(img.Mat().clone(), thresholded.uMat(), 255, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, (img.height() / 48) | 1, 4.0);
+				}
 			} else {
 				if (img.isOnGPU()){
-					cv::threshold(img.uMat().clone(), thresholded.uMat(), binaryThresholdValue, 255, cv::THRESH_BINARY);
+					cv::threshold(img.uMat().clone(), thresholded.Mat(), binaryThresholdValue, 255, cv::THRESH_BINARY);
 				}
 				else{
-					cvThreshold(*img.Clone(), thresholded, binaryThresholdValue, 255, CV_THRESH_BINARY);
-				}				
+					cv::threshold(img.Mat().clone(), thresholded.Mat(), binaryThresholdValue, 255, cv::THRESH_BINARY);
+				}
 			}
 		}
 
@@ -666,7 +666,7 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 	test2 /= test2( 2 );
 
 	boost::shared_ptr< Image > pMarkerImg = getMarkerImage(img, h, iMarkerSize);
-	const unsigned char* pData = reinterpret_cast< const unsigned char* >( pMarkerImg->iplImage()->imageData ); 
+	const unsigned char* pData = reinterpret_cast< const unsigned char* >( pMarkerImg->Mat().data ); 
 
 	// show marker image in debug mode
 	if ( pDebugImg )
@@ -676,8 +676,8 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 		for ( unsigned int x = 0; x < iMarkerSize; x++ )
 			for ( unsigned int y = 0; y < iMarkerSize; y++ )
 			{
-				unsigned c = ( (unsigned char*)pMarkerImg->iplImage()->imageData )[ y * pMarkerImg->iplImage()->widthStep + x ];
-				cvRectangle( *pDebugImg, 
+				unsigned c = ( (unsigned char*)pMarkerImg->Mat().data )[ y * pMarkerImg->Mat().step + x ];
+				cvRectangle( &(pDebugImg->Mat()), 
 					cvPoint( xStart + (iMarkerSize-1) * x, yStart + (iMarkerSize-1) * y ), 
 					cvPoint( xStart + (iMarkerSize-1) * (x+1), yStart + (iMarkerSize-1) * (y+1) ),
 					CV_RGB( (c*c)>>8, (c*c)>>8, c ), CV_FILLED );
@@ -692,7 +692,7 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 	{
 		for(int y = 0; y < pMarkerImg->height(); y++)
 		{
-			int t = pData[y*pMarkerImg->iplImage()->widthStep + x];
+			int t = pData[y*pMarkerImg->Mat().step + x];
 			avg += t;  
 		}
 	}
@@ -706,12 +706,12 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 		{
 			if ( nCode & ( ((unsigned long long int)1) << ( ( iMarkerSize - 2*nBorderSize - y ) * ( iMarkerSize - 2*nBorderSize ) + ( iMarkerSize - 2*nBorderSize - x ) ) ))
 			{
-				if (pData[ y * pMarkerImg->iplImage()->widthStep + x ] <= avg )
+				if (pData[ y * pMarkerImg->Mat().step + x ] <= avg )
 					nCorrectBoxes++;
 			}
 			else
 			{
-				if (pData[ y * pMarkerImg->iplImage()->widthStep + x ] > avg )
+				if (pData[ y * pMarkerImg->Mat().step + x ] > avg )
 					nCorrectBoxes++;
 			}
 		}
@@ -719,9 +719,9 @@ bool checkRefinedMarker(const Math::Matrix< float, 3, 3 >& K, Math::Pose checkPo
 	for (unsigned int x = 0; x < iMarkerSize ; x ++)
 		for(unsigned int y = 0; y < iMarkerSize; y++)
 		{
-			if( ( (0 <= x && x < nBorderSize) || ((iMarkerSize-nBorderSize) <= x && x < iMarkerSize)
-					|| (0 <= y && y < nBorderSize) || ((iMarkerSize-nBorderSize) <= y && y < iMarkerSize) ) 
-					&& pData[ y * pMarkerImg->iplImage()->widthStep + x ] <= avg )
+			if( ( (x < nBorderSize) || ((iMarkerSize-nBorderSize) <= x && x < iMarkerSize)
+					|| (y < nBorderSize) || ((iMarkerSize-nBorderSize) <= y && y < iMarkerSize) )
+					&& pData[ y * pMarkerImg->Mat().step + x ] <= avg )
 				nCorrectBoxes++;
 		}	
 
@@ -746,7 +746,7 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 	CvSeq* pContours = cvCreateSeq( CV_SEQ_ELTYPE_POINT, sizeof( CvSeq ), sizeof( CvPoint ), pStorage );
 
 	// Find all contours.
-	cvFindContours( img, pStorage, &pContours, sizeof( CvContour ), 
+	cvFindContours( &(img.Mat()), pStorage, &pContours, sizeof( CvContour ),
 		CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, offset );
 
 	// approximate all contours by polygons and check size and corner number
@@ -797,7 +797,7 @@ MarkerList findQuadrangles( Image& img, Image * pDbgImg, cv::Point offset)
 		}
 
 		if (pDbgImg) {
-			cvDrawContours( pDbgImg->iplImage(), pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
+			cvDrawContours( &(pDbgImg->Mat()), pApproxChain, CV_RGB ( 255, 0, 255), CV_RGB( 255, 0, 255 ), -1);
 		}
 
 		ret.push_back( rect );
@@ -866,7 +866,7 @@ int refineLinePoints( CvPoint2D32f* pPoints, int* pStrengths, int nPoints, Image
 
 		// debugging
 		if ( pDebugImg )
-			cvCircle( *pDebugImg, cvPoint( cvRound( pPoints[ iPoint ].x * 16 ), cvRound( pPoints[ iPoint ].y * 16 ) ),
+			cvCircle( &(pDebugImg->Mat()), cvPoint( cvRound( pPoints[ iPoint ].x * 16 ), cvRound( pPoints[ iPoint ].y * 16 ) ),
 				cvRound( pDebugImg->width() / 1600.0 * 16 ), nMax < g_nMinimalEdgeStrength ? CV_RGB( 255, 0, 0 ) : CV_RGB( 0, 255, 0 ), -1, CV_AA, 4 );
 	}
 
@@ -934,7 +934,7 @@ bool refineCorners( Image& img, CornerList& corners, Image* pDebugImg )
 
 		// draw refined lines and corners into the image -- is rather annoying
 		if ( pDebugImg && false )
-			cvLine( *pDebugImg, 
+			cvLine( &(pDebugImg->Mat()), 
 				cvPoint( cvRound( lineParams[ 4 * i + 2 ] + 100 * lineParams[ 4 * i + 0 ] ), cvRound( lineParams[ 4 * i + 3 ] + 100 * lineParams[ 4 * i + 1 ] ) ), 
 				cvPoint( cvRound( lineParams[ 4 * i + 2 ] - 100 * lineParams[ 4 * i + 0 ] ), cvRound( lineParams[ 4 * i + 3 ] - 100 * lineParams[ 4 * i + 1 ] ) ), 
 				CV_RGB( 0, 255, 255 ), 1, 4, 0 );
@@ -963,7 +963,7 @@ bool refineCorners( Image& img, CornerList& corners, Image* pDebugImg )
 	{
 		// draw corners as circles
 		for ( unsigned i = 0; i < corners.size(); i++ ) 
-			cvCircle( *pDebugImg, cvPoint( cvRound( corners[ i ][ 0 ] * 16 ), cvRound( corners[ i ][ 1 ] * 16 ) ),
+			cvCircle( &(pDebugImg->Mat()), cvPoint( cvRound( corners[ i ][ 0 ] * 16 ), cvRound( corners[ i ][ 1 ] * 16 ) ),
 				cvRound( 1.8f * 16 ), CV_RGB( i*80, 0, 0 ), -1, CV_AA, 4 );
 	}
 
@@ -997,7 +997,7 @@ boost::shared_ptr< Image > getMarkerImage( Image& img, const Math::Matrix< float
 	boost::shared_ptr< Image > r( new Image( nSize, nSize, 1 ) );
 	
 	// apply homography
-	cvWarpPerspective( img, *r, &cvH,
+	cvWarpPerspective( &(img), r.get(), &cvH,
 		CV_INTER_LINEAR + CV_WARP_FILL_OUTLIERS + CV_WARP_INVERSE_MAP, cvScalar( 128 ) );
 
 	return r;
@@ -1012,24 +1012,24 @@ unsigned long long int readCode( Image& markerImage, unsigned int iCodeSize, uns
 	LOG4CPP_TRACE( logger, "readCode(): markerImage.width: " << markerImage.width() 
 		<< ", markerImage.height: " << markerImage.height()  
 		<< ", iCodeSize: " << iCodeSize 
-		<< ", markerImage.widthStep: " <<  markerImage.iplImage()->widthStep 
+		<< ", markerImage.widthStep: " <<  markerImage.Mat().step 
 		<< ", markerImage.width: " << markerImage.width() );
 
 	// find threshold
 	int nAvg = 0;
-	const unsigned char* pData = reinterpret_cast< const unsigned char* >( markerImage.iplImage()->imageData ); 
+	const unsigned char* pData = reinterpret_cast< const unsigned char* >( markerImage.Mat().data ); 
 	for ( int y = 0; y < markerImage.width(); y++ )	
 		{
 		for ( int x = 0; x < markerImage.width(); x++ )	
 			nAvg += *pData++;
-		pData += markerImage.iplImage()->widthStep - markerImage.width();
+		pData += markerImage.Mat().step - markerImage.width();
 		}
 		
 	nAvg /= markerImage.width() * markerImage.height();
 	
 	// check if border is black
 	int nBlackBorderPixels = 0;
-	pData = reinterpret_cast< const unsigned char* >( markerImage.iplImage()->imageData ); 
+	pData = reinterpret_cast< const unsigned char* >( markerImage.Mat().data ); 
 	unsigned int nBorderThickness = (markerImage.width() - iCodeSize) / 2;
 	// Iterate border thickness
 	for ( unsigned int j = 0; j < nBorderThickness; j++ ) {
@@ -1037,20 +1037,20 @@ unsigned long long int readCode( Image& markerImage, unsigned int iCodeSize, uns
 		for ( int i = 0; i < markerImage.width(); i++ )
 		{
 			// upper border
-			if ( pData[ j * markerImage.iplImage()->widthStep + i ] <= nAvg )
+			if ( pData[ j * markerImage.Mat().step + i ] <= nAvg )
 				nBlackBorderPixels++;
 			// lower border
-			if ( pData[ markerImage.iplImage()->widthStep * ( markerImage.height() - 1 - j) + i ] <= nAvg )
+			if ( pData[ markerImage.Mat().step * ( markerImage.height() - 1 - j) + i ] <= nAvg )
 				nBlackBorderPixels++;
 		}
 		// Iterate remaining vertical border pixels
 		for ( unsigned int i = nBorderThickness; i < markerImage.height() - nBorderThickness; i++ )
 		{
 			// left
-			if ( pData[ i * markerImage.iplImage()->widthStep + j ] <= nAvg )
+			if ( pData[ i * markerImage.Mat().step + j ] <= nAvg )
 				nBlackBorderPixels++;
 			// right
-			if ( pData[ i * markerImage.iplImage()->widthStep + markerImage.width() - 1 - j ] <= nAvg )
+			if ( pData[ i * markerImage.Mat().step + markerImage.width() - 1 - j ] <= nAvg )
 				nBlackBorderPixels++;
 		}
 	}
@@ -1065,7 +1065,7 @@ unsigned long long int readCode( Image& markerImage, unsigned int iCodeSize, uns
 	unsigned int uiBorderWidth = (markerImage.width() - iCodeSize) / 2;
 	for ( unsigned int y = uiBorderWidth; y < (markerImage.width() - uiBorderWidth); y++ )	
 		for ( unsigned int x = uiBorderWidth; x < (markerImage.width() - uiBorderWidth); x++ )
-			if ( pData[ y * markerImage.iplImage()->widthStep + x ] <= nAvg )
+			if ( pData[ y * markerImage.Mat().step + x ] <= nAvg )
 				nMarkerCode |= ((unsigned long long int)1) << ( (markerImage.width() - uiBorderWidth - y - 1) * iCodeSize + (markerImage.width() - uiBorderWidth - x - 1) );
 					
 	LOG4CPP_TRACE( logger, "readCode(): raw code: 0x" << std::hex << nMarkerCode );
@@ -1280,21 +1280,21 @@ void drawCube( Vision::Image& img, const Math::Pose& pose, const Math::Matrix< f
 	// draw some lines
 	for ( int c = 0; c < 8; c += 4 )
 		for ( int i = 0; i < 4; i++ )
-			cvLine( img, cvPoint( cvRound( p2D[ c + i ][ 0 ] * 16 ), cvRound( p2D[ c + i ][ 1 ] * 16 ) ),
+			cvLine( &(img), cvPoint( cvRound( p2D[ c + i ][ 0 ] * 16 ), cvRound( p2D[ c + i ][ 1 ] * 16 ) ),
 				cvPoint( cvRound( p2D[ c + ( i + 1 ) % 4 ][ 0 ] * 16 ), cvRound( p2D[ c + ( i + 1 ) % 4 ][ 1 ] * 16 ) ),
 				color, 1, CV_AA, 4 );
 	for ( int i = 0; i < 4; i++ )
-		cvLine( img, cvPoint( cvRound( p2D[ i ][ 0 ] * 16 ), cvRound( p2D[ i ][ 1 ] * 16 ) ),
+		cvLine( &(img), cvPoint( cvRound( p2D[ i ][ 0 ] * 16 ), cvRound( p2D[ i ][ 1 ] * 16 ) ),
 			cvPoint( cvRound( p2D[ i + 4 ][ 0 ] * 16 ), cvRound( p2D[ i + 4 ][ 1 ] * 16 ) ),
 			i == 0 ? CV_RGB( 0, 0, 0 ) : color, 1, CV_AA, 4 );
 
 	if (error > -0.5) {
 		// draw line representing error value
 		CvScalar colorE = getGradientRampColor (error, 0.0, 100.0);
-		cvLine( img, cvPoint( cvRound( p2D[ 4 ][ 0 ] * 16 ), cvRound( p2D[ 4 ][ 1 ] * 16 ) ),
+		cvLine( &(img), cvPoint( cvRound( p2D[ 4 ][ 0 ] * 16 ), cvRound( p2D[ 4 ][ 1 ] * 16 ) ),
 			cvPoint( cvRound( p2D[ 6 ][ 0 ] * 16 ), cvRound( p2D[ 6 ][ 1 ] * 16 ) ),
 			colorE, 2, CV_AA, 4 );
-		cvLine( img, cvPoint( cvRound( p2D[ 5 ][ 0 ] * 16 ), cvRound( p2D[ 5 ][ 1 ] * 16 ) ),
+		cvLine( &(img), cvPoint( cvRound( p2D[ 5 ][ 0 ] * 16 ), cvRound( p2D[ 5 ][ 1 ] * 16 ) ),
 			cvPoint( cvRound( p2D[ 7 ][ 0 ] * 16 ), cvRound( p2D[ 7 ][ 1 ] * 16 ) ),
 			colorE, 2, CV_AA, 4 );
 	}

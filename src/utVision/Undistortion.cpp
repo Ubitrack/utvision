@@ -45,12 +45,6 @@
 #include <log4cpp/Category.hh>
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.Undistortion" ) );
 
-//#define DO_TIMING
-#ifdef DO_TIMING
-	#include <utUtil/BlockTimer.h>
-	#include <opencv2/core/ocl.hpp>
-#endif
-
 namespace { 
 	
 	/// scales the intrinsic camera matrix parameters to used image resolution
@@ -228,7 +222,7 @@ bool Undistortion::resetMapping( const int width, const int height, const intrin
 	Util::cv1::assign( intrinsics, *cvCoeffs, *cvIntrinsics );
 	
 	// set values to the mapping
-	cvInitUndistortMap( cvIntrinsics, cvCoeffs, *m_pMapX, *m_pMapY );
+	cvInitUndistortMap( cvIntrinsics, cvCoeffs, &(m_pMapX->Mat()), &(m_pMapY->Mat()) );
 	
 	// explicitly release the allocated memory
 	cvReleaseMat( &cvCoeffs );
@@ -266,43 +260,23 @@ Vision::Image::Ptr Undistortion::undistort( Vision::Image::Ptr pImage )
 
 Vision::Image::Ptr Undistortion::undistort( Image& image )
 {
-#ifdef DO_TIMING
-	static Ubitrack::Util::BlockTimer m_blockTimer( "undistortionTimer", "Ubitrack.Timing" );
-#endif
 	// check if old values are still valid for the image size, only reset mapping if not
 	if( !isValid( image ) )
 		if( !resetMapping( image ) )
 			return image.Clone();
-			
-	
+
 	// undistort
 	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(),
 			image.depth(), image.origin(), image.getImageState() ) );
 
 	if (image.isOnGPU())	{
-#ifdef DO_TIMING
-		{
-	UBITRACK_TIME( m_blockTimer );
-#endif
 		cv::UMat& distortedUmat = image.uMat();
 		cv::UMat& undistortedUMat = pImgUndistorted->uMat();
 		cv::remap( distortedUmat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
-
-#ifdef DO_TIMING
-		cv::ocl::finish();
-	}
-	static int i = 0;
-	if(i == 10)
-	{
-		LOG4CPP_INFO( logger, "timer: " << m_blockTimer << std::endl );
-		LOG4CPP_INFO( logger, "res: " << image.width() << "x" << image.height() << std::endl );
-		i = 0;
-	}
-	i++;
-#endif
 	} else {
-		pImgUndistorted->iplImage()->origin = image.origin();
-		cvRemap( image.iplImage(), pImgUndistorted->iplImage(), *m_pMapX, *m_pMapY );
+		cv::Mat& distortedUmat = image.Mat();
+		cv::Mat& undistortedUMat = pImgUndistorted->Mat();
+		cv::remap( distortedUmat, undistortedUMat, m_pMapX->Mat(), m_pMapY->Mat(), cv::INTER_LINEAR );
 	}
 
 	return pImgUndistorted;

@@ -46,9 +46,9 @@ int subpixSampleFast( Image& src, const Math::Vector< float, 2 >& p )
 	int y = static_cast< int >( floorf( p( 1 ) ) );
 	int dx = static_cast< int >( 256 * ( p( 0 ) - floorf( p( 0 ) ) ) );
 	int dy = static_cast< int >( 256 * ( p( 1 ) - floorf( p( 1 ) ) ) );
-	unsigned char* i = reinterpret_cast< unsigned char* >( src.iplImage()->imageData ) + y * src.iplImage()->widthStep + x;
+	unsigned char* i = reinterpret_cast< unsigned char* >( src.Mat().data ) + y * src.Mat().step + x;
 	int a = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
-	i += src.iplImage()->widthStep;
+	i += src.Mat().step;
 	int b = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8) ;
 	return a + ( ( dy * ( b - a ) ) >> 8 );
 }
@@ -72,15 +72,15 @@ int subpixSampleSafe( Image& src, const Math::Vector< float, 2 >& p )
 		else if ( y >= src.height() )
 			y = src.height() - 1;
 			
-		return *( reinterpret_cast< unsigned char* >( src.iplImage()->imageData ) + y * src.iplImage()->widthStep + x );
+		return *( reinterpret_cast< unsigned char* >( src.Mat().data ) + y * src.Mat().step + x );
 	}
 	
 	// do normal sampling
 	int dx = static_cast< int >( 256 * ( p( 0 ) - floorf( p( 0 ) ) ) );
 	int dy = static_cast< int >( 256 * ( p( 1 ) - floorf( p( 1 ) ) ) );
-	unsigned char* i = reinterpret_cast< unsigned char* >( src.iplImage()->imageData ) + y * src.iplImage()->widthStep + x;
+	unsigned char* i = reinterpret_cast< unsigned char* >( src.Mat().data ) + y * src.Mat().step + x;
 	int a = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
-	i += src.iplImage()->widthStep;
+	i += src.Mat().step;
 	int b = i[ 0 ] + ( ( dx * ( i[ 1 ] - i[ 0 ] ) ) >> 8 );
 	return a + ( ( dy * ( b - a ) ) >> 8 );
 }
