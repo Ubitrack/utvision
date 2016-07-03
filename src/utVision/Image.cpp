@@ -42,9 +42,40 @@
 #include <utUtil/TracingProvider.h>
 #endif
 
+// @todo add logging to image class ?
 
 namespace Ubitrack { namespace Vision {
 
+Image::PixelFormat guessFormat(int channels, int depth) {
+	Image::PixelFormat fmt = Image::UNKNOWN_PIXELFORMAT;
+
+	switch (channels) {
+	case 1:
+		fmt = Image::LUMINANCE;
+		break;
+	case 3:
+		fmt = Image::RGB;
+		break;
+	case 4:
+		fmt = Image::RGBA;
+		break;
+	default:
+		break;
+	}
+	return fmt;
+}
+
+Image::PixelFormat guessFormat(cv::Mat m) {
+	return guessFormat(m.channels(), m.depth());
+}
+
+Image::PixelFormat guessFormat(cv::UMat m) {
+	return guessFormat(m.channels(), m.depth());
+}
+
+Image::PixelFormat guessFormat(IplImage* m) {
+	return guessFormat(m->nChannels, m->depth);
+}
 
 
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
@@ -55,9 +86,10 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 	, m_channels(nChannels)
 	, m_bitsPerPixel(nDepth)
 	, m_origin(nOrigin)
-	, m_format(nChannels == 1 ? LUMINANCE : RGB)
+	, m_format(guessFormat(nChannels, nDepth))
 {
 
+	// @todo nAlign parameter is ignored for now - do we need it ?
 	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()),
 			static_cast< char* >( pImageData ), cv::Mat::AUTO_STEP);
 }
@@ -71,7 +103,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 	, m_channels(nChannels)
 	, m_bitsPerPixel(nDepth)
 	, m_origin(nOrigin)
-	, m_format(nChannels == 1 ? LUMINANCE : RGB)
+	, m_format(guessFormat(nChannels, nDepth))
 {
 
 	if (isOnGPU()) {
@@ -87,9 +119,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 #endif
 #endif
 		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
-	}
-
-	if (isOnCPU()) {
+	} else if (isOnCPU()) {
 
 #ifdef ENABLE_EVENT_TRACING
 		#ifdef HAVE_DTRACE
@@ -102,6 +132,8 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 #endif
 #endif
 		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+	} else {
+		std::cerr << "Trying to allocate CPU and GPU buffer at the same time !!!" << std::endl;
 	}
 }
 
@@ -114,7 +146,7 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	, m_channels(pIplImage->nChannels)
 	, m_bitsPerPixel(pIplImage->depth)
 	, m_origin(pIplImage->origin)
-	, m_format(pIplImage->nChannels == 1 ? LUMINANCE : RGB)
+	, m_format(guessFormat(pIplImage))
 {
 	m_cpuImage = cv::cvarrToMat(pIplImage);
 	if ( bDestroy )
@@ -128,7 +160,7 @@ Image::Image(cv::UMat & img)
 	, m_height(img.rows)
 	, m_bitsPerPixel(img.depth())
 	, m_origin(0)
-	, m_format(img.channels() == 1 ? LUMINANCE : RGB)
+	, m_format(guessFormat(img))
 {
 	if (img.dims == 2) {
 		m_channels = 1;
@@ -137,7 +169,7 @@ Image::Image(cv::UMat & img)
 	} else {
 		// ERROR dimensionality too high
 	}
-	m_gpuImage = cv::UMat(img);
+	m_gpuImage = img;
 }
 
 Image::Image( cv::Mat & img )
@@ -147,7 +179,7 @@ Image::Image( cv::Mat & img )
 	, m_height(img.rows)
 	, m_bitsPerPixel(img.depth())
 	, m_origin(0)
-	, m_format(img.channels() == 1 ? LUMINANCE : RGB)
+	, m_format(guessFormat(img))
 {
 	if (img.dims == 2) {
 		m_channels = 1;
@@ -156,7 +188,7 @@ Image::Image( cv::Mat & img )
 	} else {
 		// ERROR dimensionality too high
 	}
-	m_cpuImage = cv::Mat(img);
+	m_cpuImage = img;
 }
 
 
@@ -172,9 +204,13 @@ void Image::copyImageFormatFrom(const Image& img) {
 	m_format = img.pixelFormat();
 }
 
+
+
+
 Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
-	// @todo the current image class is a kind of a mess really .. 
+
+	// @todo the current image class is a kind of a mess really ..
 	// origin, imgFormat, pixelType should be annotations to the image class and only used from there
 	// data storage should be managed in iplImage or uMat 
 	Image::Ptr r( new Image( width(), height(), nChannels, nDepth ) );
@@ -200,15 +236,38 @@ Image::Ptr Image::AllocateNew() const
 
 Image::Ptr Image::Clone() const
 {
+
 	if (isOnGPU())
 	{
-		// need imageFormat, ... as parameters to constructor
+#ifdef ENABLE_EVENT_TRACING
+		#ifdef HAVE_DTRACE
+			if (UBITRACK_VISION_ALLOCATE_GPU_ENABLED()) {
+				UBITRACK_VISION_ALLOCATE_GPU(m_width*m_height*m_channels);
+			}
+#endif
+#ifdef HAVE_ETW
+			ETWUbitrackAllocateGpu(m_width*m_height*m_channels);
+#endif
+#endif
 		cv::UMat m = m_gpuImage.clone();
-		return Image::Ptr(new Image( m ));
+		Ptr ptr = Image::Ptr(new Image( m ));
+		ptr->copyImageFormatFrom(*this);
+		return ptr;
 	} else {
-		// need imageFormat, ... as parameters to constructor
+#ifdef ENABLE_EVENT_TRACING
+		#ifdef HAVE_DTRACE
+			if (UBITRACK_VISION_ALLOCATE_CPU_ENABLED()) {
+				UBITRACK_VISION_ALLOCATE_CPU(m_width*m_height*m_channels);
+			}
+#endif
+#ifdef HAVE_ETW
+			ETWUbitrackAllocateCpu(m_width*m_height*m_channels);
+#endif
+#endif
 		cv::Mat m = m_cpuImage.clone();
-		return Image::Ptr(new Image( m ));
+		Ptr ptr = Image::Ptr(new Image( m ));
+		ptr->copyImageFormatFrom(*this);
+		return ptr;
 	}
 	
 }
@@ -217,6 +276,9 @@ Image::Ptr Image::Clone() const
 Image::Ptr Image::PyrDown()
 {
 	// this method is only implemented on CPU!!
+	if (isOnGPU()) {
+		std::cerr << "Warning: GPU image is scaled on CPU ... " << std::endl;
+	}
 	checkOnCPU();
 
 	Image::Ptr r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
@@ -228,6 +290,9 @@ Image::Ptr Image::PyrDown()
 Image::Ptr Image::Scale( int width, int height )
 {
 	// this method is only implemented on CPU!!
+	if (isOnGPU()) {
+		std::cerr << "Warning: GPU image is scaled on CPU ... " << std::endl;
+	}
 	checkOnCPU();
 
 	Image::Ptr scaledImg( new Image( width, height, channels(), depth(), origin() ) );
@@ -398,7 +463,7 @@ void Image::checkOnGPU()
 			ETWUbitrackGpuUpload(width()*height()*channels());
 #endif
 #endif
-		m_gpuImage = cv::UMat(m_cpuImage.getUMat(0));
+		m_gpuImage = m_cpuImage.getUMat(0);
 		m_uploadState = OnCPUGPU;
 	}
 }
@@ -416,7 +481,7 @@ void Image::checkOnCPU()
 			ETWUbitrackGpuDownload(width()*height()*channels());
 #endif
 #endif
-		m_cpuImage = cv::Mat(m_gpuImage.getMat(0));
+		m_cpuImage = m_gpuImage.getMat(0);
 		m_uploadState = OnCPUGPU;
 	}
 }

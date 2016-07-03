@@ -222,7 +222,10 @@ bool Undistortion::resetMapping( const int width, const int height, const intrin
 	Util::cv1::assign( intrinsics, *cvCoeffs, *cvIntrinsics );
 	
 	// set values to the mapping
-	cvInitUndistortMap( cvIntrinsics, cvCoeffs, &(m_pMapX->Mat()), &(m_pMapY->Mat()) );
+	// @todo should be upgraded to modern opencv
+	CvMat pX = m_pMapX->Mat();
+	CvMat pY = m_pMapY->Mat();
+	cvInitUndistortMap( cvIntrinsics, cvCoeffs, &pX, &pY );
 	
 	// explicitly release the allocated memory
 	cvReleaseMat( &cvCoeffs );
