@@ -87,11 +87,22 @@ public:
 	void initializeDirectX(ID3D11Device* pD3D11Device);
 #endif
 
-#endif
+#endif // HAVE_OPENCL
+
+//    inline void acquireContext() {
+//        m_shared_opencl_mutex.lock();
+//    }
+//
+//    inline void releaseContext() {
+//        m_shared_opencl_mutex.unlock();
+//    }
 
 private:
 
-	bool m_isInitialized;
+    // mutex to be used to synchronize calls to opencl-command queue
+//    boost::mutex m_shared_opencl_mutex;
+
+    bool m_isInitialized;
     boost::mutex m_mutex;
 
 #ifdef HAVE_OPENCL

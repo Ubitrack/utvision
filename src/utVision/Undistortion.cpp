@@ -273,13 +273,13 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 			image.depth(), image.origin(), image.getImageState() ) );
 
 	if (image.isOnGPU())	{
-		cv::UMat& distortedUmat = image.uMat();
+		cv::UMat& distortedUMat = image.uMat();
 		cv::UMat& undistortedUMat = pImgUndistorted->uMat();
-		cv::remap( distortedUmat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
+		cv::remap( distortedUMat, undistortedUMat, m_pMapX->uMat(), m_pMapY->uMat(), cv::INTER_LINEAR );
 	} else {
-		cv::Mat& distortedUmat = image.Mat();
-		cv::Mat& undistortedUMat = pImgUndistorted->Mat();
-		cv::remap( distortedUmat, undistortedUMat, m_pMapX->Mat(), m_pMapY->Mat(), cv::INTER_LINEAR );
+		cv::Mat& distortedMat = image.Mat();
+		cv::Mat& undistortedMat = pImgUndistorted->Mat();
+		cv::remap( distortedMat, undistortedMat, m_pMapX->Mat(), m_pMapY->Mat(), cv::INTER_LINEAR );
 	}
 
 	return pImgUndistorted;
