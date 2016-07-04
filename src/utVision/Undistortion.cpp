@@ -282,6 +282,7 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 		cv::remap( distortedMat, undistortedMat, m_pMapX->Mat(), m_pMapY->Mat(), cv::INTER_LINEAR );
 	}
 
+	pImgUndistorted->copyImageFormatFrom(image);
 	return pImgUndistorted;
 }
 
