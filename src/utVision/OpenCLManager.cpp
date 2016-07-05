@@ -52,9 +52,6 @@ OpenCLManager& OpenCLManager::singleton()
     if (!g_pOpenCLManager) {
         LOG4CPP_INFO(logger, "Create Instance of OpenCLManager");
         g_pOpenCLManager.reset(new OpenCLManager);
-#ifdef HAVE_OPENCL
-        cv::ocl::setUseOpenCL(true);
-#endif
     }
     return *g_pOpenCLManager;
 }
@@ -267,6 +264,17 @@ void OpenCLManager::initializeOpenGL()
     cl_platform_id selectedPlatformID = platformIDs[selectedPlatform];
     delete[] platformIDs;
 
+    char cPlatformNameBuffer[1024];
+    err = clGetPlatformInfo(selectedPlatformID, CL_PLATFORM_NAME,  sizeof(char)*1024, cPlatformNameBuffer, NULL);
+    if(err)
+    {
+        LOG4CPP_ERROR(logger, "Error: Failed to retrieve platform name!");
+        return;
+    }
+
+    std::string platform_name(cPlatformNameBuffer);
+
+
 #ifdef WIN32
     // Create CL context properties, add WGL context & handle to DC
     cl_context_properties properties[] = {
@@ -400,8 +408,13 @@ void OpenCLManager::initializeOpenGL()
         return;
     }
 
-    cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);
-    oclContext.initContextFromHandle(selectedPlatformID, m_clContext, selectedDeviceID);
+
+    cv::ocl::attachContext(platform_name, selectedPlatformID, m_clContext, selectedDeviceID);
+    if( cv::ocl::useOpenCL() ) {
+        LOG4CPP_INFO(logger, "OpenCV+OpenCL works OK!");
+    } else {
+        LOG4CPP_INFO(logger, "Can't init OpenCV with OpenCL TAPI");
+    }
 
     cl_bool temp = CL_FALSE;
     size_t sz = 0;
