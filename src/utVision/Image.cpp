@@ -213,16 +213,22 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 	// @todo the current image class is a kind of a mess really ..
 	// origin, imgFormat, pixelType should be annotations to the image class and only used from there
 	// data storage should be managed in iplImage or uMat 
-	Image::Ptr r( new Image( width(), height(), nChannels, nDepth ) );
+	Image::Ptr r;
 	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
-		cv::cvtColor( m_gpuImage, r->uMat(), nCode );
+		cv::UMat mat;
+		cv::cvtColor( m_gpuImage, mat, nCode );
 		// how does origin or channelSeq translate to uMat's ??
 		//r->m_cpuImage->origin = origin();
+		r.reset(new Image( mat ) );
 	} else {
+		cv::Mat mat;
 		cv::cvtColor( m_cpuImage, r->Mat(), nCode );
 		// how does origin or channelSeq translate to uMat's ??
 //		r->m_cpuImage->origin = origin();
+		r.reset(new Image( mat ) );
 	}
+
+	// @todo add image properties after color conversion !!!
 	return r;
 }
 
@@ -231,6 +237,7 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 Image::Ptr Image::AllocateNew() const
 {
 	// need imageFormat
+	// should generate CPU or GPU image depending on current instance state
     return ImagePtr( new Image( width(), height(), channels(), depth(), origin()) );
 }
 
@@ -275,29 +282,37 @@ Image::Ptr Image::Clone() const
 
 Image::Ptr Image::PyrDown()
 {
-	// this method is only implemented on CPU!!
+	Image::Ptr r;
 	if (isOnGPU()) {
-		std::cerr << "Warning: GPU image is scaled on CPU ... " << std::endl;
+		cv::UMat mat;
+		cv::pyrDown( m_gpuImage, mat, cv::Size( width() / 2, height() / 2 ) );
+		r.reset( new Image( mat ) );
+	} else {
+		cv::Mat mat;
+		cv::pyrDown( m_cpuImage, mat, cv::Size( width() / 2, height() / 2 ) );
+		r.reset( new Image( mat ) );
 	}
-	checkOnCPU();
 
-	Image::Ptr r( new Image( width() / 2, height() / 2, channels(), depth(), origin() ) );
-	cv::pyrDown( m_cpuImage, r->Mat(), cv::Size( width() / 2, height() / 2 ) );
+	r->copyImageFormatFrom(*this);
 	return r;
 }
 
 
 Image::Ptr Image::Scale( int width, int height )
 {
-	// this method is only implemented on CPU!!
+	Image::Ptr r;
 	if (isOnGPU()) {
-		std::cerr << "Warning: GPU image is scaled on CPU ... " << std::endl;
+		cv::UMat mat;
+		cv::resize( m_gpuImage, mat, cv::Size(width, height) );
+		r.reset( new Image( mat ) );
+	} else {
+		cv::Mat mat;
+		cv::resize( m_cpuImage, mat, cv::Size(width, height) );
+		r.reset( new Image( mat ) );
 	}
-	checkOnCPU();
 
-	Image::Ptr scaledImg( new Image( width, height, channels(), depth(), origin() ) );
-	cv::resize( m_cpuImage, scaledImg->Mat(), cv::Size(width, height) );
-	return scaledImg;
+	r->copyImageFormatFrom(*this);
+	return r;
 }
 
 /** creates an image with the given scale factor 0.0 < f <= 1.0 */
@@ -429,7 +444,7 @@ void Image::saveAsJpeg( const std::string filename, int compressionFactor ) cons
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
+	if (isOnGPU()) {
 		cv::imwrite( filename, m_gpuImage, params );
 	} else {
 		cv::imwrite( filename, m_cpuImage, params );
@@ -443,7 +458,7 @@ void Image::encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor ) 
     compressionFactor = std::min( 100, std::max ( 0, compressionFactor ) );
     params.push_back( CV_IMWRITE_JPEG_QUALITY );
     params.push_back( compressionFactor );
-	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
+	if (isOnGPU()) {
 		cv::imencode( ".jpg", m_gpuImage, buffer, params );
 	} else {
 		cv::imencode( ".jpg", m_cpuImage, buffer, params );
