@@ -285,13 +285,14 @@ protected:
 
 			if ( m_pDebugImage )
 			{
+				IplImage dbgImg = m_pDebugImage->Mat();
 				Math::Vector< float, 2 > p1( start + searchPixels * normal );
 				Math::Vector< float, 2 > p2( start - searchPixels * normal );
-				cvLine( &(m_pDebugImage->Mat()),
+				cvLine( &dbgImg,
 					cvPoint( cvRound( p1( 0 ) * 16 ), cvRound( p1( 1 ) * 16 ) ), 
 					cvPoint( cvRound( p2( 0 ) * 16 ), cvRound( p2( 1 ) * 16 ) ), 
 					CV_RGB( 128, 128, 0 ), 1, CV_AA, 4 );
-				cvCircle( m_pDebugImage,
+				cvCircle( &dbgImg,
 					cvPoint( cvRound( m_edgePoints[ i ]( 0 ) * 16 ), cvRound( m_edgePoints[ i ]( 1 ) * 16 ) ),
 					cvRound( m_pDebugImage->width() / 1600.0 * 16 ),
 					m_intensities[ i ] >= g_minEdgeIntensity ? CV_RGB( 0, 255, 0 ) : CV_RGB( 255, 0, 0 ), 
