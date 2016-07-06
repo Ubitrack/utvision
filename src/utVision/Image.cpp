@@ -219,10 +219,10 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 		cv::cvtColor( m_gpuImage, mat, nCode );
 		// how does origin or channelSeq translate to uMat's ??
 		//r->m_cpuImage->origin = origin();
-		r.reset(new Image( mat ) );
+		r.reset( new Image( mat ) );
 	} else {
 		cv::Mat mat;
-		cv::cvtColor( m_cpuImage, r->Mat(), nCode );
+		cv::cvtColor( m_cpuImage, mat, nCode );
 		// how does origin or channelSeq translate to uMat's ??
 //		r->m_cpuImage->origin = origin();
 		r.reset(new Image( mat ) );
