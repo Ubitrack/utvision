@@ -109,27 +109,13 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 	if (isOnGPU()) {
 
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_ALLOCATE_GPU_ENABLED()) {
-				UBITRACK_VISION_ALLOCATE_GPU(nWidth*nHeight*nChannels);
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackAllocateGpu(nWidth*nHeight*nChannels);
-#endif
+		TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
 #endif
 		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 	} else if (isOnCPU()) {
 
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_ALLOCATE_CPU_ENABLED()) {
-				UBITRACK_VISION_ALLOCATE_CPU(nWidth*nHeight*nChannels);
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackAllocateCpu(nWidth*nHeight*nChannels);
-#endif
+		TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
 #endif
 		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
 	} else {
@@ -195,6 +181,8 @@ Image::Image( cv::Mat & img )
 Image::~Image()
 {
 	//destroy the buffers
+
+	// @todo image destruction should be traced as well !!!
 }
 
 
@@ -247,14 +235,7 @@ Image::Ptr Image::Clone() const
 	if (isOnGPU())
 	{
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_ALLOCATE_GPU_ENABLED()) {
-				UBITRACK_VISION_ALLOCATE_GPU(m_width*m_height*m_channels);
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackAllocateGpu(m_width*m_height*m_channels);
-#endif
+        TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
 #endif
 		cv::UMat m = m_gpuImage.clone();
 		Ptr ptr = Image::Ptr(new Image( m ));
@@ -262,14 +243,7 @@ Image::Ptr Image::Clone() const
 		return ptr;
 	} else {
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_ALLOCATE_CPU_ENABLED()) {
-				UBITRACK_VISION_ALLOCATE_CPU(m_width*m_height*m_channels);
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackAllocateCpu(m_width*m_height*m_channels);
-#endif
+        TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
 #endif
 		cv::Mat m = m_cpuImage.clone();
 		Ptr ptr = Image::Ptr(new Image( m ));
@@ -469,14 +443,7 @@ void Image::checkOnGPU()
 {
 	if(m_uploadState == OnCPU){
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_GPU_UPLOAD_ENABLED()) {
-				UBITRACK_VISION_GPU_UPLOAD(width()*height()*channels());
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackGpuUpload(width()*height()*channels());
-#endif
+		TRACEPOINT_VISION_GPU_UPLOAD(width()*height()*channels())
 #endif
 		m_gpuImage = m_cpuImage.getUMat(0);
 		m_uploadState = OnCPUGPU;
@@ -487,14 +454,7 @@ void Image::checkOnCPU()
 {
 	if(m_uploadState == OnGPU){
 #ifdef ENABLE_EVENT_TRACING
-		#ifdef HAVE_DTRACE
-			if (UBITRACK_VISION_GPU_DOWNLOAD_ENABLED()) {
-				UBITRACK_VISION_GPU_DOWNLOAD(width()*height()*channels());
-			}
-#endif
-#ifdef HAVE_ETW
-			ETWUbitrackGpuDownload(width()*height()*channels());
-#endif
+		TRACEPOINT_VISION_GPU_DOWNLOAD(width()*height()*channels())
 #endif
 		m_cpuImage = m_gpuImage.getMat(0);
 		m_uploadState = OnCPUGPU;
