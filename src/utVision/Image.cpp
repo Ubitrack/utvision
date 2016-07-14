@@ -37,10 +37,7 @@
 #include <log4cpp/Category.hh>
 
 #include <opencv2/core/ocl.hpp>
-
-#ifdef ENABLE_EVENT_TRACING
 #include <utUtil/TracingProvider.h>
-#endif
 
 // @todo add logging to image class ?
 
