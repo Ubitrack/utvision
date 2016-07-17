@@ -375,8 +375,6 @@ private:
 		// @todo why can image measurements only be loaded in windows ??
 		#ifdef WIN32
 		checkOnCPU();
-		cvInitImageHeader(m_cpuImage, cvSize(width(), height()), depth(), channels(), origin());
-		m_cpuImage->imageDataOrigin = m_cpuImage->imageData = static_cast< char* >(cvAlloc( m_cpuImage.total() * m_cpuImage.elemSize()));
 		ar & boost::serialization::binary_object(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());
 		#endif
 	}
