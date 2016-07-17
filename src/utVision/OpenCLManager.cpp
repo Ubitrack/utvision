@@ -213,6 +213,11 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
     LOG4CPP_INFO( logger, ": DX: Device Name: "		<< cDeviceNameBuffer );
 
 
+	char cPlatformNameBuffer[1024];
+	clGetPlatformInfo(platforms[found], CL_PLATFORM_NAME, sizeof(char) * 1024, cPlatformNameBuffer, NULL);
+	std::string platform_name(cPlatformNameBuffer);
+
+
     m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
     if(!m_clCommandQueue || err!= CL_SUCCESS)
     {
@@ -220,8 +225,14 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
         return;
     }
 
-    cv::ocl::Context& oclContext = cv::ocl::Context::getDefault(false);
-    oclContext.initContextFromHandle(platforms[found], m_clContext, selectedDeviceID);
+
+	cv::ocl::attachContext(platform_name, platforms[found], m_clContext, selectedDeviceID);
+	if (cv::ocl::useOpenCL()) {
+		LOG4CPP_INFO(logger, "OpenCV+OpenCL works OK!");
+	}
+	else {
+		LOG4CPP_INFO(logger, "Can't init OpenCV with OpenCL TAPI");
+	}
 
     m_isInitialized = true;
     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
