@@ -296,13 +296,13 @@ void OpenCLManager::initializeOpenGL()
     };
 
     // Find CL capable devices in the current GL context
-    cl_device_id devices[32];
-    size_t size;
-    clGetGLContextInfoKHR(properties, CL_DEVICES_FOR_GL_CONTEXT_KHR, 32 * sizeof(cl_device_id), devices, &size);
+    //cl_device_id devices[32];
+	//size_t size;
+    //clGetGLContextInfoKHR(properties, CL_DEVICES_FOR_GL_CONTEXT_KHR, 32 * sizeof(cl_device_id), devices, &size);
     // Create a context using the supported devices
-    int count = size / sizeof(cl_device_id);
-    //m_clContext = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
-    m_clContext = clCreateContext(properties, count, devices, NULL, 0, &err);
+    //int count = size / sizeof(cl_device_id);
+    m_clContext = clCreateContextFromType(properties, CL_DEVICE_TYPE_GPU, NULL, NULL, &err);
+    //m_clContext = clCreateContext(properties, count, devices, NULL, 0, &err);
 
 #elif __APPLE__
 
