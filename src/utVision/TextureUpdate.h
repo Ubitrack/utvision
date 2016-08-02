@@ -17,6 +17,7 @@
 #else
 #include "CL/cl.h"
 #include "CL/cl_gl.h"
+#include "GL/gl.h"
 #endif
 #endif
 
