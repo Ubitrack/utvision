@@ -243,7 +243,7 @@ bool Undistortion::resetMapping( const Vision::Image& image )
 	// generate a local copy first
 	intrinsics_type camIntrinsics = m_intrinsics;
 	
-	// image size different than intrinsics ? -> scale
+	// TODO: image size different than intrinsics ? -> scale
 	//correctForScale( image, camIntrinsics );
 	// always right-hand -> left-hand
 	correctForOpenCV( camIntrinsics );
