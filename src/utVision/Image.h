@@ -244,6 +244,8 @@ public:
 		return m_origin;
 	}
 
+	int cvMatType(void) const;
+
 	PixelFormat pixelFormat( void ) const {
 		return m_format;
 	}

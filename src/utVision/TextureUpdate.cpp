@@ -38,6 +38,7 @@ bool TextureUpdate::getImageFormat(const Measurement::ImageMeasurement& image, b
         GLenum& imgFormat, int& numOfChannels)
 {
     bool ret = true;
+
     switch (image->pixelFormat()) {
     case Image::LUMINANCE:
         imgFormat = GL_LUMINANCE;

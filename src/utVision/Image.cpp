@@ -183,6 +183,15 @@ Image::~Image()
 }
 
 
+int Image::cvMatType(void) const {
+	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
+		return m_gpuImage.type();
+	}
+	else {
+		return m_cpuImage.type();
+	}
+}
+
 void Image::copyImageFormatFrom(const Image& img) {
 	m_bitsPerPixel = img.depth();
 	m_origin = img.origin();
