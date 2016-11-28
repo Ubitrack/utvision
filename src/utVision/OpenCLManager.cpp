@@ -430,11 +430,11 @@ void OpenCLManager::initializeOpenGL()
             clGetDeviceInfo(selectedDeviceID, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(temp), &temp, &sz)==CL_SUCCESS &&
                     sz==sizeof(temp) ? temp!=0 : false;
     LOG4CPP_INFO(logger, "Host Unified Memory: " << unifiedmemory);
-    m_isInitialized = true;
     LOG4CPP_INFO(logger, "initialized OpenCL: " << isInitialized());
 #else // HAVE_OPENCL
     LOG4CPP_WARN( logger, "OpenCL is DISABLED!");
 #endif
+    m_isInitialized = true;
 }
 
 #ifdef HAVE_OPENCL
