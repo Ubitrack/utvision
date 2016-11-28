@@ -1,6 +1,4 @@
 //wglGetCurrentContext, wglGetCurrentDC
-#include <GL/glut.h>
-
 
 #include "OpenCLManager.h"
 
