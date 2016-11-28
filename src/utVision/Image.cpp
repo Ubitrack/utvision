@@ -223,6 +223,8 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 	}
 
 	// @todo add image properties after color conversion !!!
+	r->set_origin(m_origin);
+	
 	return r;
 }
 

@@ -295,7 +295,6 @@ public:
 	/**
      * @brief Copy image format related properties from first argument
      * @param img
-     * @param compressionFactor Sets the quality of the compression from 0...100. Default is 95.
      */
 	void copyImageFormatFrom(const Image& img);
 
