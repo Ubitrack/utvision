@@ -41,10 +41,9 @@ static boost::scoped_ptr<OpenCLManager> g_pOpenCLManager;
 
 OpenCLManager& OpenCLManager::singleton()
 {
-
     // @todo we should try to get rid of this lock for the default case, that is - everything initialized !!!
-    static boost::mutex singletonMutex;
-    boost::mutex::scoped_lock l(singletonMutex);
+	static boost::mutex singletonMutex;
+	boost::mutex::scoped_lock l(singletonMutex);
 
     //create a new singleton if necessary
     if (!g_pOpenCLManager) {
