@@ -65,18 +65,6 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 #include <utVision/EdgeMeasurement.h>
 #include <utAlgorithm/Function/ProjectivePoseNormalize.h>
 
-#ifdef HAVE_TBB
-#undef HAVE_TBB
-#endif
-
-#ifdef HAVE_TBB
-#include <algorithm>
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
-using namespace tbb;
-#endif
-
-
 #include <opencv/highgui.h>
 //#define DO_TIMING
 
