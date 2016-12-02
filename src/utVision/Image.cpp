@@ -453,6 +453,9 @@ void Image::checkOnGPU()
 #ifdef ENABLE_EVENT_TRACING
 		TRACEPOINT_VISION_GPU_UPLOAD(width()*height()*channels())
 #endif
+        // how about being more explicit by specifiying:
+		// cv::ACCESS_READ, cv::USAGE_ALLOCATE_DEVICE_MEMORY
+		// cv::ACCESS_WRITE, cv::USAGE_ALLOCATE_DEVICE_MEMORY
 		m_gpuImage = m_cpuImage.getUMat(0);
 		m_uploadState = OnCPUGPU;
 	}
