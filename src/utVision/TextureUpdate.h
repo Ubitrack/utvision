@@ -2,8 +2,8 @@
 // Created by Ulrich Eck on 20/07/16.
 //
 
-#ifndef UBITACK_VISION_TEXTUREUPDATE_H
-#define UBITACK_VISION_TEXTUREUPDATE_H
+#ifndef UBITRACK_VISION_TEXTUREUPDATE_H
+#define UBITRACK_VISION_TEXTUREUPDATE_H
 
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
@@ -50,4 +50,4 @@ public:
 };
 
 }} // Ubitrack::Vision
-#endif //UBITACK_TEXTUREUPDATE_H
+#endif //UBITRACK_TEXTUREUPDATE_H
