@@ -68,6 +68,8 @@ public:
     /** destroy OpenCLManager singleton **/
     static void destroyOpenCLManager();
 
+	void saveGLContext();
+	void restoreGLContext() const;
 
     /** check if OpenCLManager is initialized **/
     bool isInitialized() const;
@@ -109,6 +111,15 @@ private:
     cl_context m_clContext;
 
 	cl_command_queue m_clCommandQueue;
+#endif
+
+	// store offscreen OpenGL Context object
+#ifdef WIN32
+	HGLRC m_glContext;
+#elif __APPLE__
+	CGLContextObj m_glContext;
+#else
+	GLXContext m_glContext;
 #endif
 
 };

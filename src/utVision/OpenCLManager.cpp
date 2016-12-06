@@ -50,6 +50,7 @@ OpenCLManager& OpenCLManager::singleton()
         LOG4CPP_INFO(logger, "Create Instance of OpenCLManager");
         g_pOpenCLManager.reset(new OpenCLManager);
     }
+
     return *g_pOpenCLManager;
 }
 
@@ -89,6 +90,34 @@ OpenCLManager::~OpenCLManager(void)
 {
 
 }
+
+void OpenCLManager::saveGLContext() {
+#ifdef WIN32
+	m_glContext = wglGetCurrentContext();
+#elif __APPLE__
+	m_glContext =  = CGLGetCurrentContext();
+#else
+	m_glContext = glXGetCurrentContext();
+#endif
+}
+
+void OpenCLManager::restoreGLContext() const { 
+#ifdef WIN32
+	if (m_glContext != NULL) {
+		if (!wglMakeCurrent(wglGetCurrentDC(), m_glContext)) {
+			LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL");
+		}
+	}
+#elif __APPLE__
+//	m_glContext = = CGLGetCurrentContext();
+	LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL - NOT YET IMPLEMENTED");
+
+#else
+//	m_glContext = glXGetCurrentContext();
+	LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL - NOT YET IMPLEMENTED");
+#endif
+}
+
 
 #ifdef HAVE_OPENCL
 #ifdef WIN32
@@ -245,6 +274,7 @@ void OpenCLManager::initializeOpenGL()
     if (m_isInitialized) {
         return;
     }
+	saveGLContext();
 
 #ifdef HAVE_OPENCL
 
@@ -440,6 +470,7 @@ void OpenCLManager::initializeOpenGL()
 #ifdef HAVE_OPENCL
 cl_context OpenCLManager::getContext() const
 {
+	restoreGLContext();
     return m_clContext;
 }
 
