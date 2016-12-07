@@ -35,16 +35,9 @@
 #ifdef HAVE_OPENCL
 
 #ifdef __APPLE__
-    #include <OpenGL/OpenGL.h>
-    #include "OpenCL/cl_gl.h"
+    #include "OpenCL/cl.h"
 #else
-    #include "GL/gl.h"
-    #include "CL/cl_gl.h"
-    #ifdef WIN32
-        #include <CL/cl_d3d11_ext.h>
-    #else
-        #include "GL/glx.h"
-    #endif
+    #include "CL/cl.h"
 #endif
 #endif // HAVE_OPENCL
 
@@ -59,7 +52,8 @@
 
 
 namespace Ubitrack { namespace Vision {
-	
+
+	struct GLContextStorage;
 
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
@@ -74,6 +68,10 @@ public:
 
     /** destroy OpenCLManager singleton **/
     static void destroyOpenCLManager();
+
+	void activate();
+	void deactivate();
+	bool isActive();
 
 	void saveGLContext();
 	void restoreGLContext() const;
@@ -112,6 +110,7 @@ private:
 //    boost::mutex m_shared_opencl_mutex;
 
     bool m_isInitialized;
+	bool m_isActive;
     boost::mutex m_mutex;
 
 #ifdef HAVE_OPENCL
@@ -121,13 +120,7 @@ private:
 #endif
 
 	// store offscreen OpenGL Context object
-#ifdef WIN32
-	HGLRC m_glContext;
-#elif __APPLE__
-	CGLContextObj m_glContext;
-#else
-	GLXContext m_glContext;
-#endif
+	GLContextStorage* m_glContext;
 
 };
 
