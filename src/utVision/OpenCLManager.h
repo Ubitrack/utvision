@@ -35,12 +35,19 @@
 #ifdef HAVE_OPENCL
 
 #ifdef __APPLE__
-    #include "OpenCL/opencl.h"
+    #include <OpenGL/OpenGL.h>
+    #include "OpenCL/cl_gl.h"
 #else
-    #include "CL/cl.h"
+    #include "GL/gl.h"
+    #include "CL/cl_gl.h"
+    #ifdef WIN32
+        #include <CL/cl_d3d11_ext.h>
+    #else
+        #include "GL/glx.h"
+    #endif
 #endif
+#endif // HAVE_OPENCL
 
-#endif
 
 #include <boost/thread/mutex.hpp>
 #include <boost/utility.hpp>
