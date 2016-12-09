@@ -107,7 +107,7 @@ void OpenCLManager::saveGLContext() {
 #ifdef WIN32
 	m_glContext->data = wglGetCurrentContext();
 #elif __APPLE__
-	m_glContext->data =  = CGLGetCurrentContext();
+	m_glContext->data = CGLGetCurrentContext();
 #else
 	m_glContext->data = glXGetCurrentContext();
 #endif
