@@ -39,16 +39,6 @@ namespace Vision {
 
 static boost::scoped_ptr<OpenCLManager> g_pOpenCLManager;
 
-struct GLContextStorage {
-#ifdef WIN32
-	HGLRC data;
-#elif __APPLE__
-	CGLContextObj data;
-#else
-	GLXContext data;
-#endif
-};
-
 const char *getOpenCLErrorString(cl_int error)
 {
 switch(error){
@@ -171,7 +161,6 @@ bool OpenCLManager::isEnabled() const
 OpenCLManager::OpenCLManager()
         :  m_isInitialized(false)
 		, m_isActive(false)
-		, m_glContext(new GLContextStorage)
 {
 
 }
@@ -179,33 +168,6 @@ OpenCLManager::OpenCLManager()
 OpenCLManager::~OpenCLManager(void)
 {
 
-}
-
-void OpenCLManager::saveGLContext() {
-#ifdef WIN32
-	m_glContext->data = wglGetCurrentContext();
-#elif __APPLE__
-	m_glContext->data = CGLGetCurrentContext();
-#else
-	m_glContext->data = glXGetCurrentContext();
-#endif
-}
-
-void OpenCLManager::restoreGLContext() const { 
-#ifdef WIN32
-	if (m_glContext != NULL) {
-		if (!wglMakeCurrent(wglGetCurrentDC(), m_glContext->data)) {
-			LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL");
-		}
-	}
-#elif __APPLE__
-//	m_glContext->data = = CGLGetCurrentContext();
-	LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL - NOT YET IMPLEMENTED");
-
-#else
-//	m_glContext->data = glXGetCurrentContext();
-	LOG4CPP_ERROR(logger, "Unable to restore OpenGL Context for OpenCL - NOT YET IMPLEMENTED");
-#endif
 }
 
 void OpenCLManager::activate() {
@@ -376,8 +338,6 @@ void OpenCLManager::initializeOpenGL()
     if (m_isInitialized) {
         return;
     }
-
-	saveGLContext();
 
 #ifdef HAVE_OPENCL
 

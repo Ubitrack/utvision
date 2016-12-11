@@ -56,8 +56,6 @@ namespace Ubitrack { namespace Vision {
 
 const char *getOpenCLErrorString(cl_int error);
 
-struct GLContextStorage;
-
 
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
@@ -76,9 +74,6 @@ public:
 	void activate();
 	void deactivate();
 	bool isActive();
-
-	void saveGLContext();
-	void restoreGLContext() const;
 
     /** check if OpenCLManager is initialized **/
     bool isInitialized() const;
@@ -100,18 +95,7 @@ public:
 
 #endif // HAVE_OPENCL
 
-//    inline void acquireContext() {
-//        m_shared_opencl_mutex.lock();
-//    }
-//
-//    inline void releaseContext() {
-//        m_shared_opencl_mutex.unlock();
-//    }
-
 private:
-
-    // mutex to be used to synchronize calls to opencl-command queue
-//    boost::mutex m_shared_opencl_mutex;
 
     bool m_isInitialized;
 	bool m_isActive;
@@ -122,9 +106,6 @@ private:
 
 	cl_command_queue m_clCommandQueue;
 #endif
-
-	// store offscreen OpenGL Context object
-	GLContextStorage* m_glContext;
 
 };
 
