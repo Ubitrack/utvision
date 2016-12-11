@@ -49,6 +49,84 @@ struct GLContextStorage {
 #endif
 };
 
+const char *getOpenCLErrorString(cl_int error)
+{
+switch(error){
+    // run-time and JIT compiler errors
+    case 0: return "CL_SUCCESS";
+    case -1: return "CL_DEVICE_NOT_FOUND";
+    case -2: return "CL_DEVICE_NOT_AVAILABLE";
+    case -3: return "CL_COMPILER_NOT_AVAILABLE";
+    case -4: return "CL_MEM_OBJECT_ALLOCATION_FAILURE";
+    case -5: return "CL_OUT_OF_RESOURCES";
+    case -6: return "CL_OUT_OF_HOST_MEMORY";
+    case -7: return "CL_PROFILING_INFO_NOT_AVAILABLE";
+    case -8: return "CL_MEM_COPY_OVERLAP";
+    case -9: return "CL_IMAGE_FORMAT_MISMATCH";
+    case -10: return "CL_IMAGE_FORMAT_NOT_SUPPORTED";
+    case -11: return "CL_BUILD_PROGRAM_FAILURE";
+    case -12: return "CL_MAP_FAILURE";
+    case -13: return "CL_MISALIGNED_SUB_BUFFER_OFFSET";
+    case -14: return "CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST";
+    case -15: return "CL_COMPILE_PROGRAM_FAILURE";
+    case -16: return "CL_LINKER_NOT_AVAILABLE";
+    case -17: return "CL_LINK_PROGRAM_FAILURE";
+    case -18: return "CL_DEVICE_PARTITION_FAILED";
+    case -19: return "CL_KERNEL_ARG_INFO_NOT_AVAILABLE";
+
+    // compile-time errors
+    case -30: return "CL_INVALID_VALUE";
+    case -31: return "CL_INVALID_DEVICE_TYPE";
+    case -32: return "CL_INVALID_PLATFORM";
+    case -33: return "CL_INVALID_DEVICE";
+    case -34: return "CL_INVALID_CONTEXT";
+    case -35: return "CL_INVALID_QUEUE_PROPERTIES";
+    case -36: return "CL_INVALID_COMMAND_QUEUE";
+    case -37: return "CL_INVALID_HOST_PTR";
+    case -38: return "CL_INVALID_MEM_OBJECT";
+    case -39: return "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR";
+    case -40: return "CL_INVALID_IMAGE_SIZE";
+    case -41: return "CL_INVALID_SAMPLER";
+    case -42: return "CL_INVALID_BINARY";
+    case -43: return "CL_INVALID_BUILD_OPTIONS";
+    case -44: return "CL_INVALID_PROGRAM";
+    case -45: return "CL_INVALID_PROGRAM_EXECUTABLE";
+    case -46: return "CL_INVALID_KERNEL_NAME";
+    case -47: return "CL_INVALID_KERNEL_DEFINITION";
+    case -48: return "CL_INVALID_KERNEL";
+    case -49: return "CL_INVALID_ARG_INDEX";
+    case -50: return "CL_INVALID_ARG_VALUE";
+    case -51: return "CL_INVALID_ARG_SIZE";
+    case -52: return "CL_INVALID_KERNEL_ARGS";
+    case -53: return "CL_INVALID_WORK_DIMENSION";
+    case -54: return "CL_INVALID_WORK_GROUP_SIZE";
+    case -55: return "CL_INVALID_WORK_ITEM_SIZE";
+    case -56: return "CL_INVALID_GLOBAL_OFFSET";
+    case -57: return "CL_INVALID_EVENT_WAIT_LIST";
+    case -58: return "CL_INVALID_EVENT";
+    case -59: return "CL_INVALID_OPERATION";
+    case -60: return "CL_INVALID_GL_OBJECT";
+    case -61: return "CL_INVALID_BUFFER_SIZE";
+    case -62: return "CL_INVALID_MIP_LEVEL";
+    case -63: return "CL_INVALID_GLOBAL_WORK_SIZE";
+    case -64: return "CL_INVALID_PROPERTY";
+    case -65: return "CL_INVALID_IMAGE_DESCRIPTOR";
+    case -66: return "CL_INVALID_COMPILER_OPTIONS";
+    case -67: return "CL_INVALID_LINKER_OPTIONS";
+    case -68: return "CL_INVALID_DEVICE_PARTITION_COUNT";
+
+    // extension errors
+    case -1000: return "CL_INVALID_GL_SHAREGROUP_REFERENCE_KHR";
+    case -1001: return "CL_PLATFORM_NOT_FOUND_KHR";
+    case -1002: return "CL_INVALID_D3D10_DEVICE_KHR";
+    case -1003: return "CL_INVALID_D3D10_RESOURCE_KHR";
+    case -1004: return "CL_D3D10_RESOURCE_ALREADY_ACQUIRED_KHR";
+    case -1005: return "CL_D3D10_RESOURCE_NOT_ACQUIRED_KHR";
+    default: return "Unknown OpenCL error";
+    }
+}
+
+
 
 OpenCLManager& OpenCLManager::singleton()
 {
@@ -162,7 +240,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
     cl_int err = clGetPlatformIDs(numPlatforms, platforms.data(), NULL);
     if(err != CL_SUCCESS)
     {
-        LOG4CPP_INFO( logger, "DX: error at clGetPlatformIDs :" << err );
+        LOG4CPP_INFO( logger, "DX: error at clGetPlatformIDs :" << getOpenCLErrorString(err) );
         m_isInitialized = false;
     }
 
@@ -195,7 +273,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
             m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
             if(!m_clContext || err!= CL_SUCCESS)
             {
-                LOG4CPP_INFO( logger,  "error at clCreateContext :" << err );
+                LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
             }
             else
             {
@@ -232,7 +310,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
                 m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
                    if(!m_clContext || err != CL_SUCCESS)
                 {
-                    LOG4CPP_INFO( logger,  "error at clCreateContext :" << err );
+                    LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
                 }
                 else
                 {
@@ -254,7 +332,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
     err = clGetDeviceIDs(platforms[found], CL_DEVICE_TYPE_GPU, 1, &selectedDeviceID, NULL);
     if(err != CL_SUCCESS)
     {
-        LOG4CPP_INFO( logger, "DX: error at clGetDeviceIDs :" << err );
+        LOG4CPP_INFO( logger, "DX: error at clGetDeviceIDs :" << getOpenCLErrorString(err) );
         return;
     }
 
@@ -271,7 +349,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
     m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
     if(!m_clCommandQueue || err!= CL_SUCCESS)
     {
-        LOG4CPP_INFO( logger, "DX: error at clCreateCommandQueue :" << err );
+        LOG4CPP_INFO( logger, "DX: error at clCreateCommandQueue :" << getOpenCLErrorString(err) );
         return;
     }
 
@@ -318,7 +396,7 @@ void OpenCLManager::initializeOpenGL()
 
     err = clGetPlatformIDs(numPlatforms, platformIDs, NULL);
     if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "error at clGetPlatformIDs :" << err);
+        LOG4CPP_ERROR(logger, "error at clGetPlatformIDs :" << getOpenCLErrorString(err));
         return;
     }
 
@@ -329,9 +407,9 @@ void OpenCLManager::initializeOpenGL()
 
     char cPlatformNameBuffer[1024];
     err = clGetPlatformInfo(selectedPlatformID, CL_PLATFORM_NAME,  sizeof(char)*1024, cPlatformNameBuffer, NULL);
-    if(err)
+    if(err!=CL_SUCCESS)
     {
-        LOG4CPP_ERROR(logger, "Error: Failed to retrieve platform name!");
+        LOG4CPP_ERROR(logger, "Error: Failed to retrieve platform name! " << getOpenCLErrorString(err));
         return;
     }
 
@@ -394,7 +472,7 @@ void OpenCLManager::initializeOpenGL()
 #endif
 
     if (!m_clContext || err != CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "error at clCreateContext :" << err);
+        LOG4CPP_ERROR(logger, "error at clCreateContext :" << getOpenCLErrorString(err));
         return;
     }
 
@@ -402,9 +480,9 @@ void OpenCLManager::initializeOpenGL()
     cl_device_id device_ids[16];
 
     err = clGetContextInfo(m_clContext, CL_CONTEXT_DEVICES, sizeof(device_ids), device_ids, &returned_size);
-    if(err)
+    if(err!=CL_SUCCESS)
     {
-        LOG4CPP_ERROR(logger, "Error: Failed to retrieve compute devices for context!");
+        LOG4CPP_ERROR(logger, "Error: Failed to retrieve compute devices for context! " << getOpenCLErrorString(err));
         return;
     }
 
@@ -440,22 +518,22 @@ void OpenCLManager::initializeOpenGL()
 
     err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &device_max_compute_units, NULL);
     if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_COMPUTE_UNITS:" << err);
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_COMPUTE_UNITS:" << getOpenCLErrorString(err));
     }
 
     err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &device_max_frequency, NULL);
     if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_CLOCK_FREQUENCY:" << err);
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_MAX_CLOCK_FREQUENCY:" << getOpenCLErrorString(err));
     }
 
     err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_VENDOR_ID, sizeof(cl_uint), &device_vendor_id, NULL);
     if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR_ID:" << err);
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR_ID:" << getOpenCLErrorString(err));
     }
 
     err = clGetDeviceInfo(selectedDeviceID, CL_DEVICE_VENDOR, sizeof(char)*1024, cDeviceVendorBuffer, NULL);
     if (err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR:" << err);
+        LOG4CPP_ERROR(logger, "Error glDeviceInfo CL_DEVICE_VENDOR:" << getOpenCLErrorString(err));
     }
 
     clGetDeviceInfo(selectedDeviceID, CL_DEVICE_NAME, sizeof(char)*1024, cDeviceNameBuffer, NULL);
@@ -467,7 +545,7 @@ void OpenCLManager::initializeOpenGL()
     cl_int status = 0;
     m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
     if (!m_clCommandQueue || err!=CL_SUCCESS) {
-        LOG4CPP_ERROR(logger, "Error creating OCL CommandQueue: " << err);
+        LOG4CPP_ERROR(logger, "Error creating OCL CommandQueue: " << getOpenCLErrorString(err));
         return;
     }
 

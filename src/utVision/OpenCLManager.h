@@ -53,7 +53,11 @@
 
 namespace Ubitrack { namespace Vision {
 
-	struct GLContextStorage;
+
+const char *getOpenCLErrorString(cl_int error);
+
+struct GLContextStorage;
+
 
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
