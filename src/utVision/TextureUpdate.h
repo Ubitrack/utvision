@@ -36,6 +36,18 @@ public:
 
     void updateTexture(const Measurement::ImageMeasurement& image);
 
+	unsigned int pow2width() {
+		return m_pow2Width;
+	}
+
+	unsigned int pow2height() {
+		return m_pow2Height;
+	}
+
+	bool isInitialized() {
+		return m_bTextureInitialized;
+	}
+
     bool m_bTextureInitialized;
     GLuint m_texture;
 
