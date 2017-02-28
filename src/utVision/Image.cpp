@@ -145,13 +145,15 @@ Image::Image(cv::UMat & img)
 	, m_origin(0)
 	, m_format(guessFormat(img))
 {
-	if (img.dims == 2) {
-		m_channels = 1;
-	} else if (img.dims == 3) {
-		m_channels = img.size[2];
-	} else {
-		// ERROR dimensionality too high
-	}
+	m_channels = img.channels();
+	// PaF: buggy, does not corretly represent the channels when loaded from a file
+	//if (img.dims == 2) {
+	//	m_channels = 1;
+	//} else if (img.dims == 3) {
+	//	m_channels = img.size[2];
+	//} else {
+	//	// ERROR dimensionality too high
+	//}
 	m_gpuImage = img;
 }
 
@@ -164,13 +166,17 @@ Image::Image( cv::Mat & img )
 	, m_origin(0)
 	, m_format(guessFormat(img))
 {
-	if (img.dims == 2) {
-		m_channels = 1;
-	} else if (img.dims == 3) {
-		m_channels = img.size[2];
-	} else {
-		// ERROR dimensionality too high
-	}
+
+	m_channels = img.channels();
+
+	// PaF: buggy, does not corretly represent the channels when loaded from a file
+	//if (img.dims == 2) {
+	//	m_channels = 1;
+	//} else if (img.dims == 3) {
+	//	m_channels = img.size[2];
+	//} else {
+	//	// ERROR dimensionality too high
+	//}
 	m_cpuImage = img;
 }
 

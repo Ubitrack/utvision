@@ -50,6 +50,9 @@
 namespace Ubitrack { namespace Vision {
 
 	static log4cpp::Category& imageLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
+
+
+	
 /**
  * @ingroup vision
  * A wrapper object for IplImages in a "Resource Acquisition Is Initialization" (RAII) fashion.
@@ -366,33 +369,36 @@ private:
 	template<class Archive>
 	void save(Archive & ar, const unsigned int version) const
 	{	
+		//TODO OnCPU should be checked, does not work right now
 		//checkOnCPU();
+		//LOG4CPP_INFO(imageLogger, "save w:" << m_width << " h: " << m_height << " depth: " << m_bitsPerPixel << " channels: " << m_channels << " total:" << m_cpuImage.total() << " elemSize:" << m_cpuImage.elemSize())
 		ar & boost::serialization::make_binary_object(m_cpuImage.data, m_cpuImage.total() * m_cpuImage.elemSize());
+
 	}
 
 	template<class Archive>
 	void load(Archive & ar, const unsigned int version)
 	{
-		// @todo why can image measurements only be loaded in windows ??
-		#ifdef WIN32
-		checkOnCPU();
-		ar & boost::serialization::binary_object(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());
-		#endif
+				
+		m_cpuImage = cv::Mat(m_height, m_width, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(m_bitsPerPixel*8), m_channels));				
+		//LOG4CPP_INFO(imageLogger, "save w:" << m_width << " h: " << m_height << " depth: " << m_bitsPerPixel << " channels: " << m_channels << " total:" << m_cpuImage.total() << " elemSize:" << m_cpuImage.elemSize())
+		ar & boost::serialization::binary_object(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());		
+		
+		//m_format = guessFormat(m_channels, m_bitsPerPixel*8)
+		m_uploadState = OnCPU;
+		
 	}
 
 	template< class Archive >
 	void serialize(Archive& ar, const unsigned int file_version)
 	{
-		int imageWidth = width();
-		int imageHeight = height();
-		int imageDepth = depth();
-		int imageChannels = channels();
-		int imageOrigin = origin();
-		ar &  imageWidth;          
-		ar &  imageHeight;         
-		ar &  imageDepth;      
-		ar & imageChannels;
-		ar &  imageOrigin;	
+
+		ar &  m_width;          
+		ar &  m_height;         
+		ar &  m_bitsPerPixel;
+		ar &  m_channels;
+		ar &  m_origin;
+		//ar &  (int)m_format;
 
 		boost::serialization::split_member(ar, *this, file_version);
 	}
