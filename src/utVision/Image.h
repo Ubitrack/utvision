@@ -382,7 +382,8 @@ private:
 				
 		m_cpuImage = cv::Mat(m_height, m_width, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(m_bitsPerPixel*8), m_channels));				
 		//LOG4CPP_INFO(imageLogger, "save w:" << m_width << " h: " << m_height << " depth: " << m_bitsPerPixel << " channels: " << m_channels << " total:" << m_cpuImage.total() << " elemSize:" << m_cpuImage.elemSize())
-		ar & boost::serialization::binary_object(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());		
+		boost::serialization::binary_object data(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());
+		ar & data;		
 		
 		//m_format = guessFormat(m_channels, m_bitsPerPixel*8)
 		m_uploadState = OnCPU;
