@@ -42,7 +42,7 @@
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
 
-#include <opencv/cv.hpp>
+#include <opencv2/opencv.hpp>
 #include <log4cpp/Category.hh>
 
 //#define CONVERSION_LOGGING

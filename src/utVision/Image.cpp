@@ -74,7 +74,7 @@ Image::PixelFormat guessFormat(IplImage* m) {
 	return guessFormat(m->nChannels, m->depth);
 }
 
-
+// @todo fix bitsPerPixel vs. depth in Image Class
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
 	, m_uploadState(OnCPU)
@@ -87,10 +87,10 @@ Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDep
 {
 
 	// @todo nAlign parameter is ignored for now - do we need it ?
+	// @todo no tracing of allocation here ..
 	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()),
 			static_cast< char* >( pImageData ), cv::Mat::AUTO_STEP);
 }
-
 
 Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, ImageUploadState nState)
 	: m_bOwned( true )
