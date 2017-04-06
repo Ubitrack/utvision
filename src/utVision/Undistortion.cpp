@@ -210,8 +210,8 @@ bool Undistortion::resetMapping( const int width, const int height, const intrin
 	LOG4CPP_INFO( logger, "initialize undistortion mapping with intrinsics:\n" << intrinsics );
 	
 	// reset the map images
-	m_pMapX.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
-	m_pMapY.reset( new Image( width, height, 1, IPL_DEPTH_32F ) );
+	m_pMapX.reset( new Image( width, height, 1, CV_32F ) );
+	m_pMapY.reset( new Image( width, height, 1, CV_32F ) );
 	
 	// copy the values to the corresponding opencv data-structures
 	// CvMat cvIntrinsics;
@@ -269,8 +269,9 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 			return image.Clone();
 
 	// undistort
-	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), image.channels(),
-			image.depth(), image.origin(), image.getImageState() ) );
+	Vision::Image::ImageFormatProperties fmt;
+	image.getFormatProperties(fmt);
+	Vision::Image::Ptr pImgUndistorted( new Image( image.width(), image.height(), fmt, image.getImageState() ) );
 
 	if (image.isOnGPU())	{
 		cv::UMat& distortedUMat = image.uMat();
@@ -282,7 +283,6 @@ Vision::Image::Ptr Undistortion::undistort( Image& image )
 		cv::remap( distortedMat, undistortedMat, m_pMapX->Mat(), m_pMapY->Mat(), cv::INTER_LINEAR );
 	}
 
-	pImgUndistorted->copyImageFormatFrom(image);
 	return pImgUndistorted;
 }
 

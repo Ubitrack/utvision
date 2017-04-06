@@ -52,7 +52,6 @@ namespace Ubitrack { namespace Vision {
 	static log4cpp::Category& imageLogger( log4cpp::Category::getInstance( "Ubitrack.Vision.Image" ) );
 
 
-	
 /**
  * @ingroup vision
  * A wrapper object for IplImages in a "Resource Acquisition Is Initialization" (RAII) fashion.
@@ -111,7 +110,7 @@ public:
 	  DEPTH
 	};
 
-
+    /* Enum to relect memory location of image buffer */
     enum ImageUploadState {
       OnCPU,
       OnGPU,
@@ -119,8 +118,79 @@ public:
     };
 
 
-	/**
+    /* Enum to mask ImageProperties when copying */
+    enum ImageProperties {
+      IMAGE_FORMAT = 1,
+      IMAGE_DEPTH = 2,
+      IMAGE_CHANNELS = 4,
+      IMAGE_BITSPERPIXEL = 8,
+      IMAGE_ORIGIN = 16
+    };
+
+
+    /*
+     * Image Format Descriptor
+     */
+    struct ImageFormatProperties {
+        ImageFormatProperties() {
+            imageFormat = Image::UNKNOWN_PIXELFORMAT;
+            depth = CV_8U;
+            channels = 1;
+            matType = CV_8UC1;
+            bitsPerPixel = 8;
+            origin = 0;
+            align = 4;
+        }
+
+        /*
+         * Image Format Enum
+         */
+        PixelFormat imageFormat;
+
+        /*
+         * CV Matrix Element Type (e.g. CV_8U)
+         */
+        int depth;
+
+        /*
+         * Number of channels in the image
+         */
+        int channels;
+
+        /*
+         * CV Matrix Type (e.g. CV_8UC1)
+         */
+        int matType;
+
+        /*
+         * Number of bits per Pixel
+         */
+        int bitsPerPixel;
+
+        /*
+         * Origin of image (0 if pixels start in top-left corner, 1 if in bottom-left)
+         */
+        int origin;
+
+        /*
+         * alignment of rows in bytes
+         */
+        int align;
+    };
+
+
+
+    /**
 	 * Creates a new image and allocates memory for it.
+	 *
+	 * @param nWidth width of image in pixels
+	 * @param nHeight height of image in pixels
+	 * @param nFormat Image Format Properties
+	 */
+    Image( int nWidth, int nHeight, ImageFormatProperties& nFormat, ImageUploadState nState = OnCPU);
+
+    /**
+	 * Creates a new image and allocates memory for it. (DEPRECATED)
 	 *
 	 * @param nWidth width of image in pixels
 	 * @param nHeight height of image in pixels
@@ -128,11 +198,23 @@ public:
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 * @param nOrigin 0 if pixels start in top-left corner, 1 if in bottom-left
 	 */
-	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = IPL_DEPTH_8U,
+	Image( int nWidth = 0, int nHeight = 0, int nChannels = 1, int nDepth = CV_8U,
 			int nOrigin = 0, ImageUploadState nState = OnCPU);
 
+
+    /**
+     * Creates a reference to an existing image array.
+     * The resulting \c Image object does not own the data.
+     *
+     * @param nWidth width of image in pixels
+     * @param nHeight height of image in pixels
+	 * @param nFormat Image Format Properties
+     * @param pImageData pointer to raw image data
+     */
+    Image( int nWidth, int nHeight, ImageFormatProperties& nFormat, void* pImageData );
+
 	/**
-	 * Creates a reference to an existing image array.
+	 * Creates a reference to an existing image array. (DEPRECATED)
 	 * The resulting \c Image object does not own the data.
 	 *
 	 * @param nWidth width of image in pixels
@@ -144,10 +226,10 @@ public:
 	 * @param nAlign alignment of rows in bytes
 	 */
 	Image( int nWidth, int nHeight, int nChannels, void* pImageData,
-		int nDepth = IPL_DEPTH_8U, int nOrigin = 0, int nAlign = 4 );
+		int nDepth = CV_8U, int nOrigin = 0, int nAlign = 4 );
 
 	/**
-	 * Create from pointer to IplImage.
+	 * Create from pointer to IplImage. (DEPRECATED)
 	 *
 	 * @param pIplImage pointer to existing IplImage
 	 * @param bDestroy if true, the IplImage is destroyed (using cvReleaseImageHeader) and
@@ -160,12 +242,22 @@ public:
 	 */
 	explicit Image( cv::Mat & img );
 
+    /**
+     * Create from Mat object with Properties
+     */
+    explicit Image( cv::Mat & img, ImageFormatProperties& fmt );
+
 	/**
 	* Create from UMat object
 	*/
 	explicit Image(cv::UMat & img);
 
-	/** releases the image data if the data block is owned by this object. */
+    /**
+    * Create from UMat object with Properties
+    */
+    explicit Image(cv::UMat & img, ImageFormatProperties& fmt);
+
+    /** releases the image data if the data block is owned by this object. */
 	~Image();
 
 	cv::Mat& Mat()
@@ -190,7 +282,7 @@ public:
 	 * @param nChannels number of channels (1=grey, 3=rgb)
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 */
-	Ptr CvtColor( int nCode, int nChannels, int nDepth = IPL_DEPTH_8U ) const;
+	Ptr CvtColor( int nCode, int nChannels, int nDepth = CV_8U ) const;
 
     /** Allocates empty memory of the size of the image */
 	Ptr AllocateNew() const;
@@ -236,7 +328,7 @@ public:
 	}
 
 	int depth( void ) const {
-		return m_bitsPerPixel;
+		return m_depth;
 	}
 
 	int bitsPerPixel( void ) const {
@@ -266,7 +358,11 @@ public:
 		m_height = v;
 	}
 
-	void set_bitsPerPixel( int v ) {
+    void set_depth( int v ) {
+        m_depth = v;
+    }
+
+    void set_bitsPerPixel( int v ) {
 		m_bitsPerPixel = v;
 	}
 
@@ -277,6 +373,37 @@ public:
 	void set_pixelFormat( PixelFormat v ) {
 		m_format = v;
 	}
+
+
+    /**
+     * Guess Format of an Image based on the given properties
+     * @param result
+     * @param channels
+     * @param depth = -1
+     * @param matType = -1
+     */
+    static void guessFormat(ImageFormatProperties& result, int channels, int depth=-1, int matType=-1);
+    static void guessFormat(ImageFormatProperties& result, cv::Mat m);
+    static void guessFormat(ImageFormatProperties& result, cv::UMat m);
+    static void guessFormat(ImageFormatProperties& result, IplImage* m);
+
+    /*
+     * Get the ImageFormatProperties from the current image
+     */
+    void getFormatProperties(ImageFormatProperties& result) const;
+
+    /*
+     * Set the ImageFormatProperties for the current image using a Mask (ImageProperties)
+     */
+    void setFormatProperties(ImageFormatProperties& fmt, unsigned char mask=255);
+
+    /**
+     * @brief Copy image format related properties from first argument using a mask (ImageProperties)
+     * @param img
+     * @param mask = 255 (copy all by default)
+     */
+    void copyImageFormatFrom(const Image& img, unsigned char mask=255);
+
 
     /**
      * @brief Saves an image as compressed JPEG
@@ -295,11 +422,6 @@ public:
     void encodeAsJpeg( std::vector< uchar >& buffer, int compressionFactor = 95 ) const;
 
 
-	/**
-     * @brief Copy image format related properties from first argument
-     * @param img
-     */
-	void copyImageFormatFrom(const Image& img);
 
     /**
      * @brief get current ImageState
@@ -345,6 +467,9 @@ private:
     // the number of channels per pixel
     int m_channels;
 
+    // OpenCV Matrix Element Type (CV_8U/CV_16U/...)
+    int m_depth;
+
     // the number of bits per pixel (for one channel)
     int m_bitsPerPixel;
 
@@ -372,22 +497,28 @@ private:
 		//TODO OnCPU should be checked, does not work right now
 		//checkOnCPU();
 		//LOG4CPP_INFO(imageLogger, "save w:" << m_width << " h: " << m_height << " depth: " << m_bitsPerPixel << " channels: " << m_channels << " total:" << m_cpuImage.total() << " elemSize:" << m_cpuImage.elemSize())
-		ar & boost::serialization::make_binary_object(m_cpuImage.data, m_cpuImage.total() * m_cpuImage.elemSize());
 
+        ar &  (int)m_format;
+		if (isOnCPU()) {
+			ar & boost::serialization::make_binary_object(m_cpuImage.data, m_cpuImage.total() * m_cpuImage.elemSize());
+		} else if (isOnGPU()) {
+			cv::Mat tmp = m_gpuImage.getMat(0);
+			ar & boost::serialization::make_binary_object(tmp.data, tmp.total() * tmp.elemSize());
+		}
 	}
 
 	template<class Archive>
 	void load(Archive & ar, const unsigned int version)
 	{
-				
-		m_cpuImage = cv::Mat(m_height, m_width, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(m_bitsPerPixel*8), m_channels));				
+		m_cpuImage = cv::Mat(m_height, m_width, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels));
 		//LOG4CPP_INFO(imageLogger, "save w:" << m_width << " h: " << m_height << " depth: " << m_bitsPerPixel << " channels: " << m_channels << " total:" << m_cpuImage.total() << " elemSize:" << m_cpuImage.elemSize())
+        int fmt;
+        ar & fmt;
+        m_format = (PixelFormat)fmt;
+
 		boost::serialization::binary_object data(m_cpuImage.data,  m_cpuImage.total() * m_cpuImage.elemSize());
 		ar & data;		
-		
-		//m_format = guessFormat(m_channels, m_bitsPerPixel*8)
-		m_uploadState = OnCPU;
-		
+        m_uploadState = OnCPU;
 	}
 
 	template< class Archive >
@@ -395,11 +526,11 @@ private:
 	{
 
 		ar &  m_width;          
-		ar &  m_height;         
-		ar &  m_bitsPerPixel;
+		ar &  m_height;
+        ar &  m_depth;
+        ar &  m_bitsPerPixel;
 		ar &  m_channels;
 		ar &  m_origin;
-		//ar &  (int)m_format;
 
 		boost::serialization::split_member(ar, *this, file_version);
 	}

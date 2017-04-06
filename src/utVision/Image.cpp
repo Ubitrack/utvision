@@ -43,52 +43,71 @@
 
 namespace Ubitrack { namespace Vision {
 
-Image::PixelFormat guessFormat(int channels, int depth) {
-	Image::PixelFormat fmt = Image::UNKNOWN_PIXELFORMAT;
 
-	switch (channels) {
-	case 1:
-		fmt = Image::LUMINANCE;
-		break;
-	case 3:
-		fmt = Image::RGB;
-		break;
-	case 4:
-		fmt = Image::RGBA;
-		break;
-	default:
-		break;
+Image::Image( int nWidth, int nHeight, ImageFormatProperties& fmt, void* pImageData )
+		: m_bOwned( false )
+		, m_uploadState(OnCPU)
+		, m_width(nWidth)
+		, m_height(nHeight)
+		, m_channels(fmt.channels)
+		, m_origin(fmt.origin)
+		, m_format(fmt.imageFormat)
+		, m_bitsPerPixel(fmt.bitsPerPixel)
+		, m_depth(fmt.depth)
+{
+	// @todo nAlign parameter is ignored for now - do we need it ?
+	// @todo no tracing of allocation here ..
+	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels),
+			static_cast< char* >( pImageData ), cv::Mat::AUTO_STEP);
+}
+
+
+Image::Image( int nWidth, int nHeight, ImageFormatProperties& fmt, ImageUploadState nState)
+		: m_bOwned( true )
+		, m_uploadState(nState)
+		, m_width(nWidth)
+		, m_height(nHeight)
+		, m_channels(fmt.channels)
+		, m_origin(fmt.origin)
+		, m_format(fmt.imageFormat)
+		, m_bitsPerPixel(fmt.bitsPerPixel)
+		, m_depth(fmt.depth)
+{
+	if (isOnGPU()) {
+
+#ifdef ENABLE_EVENT_TRACING
+		TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
+#endif
+		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels));
+	} else if (isOnCPU()) {
+
+#ifdef ENABLE_EVENT_TRACING
+		TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
+#endif
+		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels));
+	} else {
+		LOG4CPP_ERROR( imageLogger, "Trying to allocate CPU and GPU buffer at the same time !!!");
 	}
-	return fmt;
 }
 
-Image::PixelFormat guessFormat(cv::Mat m) {
-	return guessFormat(m.channels(), m.depth());
-}
 
-Image::PixelFormat guessFormat(cv::UMat m) {
-	return guessFormat(m.channels(), m.depth());
-}
-
-Image::PixelFormat guessFormat(IplImage* m) {
-	return guessFormat(m->nChannels, m->depth);
-}
-
-// @todo fix bitsPerPixel vs. depth in Image Class
 Image::Image( int nWidth, int nHeight, int nChannels, void* pImageData, int nDepth, int nOrigin, int nAlign )
 	: m_bOwned( false )
 	, m_uploadState(OnCPU)
 	, m_width(nWidth)
 	, m_height(nHeight)
 	, m_channels(nChannels)
-	, m_bitsPerPixel(nDepth)
+	, m_depth(nDepth)
 	, m_origin(nOrigin)
-	, m_format(guessFormat(nChannels, nDepth))
 {
+	ImageFormatProperties fmt;
+	guessFormat(fmt, nChannels, nDepth);
+	m_format = fmt.imageFormat;
+	m_bitsPerPixel = fmt.bitsPerPixel;
 
 	// @todo nAlign parameter is ignored for now - do we need it ?
 	// @todo no tracing of allocation here ..
-	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()),
+	m_cpuImage = cv::Mat(cv::Size( nWidth, nHeight), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels),
 			static_cast< char* >( pImageData ), cv::Mat::AUTO_STEP);
 }
 
@@ -98,25 +117,28 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 	, m_width(nWidth)
 	, m_height(nHeight)
 	, m_channels(nChannels)
-	, m_bitsPerPixel(nDepth)
+	, m_depth(nDepth)
 	, m_origin(nOrigin)
-	, m_format(guessFormat(nChannels, nDepth))
 {
+	ImageFormatProperties fmt;
+	guessFormat(fmt, nChannels, nDepth);
+	m_format = fmt.imageFormat;
+	m_bitsPerPixel = fmt.bitsPerPixel;
 
 	if (isOnGPU()) {
 
 #ifdef ENABLE_EVENT_TRACING
 		TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
 #endif
-		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
 	} else if (isOnCPU()) {
 
 #ifdef ENABLE_EVENT_TRACING
 		TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
 #endif
-		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(IPL2CV_DEPTH(depth()), channels()));
+		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
 	} else {
-		std::cerr << "Trying to allocate CPU and GPU buffer at the same time !!!" << std::endl;
+		LOG4CPP_ERROR( imageLogger, "Trying to allocate CPU and GPU buffer at the same time !!!");
 	}
 }
 
@@ -127,10 +149,13 @@ Image::Image( IplImage* pIplImage, bool bDestroy )
 	, m_width(pIplImage->width)
 	, m_height(pIplImage->height)
 	, m_channels(pIplImage->nChannels)
-	, m_bitsPerPixel(pIplImage->depth)
 	, m_origin(pIplImage->origin)
-	, m_format(guessFormat(pIplImage))
 {
+	ImageFormatProperties fmt;
+	guessFormat(fmt, pIplImage);
+	m_format = fmt.imageFormat;
+	m_depth = fmt.depth;
+
 	m_cpuImage = cv::cvarrToMat(pIplImage);
 	if ( bDestroy )
 		cvReleaseImageHeader( &pIplImage );
@@ -141,42 +166,65 @@ Image::Image(cv::UMat & img)
 	, m_uploadState( OnGPU )
 	, m_width(img.cols)
 	, m_height(img.rows)
-	, m_bitsPerPixel(img.depth())
-	, m_origin(0)
-	, m_format(guessFormat(img))
 {
-	m_channels = img.channels();
-	// PaF: buggy, does not corretly represent the channels when loaded from a file
-	//if (img.dims == 2) {
-	//	m_channels = 1;
-	//} else if (img.dims == 3) {
-	//	m_channels = img.size[2];
-	//} else {
-	//	// ERROR dimensionality too high
-	//}
+
+	ImageFormatProperties fmt;
+	guessFormat(fmt, img);
+	m_format = fmt.imageFormat;
+	m_channels = fmt.channels;
+	m_depth = fmt.depth;
+	m_bitsPerPixel = fmt.bitsPerPixel;
+	m_origin = fmt.origin;
+
 	m_gpuImage = img;
 }
+
+Image::Image(cv::UMat & img, ImageFormatProperties& fmt)
+		: m_bOwned( true )
+		, m_uploadState( OnGPU )
+		, m_width(img.cols)
+		, m_height(img.rows)
+{
+	m_format = fmt.imageFormat;
+	m_channels = fmt.channels;
+	m_depth = fmt.depth;
+	m_bitsPerPixel = fmt.bitsPerPixel;
+	m_origin = fmt.origin;
+
+	m_gpuImage = img;
+}
+
 
 Image::Image( cv::Mat & img )
 	: m_bOwned( true )
 	, m_uploadState(OnCPU)
 	, m_width(img.cols)
 	, m_height(img.rows)
-	, m_bitsPerPixel(img.depth())
-	, m_origin(0)
-	, m_format(guessFormat(img))
 {
 
-	m_channels = img.channels();
+	ImageFormatProperties fmt;
+	guessFormat(fmt, img);
+	m_format = fmt.imageFormat;
+	m_channels = fmt.channels;
+	m_depth = fmt.depth;
+	m_bitsPerPixel = fmt.bitsPerPixel;
+	m_origin = fmt.origin;
 
-	// PaF: buggy, does not corretly represent the channels when loaded from a file
-	//if (img.dims == 2) {
-	//	m_channels = 1;
-	//} else if (img.dims == 3) {
-	//	m_channels = img.size[2];
-	//} else {
-	//	// ERROR dimensionality too high
-	//}
+	m_cpuImage = img;
+}
+
+Image::Image( cv::Mat & img, ImageFormatProperties& fmt )
+		: m_bOwned( true )
+		, m_uploadState(OnCPU)
+		, m_width(img.cols)
+		, m_height(img.rows)
+{
+	m_format = fmt.imageFormat;
+	m_channels = fmt.channels;
+	m_depth = fmt.depth;
+	m_bitsPerPixel = fmt.bitsPerPixel;
+	m_origin = fmt.origin;
+
 	m_cpuImage = img;
 }
 
@@ -189,6 +237,262 @@ Image::~Image()
 }
 
 
+void Image::guessFormat(ImageFormatProperties& result, int channels, int depth, int matType) {
+
+	result.channels = channels;
+	result.depth = CV_8U;
+	result.bitsPerPixel = 8;
+	result.imageFormat = Image::UNKNOWN_PIXELFORMAT;
+
+
+	if (depth != -1) {
+
+		// check CV Matrix Element type
+		switch(depth) {
+		case CV_8U:
+			result.bitsPerPixel = 8 * channels;
+            result.depth = depth;
+			break;
+		case CV_8S:
+			result.bitsPerPixel = 8 * channels;
+            result.depth = depth;
+			break;
+		case CV_16U:
+			result.bitsPerPixel = 16 * channels;
+            result.depth = depth;
+			break;
+		case CV_16S:
+			result.bitsPerPixel = 16 * channels;
+            result.depth = depth;
+			break;
+		case CV_32S:
+			result.bitsPerPixel = 32 * channels;
+            result.depth = depth;
+			break;
+		case CV_32F:
+			result.bitsPerPixel = 32 * channels;
+            result.depth = depth;
+			break;
+		case CV_64F:
+			result.bitsPerPixel = 64 * channels;
+            result.depth = depth;
+			break;
+		default:
+    		LOG4CPP_WARN(imageLogger, "Unknown Matrix-Element Type: " << depth);
+		}
+	}
+
+
+	if (matType != -1) {
+		// check CV Matrix Type
+		switch(matType) {
+		case CV_8UC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 8;
+			result.depth = CV_8U;
+			result.channels = 1;
+			break;
+		case CV_8UC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 24;
+			result.depth = CV_8U;
+			result.channels = 3;
+			break;
+		case CV_8UC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 32;
+			result.depth = CV_8U;
+			result.channels = 4;
+			break;
+		case CV_8SC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 8;
+			result.depth = CV_8S;
+			result.channels = 1;
+			break;
+		case CV_8SC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 24;
+			result.depth = CV_8S;
+			result.channels = 3;
+			break;
+		case CV_8SC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 32;
+			result.depth = CV_8S;
+			result.channels = 4;
+			break;
+		case CV_16UC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 16;
+			result.depth = CV_16U;
+			result.channels = 1;
+			break;
+		case CV_16UC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 48;
+			result.depth = CV_16U;
+			result.channels = 3;
+			break;
+		case CV_16UC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 64;
+			result.depth = CV_16U;
+			result.channels = 4;
+			break;
+		case CV_16SC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 16;
+			result.depth = CV_16S;
+			result.channels = 1;
+			break;
+		case CV_16SC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 48;
+			result.depth = CV_16S;
+			result.channels = 3;
+			break;
+		case CV_16SC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 64;
+			result.depth = CV_16S;
+			result.channels = 4;
+			break;
+		case CV_32SC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 32;
+			result.depth = CV_32S;
+			result.channels = 1;
+			break;
+		case CV_32SC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 96;
+			result.depth = CV_32S;
+			result.channels = 3;
+			break;
+		case CV_32SC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 128;
+			result.depth = CV_32S;
+			result.channels = 4;
+			break;
+		case CV_32FC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 32;
+			result.depth = CV_32F;
+			result.channels = 1;
+			break;
+		case CV_32FC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 96;
+			result.depth = CV_32F;
+			result.channels = 3;
+			break;
+		case CV_32FC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 128;
+			result.depth = CV_32F;
+			result.channels = 4;
+			break;
+		case CV_64FC1:
+			result.imageFormat = Image::LUMINANCE;
+			result.bitsPerPixel = 64;
+			result.depth = CV_64F;
+			result.channels = 1;
+			break;
+		case CV_64FC3:
+			result.imageFormat = Image::RGB;
+			result.bitsPerPixel = 192;
+			result.depth = CV_64F;
+			result.channels = 3;
+			break;
+		case CV_64FC4:
+			result.imageFormat = Image::RGBA;
+			result.bitsPerPixel = 256;
+			result.depth = CV_64F;
+			result.channels = 4;
+			break;
+		default:
+		LOG4CPP_WARN(imageLogger, "Unknown Matrix Type: " << matType);
+		}
+	}
+
+	if (result.imageFormat == Image::UNKNOWN_PIXELFORMAT) {
+		// guess some image format
+		switch (channels) {
+		case 1:
+			result.imageFormat = Image::LUMINANCE;
+			break;
+		case 3:
+			result.imageFormat = Image::RGB;
+			break;
+		case 4:
+			result.imageFormat = Image::RGBA;
+			break;
+		default:
+		LOG4CPP_WARN(imageLogger, "Unexpected number of channels: " << channels);
+		}
+	}
+
+    LOG4CPP_TRACE(imageLogger, "Guessed Format: "
+            << " imageFormat: " << result.imageFormat
+            << " matType: " << result.matType
+            << " origin: " << result.origin
+            << " depth: " << result.depth
+            << " bitsPerPixel: " << result.bitsPerPixel
+            << " channels: " << result.channels
+    )
+}
+
+void Image::guessFormat(ImageFormatProperties& result, cv::Mat m) {
+	guessFormat(result, m.channels(), m.depth(), m.type());
+}
+
+void Image::guessFormat(ImageFormatProperties& result, cv::UMat m) {
+	guessFormat(result, m.channels(), m.depth(), m.type());
+}
+
+void Image::guessFormat(ImageFormatProperties& result, IplImage* m) {
+	// @todo can we extract the CvMat Type based on the information in IplImage??
+	guessFormat(result, m->nChannels, IPL2CV_DEPTH(m->depth));
+	// check m->channelSeq for RGB/BGR
+}
+
+void Image::getFormatProperties(ImageFormatProperties& result) const {
+	result.imageFormat = pixelFormat();
+	result.bitsPerPixel = bitsPerPixel();
+	result.channels = channels();
+	result.depth = depth();
+	result.origin = origin();
+	result.matType = CV_MAKE_TYPE(depth(), channels());
+	// alignment is not stored in Image ..
+}
+
+void Image::setFormatProperties(ImageFormatProperties& fmt, unsigned char mask){
+	if (mask & IMAGE_FORMAT) {
+		m_format = fmt.imageFormat;
+	}
+	if (mask & IMAGE_DEPTH) {
+		m_depth = fmt.depth;
+	}
+	if (mask & IMAGE_CHANNELS) {
+		m_channels = fmt.channels;
+	}
+	if (mask & IMAGE_BITSPERPIXEL) {
+		m_bitsPerPixel = fmt.bitsPerPixel;
+	}
+	if (mask & IMAGE_ORIGIN) {
+		m_origin = fmt.origin;
+	}
+}
+
+void Image::copyImageFormatFrom(const Image& img, unsigned char mask) {
+	ImageFormatProperties fmt;
+	img.getFormatProperties(fmt);
+	setFormatProperties(fmt, mask);
+}
+
+
 int Image::cvMatType(void) const {
 	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
 		return m_gpuImage.type();
@@ -198,39 +502,41 @@ int Image::cvMatType(void) const {
 	}
 }
 
-void Image::copyImageFormatFrom(const Image& img) {
-	m_bitsPerPixel = img.depth();
-	m_origin = img.origin();
-	m_format = img.pixelFormat();
-}
 
 
-
-
+// @todo nChannels and nDepth are ignored .. should be removed.
 Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 {
+	ImageFormatProperties fmt;
+	getFormatProperties(fmt);
 
-	// @todo the current image class is a kind of a mess really ..
-	// origin, imgFormat, pixelType should be annotations to the image class and only used from there
-	// data storage should be managed in iplImage or uMat 
+	switch(nCode) {
+	case CV_BGR2GRAY:
+	case CV_RGB2GRAY:
+	case CV_BGRA2GRAY:
+	case CV_RGBA2GRAY:
+		fmt.imageFormat = LUMINANCE;
+		break;
+	case CV_GRAY2RGB: // also matches GRAY2BGR
+		fmt.imageFormat = RGB;
+		break;
+	case CV_GRAY2RGBA: // also matches GRAY2BGRA
+		fmt.imageFormat = RGBA;
+		break;
+	default:
+		LOG4CPP_WARN(imageLogger, "Unknown Image Transformation.");
+	}
+
 	Image::Ptr r;
 	if (m_uploadState == OnCPUGPU || m_uploadState == OnGPU) {
 		cv::UMat mat;
 		cv::cvtColor( m_gpuImage, mat, nCode );
-		// how does origin or channelSeq translate to uMat's ??
-		//r->m_cpuImage->origin = origin();
-		r.reset( new Image( mat ) );
+		r.reset( new Image( mat, fmt ) );
 	} else {
 		cv::Mat mat;
 		cv::cvtColor( m_cpuImage, mat, nCode );
-		// how does origin or channelSeq translate to uMat's ??
-//		r->m_cpuImage->origin = origin();
-		r.reset(new Image( mat ) );
+		r.reset(new Image( mat, fmt ) );
 	}
-
-	// @todo add image properties after color conversion !!!
-	r->set_origin(m_origin);
-	
 	return r;
 }
 
@@ -240,28 +546,29 @@ Image::Ptr Image::AllocateNew() const
 {
 	// need imageFormat
 	// should generate CPU or GPU image depending on current instance state
-    return ImagePtr( new Image( width(), height(), channels(), depth(), origin()) );
+	ImageFormatProperties fmt;
+	getFormatProperties(fmt);
+    return ImagePtr( new Image( width(), height(), fmt) );
 }
 
 Image::Ptr Image::Clone() const
 {
-
+	ImageFormatProperties fmt;
+	getFormatProperties(fmt);
 	if (isOnGPU())
 	{
 #ifdef ENABLE_EVENT_TRACING
         TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
 #endif
 		cv::UMat m = m_gpuImage.clone();
-		Ptr ptr = Image::Ptr(new Image( m ));
-		ptr->copyImageFormatFrom(*this);
+		Ptr ptr = Image::Ptr(new Image( m, fmt ));
 		return ptr;
 	} else {
 #ifdef ENABLE_EVENT_TRACING
         TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
 #endif
 		cv::Mat m = m_cpuImage.clone();
-		Ptr ptr = Image::Ptr(new Image( m ));
-		ptr->copyImageFormatFrom(*this);
+		Ptr ptr = Image::Ptr(new Image( m, fmt ));
 		return ptr;
 	}
 	
@@ -270,36 +577,36 @@ Image::Ptr Image::Clone() const
 
 Image::Ptr Image::PyrDown()
 {
+	ImageFormatProperties fmt;
+	getFormatProperties(fmt);
 	Image::Ptr r;
 	if (isOnGPU()) {
 		cv::UMat mat;
 		cv::pyrDown( m_gpuImage, mat, cv::Size( width() / 2, height() / 2 ) );
-		r.reset( new Image( mat ) );
+		r.reset( new Image( mat, fmt ) );
 	} else {
 		cv::Mat mat;
 		cv::pyrDown( m_cpuImage, mat, cv::Size( width() / 2, height() / 2 ) );
-		r.reset( new Image( mat ) );
+		r.reset( new Image( mat, fmt ) );
 	}
-
-	r->copyImageFormatFrom(*this);
 	return r;
 }
 
 
 Image::Ptr Image::Scale( int width, int height )
 {
+	ImageFormatProperties fmt;
+	getFormatProperties(fmt);
 	Image::Ptr r;
 	if (isOnGPU()) {
 		cv::UMat mat;
 		cv::resize( m_gpuImage, mat, cv::Size(width, height) );
-		r.reset( new Image( mat ) );
+		r.reset( new Image( mat, fmt ) );
 	} else {
 		cv::Mat mat;
 		cv::resize( m_cpuImage, mat, cv::Size(width, height) );
-		r.reset( new Image( mat ) );
+		r.reset( new Image( mat, fmt ) );
 	}
-
-	r->copyImageFormatFrom(*this);
 	return r;
 }
 
@@ -316,13 +623,12 @@ Image::Ptr Image::Scale( double scale )
 bool Image::isGrayscale() const
 {
 	// use imageFormat here
-    return channels() == 1;
+    return m_format == LUMINANCE;
 }
 
 Image::Ptr Image::getGrayscale( void ) const
 {
     if ( !isGrayscale() ) {
-        // TODO: Has the image, if not grayscale, really three channels then and is RGB ?
         return CvtColor( CV_RGB2GRAY, 1, depth());
     } else {
         return Clone();
