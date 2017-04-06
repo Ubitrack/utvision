@@ -41,7 +41,8 @@
 #endif
 #endif // HAVE_OPENCL
 
-
+#include <vector>
+#include <functional>
 #include <boost/thread/mutex.hpp>
 #include <boost/utility.hpp>
 #include <utVision.h>
@@ -62,6 +63,9 @@ class UTVISION_EXPORT OpenCLManager
 {
 
 public:
+
+    typedef std::function< void()> InitCallbackType;
+
 	OpenCLManager(void);
 	~OpenCLManager(void);
 
@@ -84,6 +88,9 @@ public:
     /** initalize OpenCLManager for OpenGL **/
     void initializeOpenGL();
 
+    void registerInitCallback(InitCallbackType cb);
+
+
 #ifdef HAVE_OPENCL
 
     cl_context getContext() const;
@@ -100,6 +107,9 @@ private:
     bool m_isInitialized;
 	bool m_isActive;
     boost::mutex m_mutex;
+
+    std::vector< InitCallbackType > m_initCallbacks;
+    void notifyInitComplete();
 
 #ifdef HAVE_OPENCL
     cl_context m_clContext;

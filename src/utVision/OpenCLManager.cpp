@@ -182,6 +182,17 @@ bool OpenCLManager::isActive() {
 	return m_isActive;
 }
 
+void OpenCLManager::registerInitCallback(InitCallbackType cb) {
+    m_initCallbacks.push_back(cb);
+}
+
+void OpenCLManager::notifyInitComplete() {
+    for (int i=0; i < m_initCallbacks.size(); ++i) {
+        m_initCallbacks.at(i)();
+    }
+    // clear the callback list
+    m_initCallbacks.clear();
+}
 
 #ifdef HAVE_OPENCL
 #ifdef WIN32
@@ -325,6 +336,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 	}
 
     m_isInitialized = true;
+    notifyInitComplete()
     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }
 #endif // WIN32
@@ -403,12 +415,13 @@ void OpenCLManager::initializeOpenGL()
 
     cl_context_properties properties[] = {
             CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
-            (cl_context_properties)kCGLShareGroup, 0
+            (cl_context_properties)kCGLShareGroup,
+            0
     };
 
     // Create a context from a CGL share group
     //
-    m_clContext = clCreateContext(properties, 0, 0, notifyOpenCLState, 0, 0);
+    m_clContext = clCreateContext(properties, 0, 0, notifyOpenCLState, 0, &err);
 
 #else
 
@@ -431,7 +444,7 @@ void OpenCLManager::initializeOpenGL()
 
 #endif
 
-    if (!m_clContext || err != CL_SUCCESS) {
+    if (err != CL_SUCCESS) {
         LOG4CPP_ERROR(logger, "error at clCreateContext :" << getOpenCLErrorString(err));
         return;
     }
@@ -523,11 +536,12 @@ void OpenCLManager::initializeOpenGL()
             clGetDeviceInfo(selectedDeviceID, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(temp), &temp, &sz)==CL_SUCCESS &&
                     sz==sizeof(temp) ? temp!=0 : false;
     LOG4CPP_INFO(logger, "Host Unified Memory: " << unifiedmemory);
-    LOG4CPP_INFO(logger, "initialized OpenCL: " << isInitialized());
 #else // HAVE_OPENCL
     LOG4CPP_WARN( logger, "OpenCL is DISABLED!");
 #endif
     m_isInitialized = true;
+    notifyInitComplete();
+    LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }
 
 #ifdef HAVE_OPENCL
