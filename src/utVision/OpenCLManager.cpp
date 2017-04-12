@@ -336,7 +336,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 	}
 
     m_isInitialized = true;
-    notifyInitComplete()
+	notifyInitComplete();
     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }
 #endif // WIN32
