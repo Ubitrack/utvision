@@ -26,12 +26,19 @@ namespace Vision {
 
 class UTVISION_EXPORT TextureUpdate {
 public:
-    TextureUpdate() : m_bTextureInitialized(false), m_texture(0), m_pow2Width(0), m_pow2Height(0) { }
+    TextureUpdate()
+            : m_bTextureInitialized(false)
+            , m_bIsExternalTexture(true)
+            , m_texture(0)
+            , m_pow2Width(0)
+            , m_pow2Height(0)
+    { }
 
     bool getImageFormat(const Measurement::ImageMeasurement& image, bool use_gpu, int& umatConvertCode,
             GLenum& imgFormat, int& numOfChannels);
 
     void initializeTexture(const Measurement::ImageMeasurement& image);
+    void initializeTexture(const Measurement::ImageMeasurement& image, const GLuint tex_id);
     void cleanupTexture();
 
     void updateTexture(const Measurement::ImageMeasurement& image);
@@ -49,6 +56,7 @@ public:
 	}
 
     bool m_bTextureInitialized;
+    bool m_bIsExternalTexture;
     GLuint m_texture;
 
 #ifdef HAVE_OPENCL

@@ -88,31 +88,45 @@ void TextureUpdate::cleanupTexture() {
     if (m_bTextureInitialized ) {
         glBindTexture( GL_TEXTURE_2D, 0 );
         glDisable( GL_TEXTURE_2D );
-        glDeleteTextures( 1, &(m_texture) );
+        if (!m_bIsExternalTexture) {
+            glDeleteTextures( 1, &(m_texture) );
+        }
     }
 }
 
 void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image) {
-#ifdef HAVE_OPENCV
-   // access OCL Manager and initialize if needed
-    Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
-
     if (!image) {
-        // LOG4CPP_WARN ??
         return;
     }
 
-    // if OpenCL is enabled and image is on GPU, then use OCL codepath
-    bool image_isOnGPU = oclManager.isEnabled() & image->isOnGPU();
+    if (!m_bTextureInitialized) {
+        GLuint tex_id;
+        glGenTextures( 1, &(tex_id) );
+        m_bIsExternalTexture = false;
+        initializeTexture(image, tex_id);
+    }
+}
 
-    // find out texture format
-    int umatConvertCode = -1;
-    GLenum imgFormat = GL_LUMINANCE;
-    int numOfChannels = 1;
-    getImageFormat(image, image_isOnGPU, umatConvertCode, imgFormat, numOfChannels);
+void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image, const GLuint tex_id) {
+
+#ifdef HAVE_OPENCV
+    if (!image) {
+        return;
+    }
 
     if ( !m_bTextureInitialized )
     {
+        // access OCL Manager and initialize if needed
+        Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+
+        // if OpenCL is enabled and image is on GPU, then use OCL codepath
+        bool image_isOnGPU = oclManager.isEnabled() & image->isOnGPU();
+
+        // find out texture format
+        int umatConvertCode = -1;
+        GLenum imgFormat = GL_LUMINANCE;
+        int numOfChannels = 1;
+        getImageFormat(image, image_isOnGPU, umatConvertCode, imgFormat, numOfChannels);
 
         // generate power-of-two sizes
         m_pow2Width = 1;
@@ -123,7 +137,8 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
         while ( m_pow2Height < (unsigned)image->height() )
             m_pow2Height <<= 1;
 
-        glGenTextures( 1, &(m_texture) );
+        m_texture = tex_id;
+
         glBindTexture( GL_TEXTURE_2D, m_texture );
 
         // define texture parameters
