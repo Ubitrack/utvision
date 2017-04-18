@@ -516,12 +516,18 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 	case CV_BGRA2GRAY:
 	case CV_RGBA2GRAY:
 		fmt.imageFormat = LUMINANCE;
+		fmt.bitsPerPixel = fmt.bitsPerPixel / fmt.channels;
+		fmt.channels = 1;
 		break;
 	case CV_GRAY2RGB: // also matches GRAY2BGR
 		fmt.imageFormat = RGB;
+		fmt.bitsPerPixel = fmt.bitsPerPixel * 3;
+		fmt.channels = 3;
 		break;
 	case CV_GRAY2RGBA: // also matches GRAY2BGRA
 		fmt.imageFormat = RGBA;
+		fmt.bitsPerPixel = fmt.bitsPerPixel * 4;
+		fmt.channels = 4;
 		break;
 	default:
 		LOG4CPP_WARN(imageLogger, "Unknown Image Transformation.");
