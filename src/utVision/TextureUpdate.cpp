@@ -206,6 +206,7 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
 
             glBindTexture( GL_TEXTURE_2D, m_texture );
 
+            // @todo this probably causes unwanted delay - maybe warn here ??
             if (umatConvertCode != -1) {
                 cv::cvtColor(image->uMat(), m_convertedImage, umatConvertCode );
             } else {

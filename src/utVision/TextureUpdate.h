@@ -5,6 +5,8 @@
 #ifndef UBITRACK_VISION_TEXTUREUPDATE_H
 #define UBITRACK_VISION_TEXTUREUPDATE_H
 
+#include <boost/utility.hpp>
+
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
@@ -24,7 +26,7 @@
 namespace Ubitrack {
 namespace Vision {
 
-class UTVISION_EXPORT TextureUpdate {
+class UTVISION_EXPORT TextureUpdate : private boost::noncopyable {
 public:
     TextureUpdate()
             : m_bTextureInitialized(false)
@@ -54,6 +56,14 @@ public:
 	bool isInitialized() {
 		return m_bTextureInitialized;
 	}
+    GLuint textureId() {
+        return m_texture;
+    }
+
+
+    // should be private - needs to update dependencies (utvisualization, h3dintegration)
+    unsigned m_pow2Width;
+    unsigned m_pow2Height;
 
     bool m_bTextureInitialized;
     bool m_bIsExternalTexture;
@@ -65,8 +75,6 @@ public:
   cv::UMat m_convertedImage;
 #endif
 
-    unsigned m_pow2Width;
-    unsigned m_pow2Height;
 };
 
 }} // Ubitrack::Vision
