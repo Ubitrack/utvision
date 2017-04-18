@@ -34,53 +34,89 @@ static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Visi
 namespace Ubitrack {
 namespace Vision {
 
-bool TextureUpdate::getImageFormat(const Measurement::ImageMeasurement& image, bool use_gpu, int& umatConvertCode,
-        GLenum& imgFormat, int& numOfChannels)
+bool TextureUpdate::getImageFormat(const Image::ImageFormatProperties& fmtSrc,
+        Image::ImageFormatProperties& fmtDst,
+        bool use_gpu, int& umatConvertCode,
+        GLenum& glFormat, GLenum& glDatatype)
 {
     bool ret = true;
 
-    switch (image->pixelFormat()) {
+    // determine datatype
+    switch(fmtSrc.depth) {
+    case CV_8U:
+        glDatatype = GL_UNSIGNED_BYTE;
+        break;
+    case CV_16U:
+        glDatatype = GL_UNSIGNED_SHORT;
+        break;
+    case CV_32F:
+        glDatatype = GL_FLOAT;
+        break;
+    case CV_64F:
+        glDatatype = GL_DOUBLE;
+        break;
+    default:
+        // assume unsigned byte
+        glDatatype = GL_UNSIGNED_BYTE;
+        // Log Error ?
+        ret = false;
+        break;
+    }
+
+    // determine image properties
+    switch (fmtSrc.imageFormat) {
     case Image::LUMINANCE:
-        imgFormat = GL_LUMINANCE;
-        numOfChannels = 1;
+        glFormat = GL_LUMINANCE;
+        fmtDst.channels = 1;
         break;
     case Image::RGB:
-        numOfChannels = use_gpu ? 4 : 3;
-        imgFormat = use_gpu ? GL_RGBA : GL_RGB;
+        glFormat = use_gpu ? GL_RGBA : GL_RGB;
+        fmtDst.channels = use_gpu ? 4 : 3;
+        fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::RGB;
         umatConvertCode = cv::COLOR_RGB2RGBA;
         break;
 #ifndef GL_BGR_EXT
     case Image::BGR:
-        imgFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
-        numOfChannels = use_gpu ? 4 : 3;
+        fmtDst.channels = use_gpu ? 4 : 3;
+        glFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
+        fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGR;
         umatConvertCode = cv::COLOR_BGR2RGBA;
         break;
     case Image::BGRA:
-        numOfChannels = 4;
-        imgFormat = use_gpu ? GL_RGBA : GL_BGRA;
+        fmt.channels = 4;
+        glFormat = use_gpu ? GL_RGBA : GL_BGRA;
+        fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGRA;
         umatConvertCode = cv::COLOR_BGRA2RGBA;
         break;
 #else
-        case Image::BGR:
-        numOfChannels = use_gpu ? 4 : 3;
-        imgFormat = use_gpu ? GL_RGBA : GL_BGR_EXT;
+    case Image::BGR:
+        fmtDst.channels = use_gpu ? 4 : 3;
+        glFormat = use_gpu ? GL_RGBA : GL_BGR_EXT;
+        fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGR;
         umatConvertCode = cv::COLOR_BGR2RGBA;
         break;
     case Image::BGRA:
-        numOfChannels = 4;
-        imgFormat = use_gpu ? GL_RGBA : GL_BGRA_EXT;
+        fmtDst.channels = 4;
+        glFormat = use_gpu ? GL_RGBA : GL_BGRA_EXT;
+        fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGRA;
         umatConvertCode = cv::COLOR_BGRA2RGBA;
         break;
 #endif
     case Image::RGBA:
-        numOfChannels = 4;
-        imgFormat = GL_RGBA;
+        fmtDst.channels = 4;
+        glFormat = GL_RGBA;
+        fmtDst.imageFormat = Image::RGBA;
         break;
     default:
         // Log Error ?
         ret = false;
         break;
     }
+
+    // update dependent parameters
+    fmtDst.bitsPerPixel = fmtSrc.bitsPerPixel / fmtSrc.channels * fmtDst.channels;
+    fmtDst.matType = CV_MAKE_TYPE(fmtDst.depth, fmtDst.channels);
+
     return ret;
 }
 
@@ -124,9 +160,14 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
 
         // find out texture format
         int umatConvertCode = -1;
-        GLenum imgFormat = GL_LUMINANCE;
+        GLenum glFormat = GL_LUMINANCE;
+        GLenum glDatatype = GL_UNSIGNED_BYTE;
         int numOfChannels = 1;
-        getImageFormat(image, image_isOnGPU, umatConvertCode, imgFormat, numOfChannels);
+        Image::ImageFormatProperties fmtSrc, fmtDst;
+        image->getFormatProperties(fmtSrc);
+        image->getFormatProperties(fmtDst);
+
+        getImageFormat(fmtSrc, fmtDst, image_isOnGPU, umatConvertCode, glFormat, glDatatype);
 
         // generate power-of-two sizes
         m_pow2Width = 1;
@@ -147,9 +188,9 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
         glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
 
         // load empty texture image (defines texture size)
-        glTexImage2D( GL_TEXTURE_2D, 0, numOfChannels, m_pow2Width, m_pow2Height, 0, imgFormat, GL_UNSIGNED_BYTE, 0 );
+        glTexImage2D( GL_TEXTURE_2D, 0, fmtDst.channels, m_pow2Width, m_pow2Height, 0, glFormat, glDatatype, 0 );
         LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
-        LOG4CPP_INFO( logger, "initalized texture ( " << imgFormat << " ) OnGPU: " << image_isOnGPU);
+        LOG4CPP_INFO( logger, "initalized texture ( " << glFormat << " ) OnGPU: " << image_isOnGPU);
 
 
         if (oclManager.isInitialized()) {
@@ -197,16 +238,21 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
 
         // find out texture format
         int umatConvertCode = -1;
-        GLenum imgFormat = GL_LUMINANCE;
+        GLenum glFormat = GL_LUMINANCE;
+        GLenum glDatatype = GL_UNSIGNED_BYTE;
         int numOfChannels = 1;
-        getImageFormat(image, image_isOnGPU, umatConvertCode, imgFormat, numOfChannels);
+        Image::ImageFormatProperties fmtSrc, fmtDst;
+        image->getFormatProperties(fmtSrc);
+        image->getFormatProperties(fmtDst);
+
+        getImageFormat(fmtSrc, fmtDst, image_isOnGPU, umatConvertCode, glFormat, glDatatype);
 
         if (image_isOnGPU) {
 #ifdef HAVE_OPENCL
 
             glBindTexture( GL_TEXTURE_2D, m_texture );
 
-            // @todo this probably causes unwanted delay - maybe warn here ??
+            // @todo this probably causes unwanted delay - .. except when executed on gpu ...
             if (umatConvertCode != -1) {
                 cv::cvtColor(image->uMat(), m_convertedImage, umatConvertCode );
             } else {
@@ -255,7 +301,7 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
             // load image from CPU buffer into texture
             glBindTexture( GL_TEXTURE_2D, m_texture );
             glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(),
-                    imgFormat, GL_UNSIGNED_BYTE, image->Mat().data );
+                    glFormat, glDatatype, image->Mat().data );
 
         }
 

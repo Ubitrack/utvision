@@ -36,8 +36,10 @@ public:
             , m_pow2Height(0)
     { }
 
-    bool getImageFormat(const Measurement::ImageMeasurement& image, bool use_gpu, int& umatConvertCode,
-            GLenum& imgFormat, int& numOfChannels);
+    bool getImageFormat(const Image::ImageFormatProperties& fmtSrc,
+            Image::ImageFormatProperties& fmtDst,
+            bool use_gpu, int& umatConvertCode,
+            GLenum& glFormat, GLenum& glDatatype);
 
     void initializeTexture(const Measurement::ImageMeasurement& image);
     void initializeTexture(const Measurement::ImageMeasurement& image, const GLuint tex_id);
@@ -60,6 +62,7 @@ public:
         return m_texture;
     }
 
+private:
 
     // should be private - needs to update dependencies (utvisualization, h3dintegration)
     unsigned m_pow2Width;
