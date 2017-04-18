@@ -80,31 +80,33 @@ struct MsgpackSerializationFormat<Ubitrack::Measurement::ImageMeasurement> {
       // @todo throw some exceptions if not complete ?
       bool invalid = false;
       if (pac.next(oh)) {
-          ts = oh.get().as<unsigned long long>();
+		  msgpack::adaptor::convert<unsigned long long>()(oh.get(), ts);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          width = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), width);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          height = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), height);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.imageFormat = static_cast<typename Ubitrack::Vision::Image::PixelFormat>(oh.get().as<int>());
+		  int imageFormat;
+		  msgpack::adaptor::convert<int>()(oh.get(), imageFormat);
+          fmt.imageFormat = static_cast<typename Ubitrack::Vision::Image::PixelFormat>(imageFormat);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.depth = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), fmt.depth);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.channels = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), fmt.channels);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.matType = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), fmt.matType);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.bitsPerPixel = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), fmt.bitsPerPixel);
       } else { invalid = true; }
       if (pac.next(oh)) {
-          fmt.origin = oh.get().as<int>();
+		  msgpack::adaptor::convert<int>()(oh.get(), fmt.origin);
       } else { invalid = true; }
       boost::shared_ptr<Ubitrack::Vision::Image> img(new Ubitrack::Vision::Image(width, height, fmt));
       if (pac.next(oh)) {
