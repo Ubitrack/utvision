@@ -243,6 +243,7 @@ void Image::guessFormat(ImageFormatProperties& result, int channels, int depth, 
 	result.depth = CV_8U;
 	result.bitsPerPixel = 8;
 	result.imageFormat = Image::UNKNOWN_PIXELFORMAT;
+	result.origin = 0;
 
 
 	if (depth != -1) {
