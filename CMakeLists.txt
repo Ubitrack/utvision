@@ -1,7 +1,51 @@
-IF(HAVE_OPENCV)
-	set(the_description "The UbiTrack Vision Module")
-	ut_add_module(utvision utcore utdataflow)
-	ut_module_include_directories(${UBITRACK_CORE_DEPS_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${OpenCL_INCLUDE_DIR})
-	ut_glob_module_sources(HEADERS "src/*.h" "src/*/*.h" SOURCES "src/*/*.cpp")
-	ut_create_module(${TINYXML_LIBRARIES} ${LOG4CPP_LIBRARIES} ${LAPACK_LIBRARIES} ${Boost_LIBRARIES} ${OPENGL_LIBRARIES} ${OPENCV_LIBRARIES} ${OpenCL_LIBRARY})
-ENDIF(HAVE_OPENCV)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+project(ubitrack_vision)
+
+cmake_minimum_required(VERSION 3.4.0)
+
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup(KEEP_RPATHS)
+
+include(GNUInstallDirs)
+include(cmake/UbitrackConfig)
+
+
+# External Libraries (could this be solved with conan dependencies ??)
+
+# OpenGL
+SET(HAVE_OPENGL 0)
+find_package(OpenGL)
+IF(OpenGL_FOUND)
+  add_definitions(-DHAVE_OPENGL)
+  SET(HAVE_OPENGL 1)
+  MESSAGE(STATUS "Found OpenGL: ${OpenGL_INCLUDE_DIR} - ${OpenGL_LIBRARIES}")
+ENDIF(OpenGL_FOUND)
+
+# OpenCL
+SET(HAVE_OPENCL 0)
+find_package(OpenCL)
+IF(OpenCL_FOUND)
+  add_definitions(-DHAVE_OPENCL)
+  include_directories(${OpenCL_INCLUDE_DIR})
+  SET(HAVE_OPENCL 1)
+  MESSAGE(STATUS "Found OpenCL: ${OpenCL_INCLUDE_DIR} - ${OpenCL_LIBRARY}")
+ENDIF(OpenCL_FOUND)
+
+set(UBITRACK_EXTRA_LIBS ${OpenGL_LIBRARIES} ${OpenCL_LIBRARY})
+
+
+add_subdirectory(src)
+
+add_subdirectory(tests)
+
+file(GLOB _doc_files LIST_DIRECTORIES false "doc/bibliography.bib")
+foreach(pfile ${_doc_files})
+  string(REGEX REPLACE "^.*/doc/" "" pfile2 "${pfile}")
+  GET_FILENAME_COMPONENT(fpath ${pfile2} PATH)
+  IF(fpath)
+    install(FILES ${pfile} DESTINATION "share/UbiTrack/doc/${fpath}" COMPONENT doc)
+  ELSE(fpath)
+    install(FILES ${pfile} DESTINATION "share/UbiTrack/doc" COMPONENT doc)
+  ENDIF(fpath)
+endforeach()
