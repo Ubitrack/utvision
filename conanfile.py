@@ -64,4 +64,4 @@ class UbitrackCoreConan(ConanFile):
             suffix += self.version.replace(".", "")
             if self.settings.build_type == "Debug":
                 suffix += "d"
-        self.cpp_info.libs.append("utcore%s" % (suffix))
+        self.cpp_info.libs.append("utvision%s" % (suffix))
