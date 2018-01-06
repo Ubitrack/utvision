@@ -11,28 +11,12 @@ class UbitrackCoreConan(ConanFile):
     generators = "cmake"
     options = {"shared": [True, False]}
     requires = (
-        "Boost.Bind/1.65.1@bincrafters/stable", 
-        "Boost.Chrono/1.65.1@bincrafters/stable", 
-        "Boost.Core/1.65.1@bincrafters/stable", 
-        "Boost.Date_Time/1.65.1@bincrafters/stable",
-        "Boost.Filesystem/1.65.1@bincrafters/stable", 
-        "Boost.Iostreams/1.65.1@bincrafters/stable", 
-        "Boost.Locale/1.65.1@bincrafters/stable", 
-        "Boost.Math/1.65.1@bincrafters/stable", 
-        "Boost.Mpl/1.65.1@bincrafters/stable", 
-        "Boost.Numeric_Ublas/1.65.1@bincrafters/stable",
-        "Boost.Program_Options/1.65.1@bincrafters/stable",
-        "Boost.Random/1.65.1@bincrafters/stable", 
-        "Boost.Regex/1.65.1@bincrafters/stable", 
-        "Boost.Serialization/1.65.1@bincrafters/stable",
-        "Boost.System/1.65.1@bincrafters/stable",
-        "Boost.Test/1.65.1@bincrafters/stable",
-        "Boost.Type_Traits/1.65.1@bincrafters/stable",
-        "Boost.Utility/1.65.1@bincrafters/stable",
+        "Boost/[>=1.64.0]@ulricheck/stable",
 
-        "opencv/3.2.0@ulricheck/stable", 
-        "clapack/3.2.1@ulricheck/stable", 
-        "msgpack/2.1.5@ulricheck/stable", 
+        "opencv/[>=3.2.0]@ulricheck/stable", 
+        "clapack/[>=3.2.1]@ulricheck/stable", 
+        "msgpack/[>=2.1.5]@ulricheck/stable", 
+
         "ubitrack_boost_bindings/1.0@ulricheck/stable", 
         "ubitrack_tinyxml/2.5.3@ulricheck/stable", 
         "ubitrack_log4cpp/0.3.5@ulricheck/stable",
@@ -40,15 +24,12 @@ class UbitrackCoreConan(ConanFile):
         )
 
     default_options = (
-        "Boost.Chrono:shared=True", 
-        "Boost.Filesystem:shared=True", 
-        "Boost.Iostreams:shared=True",  
-        "Boost.Program_Options:shared=True", 
-        "Boost.Regex:shared=True", 
-        "Boost.System:shared=True", 
+        "Boost:shared=True", 
+
         "opencv:shared=True", 
         "clapack:shared=True", 
         "msgpack:shared=True", 
+
         "ubitrack_log4cpp:shared=True",
         "ubitrack_core:shared=True",
         "shared=True",
