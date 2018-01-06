@@ -20,7 +20,8 @@ class UbitrackCoreConan(ConanFile):
         "ubitrack_boost_bindings/1.0@ulricheck/stable", 
         "ubitrack_tinyxml/2.5.3@ulricheck/stable", 
         "ubitrack_log4cpp/0.3.5@ulricheck/stable",
-        "ubitrack_core/1.3.0@ulricheck/stable",
+
+        "ubitrack_core/%s@ulricheck/stable" % version,
         )
 
     default_options = (
