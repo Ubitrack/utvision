@@ -36,16 +36,18 @@ class UbitrackCoreConan(ConanFile):
         cmake.definitions['BUILD_SHARED_LIBS'] = self.options.shared
         cmake.configure()
         cmake.build()
+        cmake.install()
 
     def package(self):
-        self.copy("*.h", dst="include", src="src")
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.dylib*", dst="lib", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
-        self.copy("*", dst="bin", src="bin", keep_path=False)
-
+        # self.copy("*.h", dst="include", src="src")
+        # self.copy("*.lib", dst="lib", keep_path=False)
+        # self.copy("*.dll", dst="bin", keep_path=False)
+        # self.copy("*.dylib*", dst="lib", keep_path=False)
+        # self.copy("*.so", dst="lib", keep_path=False)
+        # self.copy("*.a", dst="lib", keep_path=False)
+        # self.copy("*", dst="bin", src="bin", keep_path=False)
+        pass
+        
     def package_info(self):
         suffix = ""
         if self.settings.os == "Windows":
