@@ -85,9 +85,9 @@ endif(NOT ANDROID)
 # Installation of libraries, headers and documents
 install(TARGETS ${UBITRACK_LIBRARY_NAME}
   EXPORT library_targets
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
 foreach(hdr ${UBITRACK_HEADERS})
@@ -102,5 +102,5 @@ endforeach()
 
 install(EXPORT library_targets
   NAMESPACE utvision::
-  DESTINATION lib/cmake/utvision
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/utvision
   )
