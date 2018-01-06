@@ -1,12 +1,14 @@
-import os
 from conans import ConanFile, CMake
-from conans.tools import download
-from conans.tools import unzip
 
 
 class UbitrackCoreConan(ConanFile):
     name = "ubitrack_vision"
     version = "1.3.0"
+
+    description = "Ubitrack Vision Library"
+    url = "https://github.com/Ubitrack/utvision.git"
+    license = "GPL"
+
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
     options = {"shared": [True, False]}
@@ -47,7 +49,7 @@ class UbitrackCoreConan(ConanFile):
         # self.copy("*.a", dst="lib", keep_path=False)
         # self.copy("*", dst="bin", src="bin", keep_path=False)
         pass
-        
+
     def package_info(self):
         suffix = ""
         if self.settings.os == "Windows":
