@@ -9,6 +9,7 @@ class UbitrackCoreConan(ConanFile):
     url = "https://github.com/Ubitrack/utvision.git"
     license = "GPL"
 
+    short_paths = True
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
     options = {"shared": [True, False]}
