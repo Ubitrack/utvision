@@ -11,33 +11,21 @@ class UbitrackCoreConan(ConanFile):
     generators = "cmake"
     options = {"shared": [True, False]}
     requires = (
-        "Boost/[>=1.64.0]@ulricheck/stable",
-
         "opencv/[>=3.2.0]@ulricheck/stable", 
-        "clapack/[>=3.2.1]@ulricheck/stable", 
-        "msgpack/[>=2.1.5]@ulricheck/stable", 
-
-        "ubitrack_boost_bindings/1.0@ulricheck/stable", 
-        "ubitrack_tinyxml/2.5.3@ulricheck/stable", 
-        "ubitrack_log4cpp/0.3.5@ulricheck/stable",
-
         "ubitrack_core/%s@ulricheck/stable" % version,
         )
 
     default_options = (
-        "Boost:shared=True", 
-
-        "opencv:shared=True", 
-        "clapack:shared=True", 
-        "msgpack:shared=True", 
-
-        "ubitrack_log4cpp:shared=True",
-        "ubitrack_core:shared=True",
         "shared=True",
         )
 
     # all sources are deployed with the package
     exports_sources = "doc/*", "src/*", "tests/*", "CMakeLists.txt"
+
+    def configure(self):
+        if self.options.shared:
+            self.options['opencv'].shared = True
+            self.options['ubitrack_core'].shared = True
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
