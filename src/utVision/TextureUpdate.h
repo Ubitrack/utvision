@@ -14,6 +14,7 @@
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
 #ifdef __APPLE__
+#pragma OPENCL EXTENSION CL_APPLE_gl_sharing : enable
 #include "OpenCL/opencl.h"
 #include "OpenCL/cl_gl.h"
 #else
