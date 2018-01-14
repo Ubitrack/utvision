@@ -14,8 +14,8 @@ class UbitrackCoreConan(ConanFile):
     generators = "cmake"
     options = {"shared": [True, False]}
     requires = (
-        "opencv/[>=3.2.0]@ulricheck/stable", 
-        "ubitrack_core/%s@ulricheck/stable" % version,
+        "opencv/[>=3.2.0]@camposs/stable", 
+        "ubitrack_core/%s@ubitrack/stable" % version,
         )
 
     default_options = (
