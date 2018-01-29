@@ -30,6 +30,9 @@ class UbitrackCoreConan(ConanFile):
             self.options['opencv'].shared = True
             self.options['ubitrack_core'].shared = True
 
+
+    # add linux requirement: ubuntu "ocl-icd-opencl-dev"
+
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
         self.copy(pattern="*.dylib*", dst="lib", src="lib") 
