@@ -34,7 +34,9 @@ set(UBITRACK_EXTRA_LIBS ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${OpenCL_LIBR
 
 add_subdirectory(src)
 
-add_subdirectory(tests)
+if(ENABLE_UNITTESTS)
+  add_subdirectory(tests)
+endif(ENABLE_UNITTESTS)
 
 file(GLOB _doc_files LIST_DIRECTORIES false "doc/bibliography.bib")
 foreach(pfile ${_doc_files})

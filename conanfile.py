@@ -37,6 +37,7 @@ class UbitrackCoreConan(ConanFile):
     def build(self):
         cmake = CMake(self)
         cmake.definitions['BUILD_SHARED_LIBS'] = self.options.shared
+        cmake.definitions['ENABLE_UNITTESTS'] = not self.options['ubitrack_core'].without_tests
         cmake.configure()
         cmake.build()
         cmake.install()
