@@ -97,9 +97,11 @@ public:
     cl_context getContext() const;
     cl_command_queue getCommandQueue() const;
 
-#ifdef WIN32
-	void initializeDirectX(ID3D11Device* pD3D11Device);
-#endif
+// DirectX support is disabled for now
+// specifically, because it requires NVIDIA OpenCL
+// #ifdef WIN32
+// 	void initializeDirectX(ID3D11Device* pD3D11Device);
+// #endif
 
 #endif // HAVE_OPENCL
 
