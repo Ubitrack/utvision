@@ -31,6 +31,34 @@
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.TextureUpdate" ) );
 
+namespace {
+
+unsigned int getBytesForGLDatatype(GLenum dt) {
+    unsigned int glDatatypeBytes = 1;
+    switch(dt) {
+    case GL_BYTE:
+    case GL_UNSIGNED_BYTE:
+        glDatatypeBytes = 1;
+        break;
+    case GL_SHORT:
+    case GL_UNSIGNED_SHORT:
+    case GL_HALF_FLOAT:
+        glDatatypeBytes = 2;
+        break;
+    case GL_INT:
+    case GL_UNSIGNED_INT:
+    case GL_FLOAT:
+        glDatatypeBytes = 4;
+        break;
+    case GL_DOUBLE:
+        glDatatypeBytes = 8;
+        break;
+    }
+    return glDatatypeBytes;
+}
+}
+
+
 namespace Ubitrack {
 namespace Vision {
 
@@ -126,7 +154,11 @@ void TextureUpdate::cleanupTexture() {
         glDisable( GL_TEXTURE_2D );
         if (!m_bIsExternalTexture) {
             glDeleteTextures( 1, &(m_texture) );
+            m_texture = 0;
         }
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        glDeleteBuffers(GL_PIXEL_UNPACK_BUFFER, &(m_pbo));
+        m_pbo = 0;
     }
 }
 
@@ -145,6 +177,9 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
 
 void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image, const GLuint tex_id) {
 
+    // store texture id
+    m_texture = tex_id;
+
 #ifdef HAVE_OPENCV
     if (!image) {
         return;
@@ -162,23 +197,44 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
         int umatConvertCode = -1;
         GLenum glFormat = GL_LUMINANCE;
         GLenum glDatatype = GL_UNSIGNED_BYTE;
-        int numOfChannels = 1;
         Image::ImageFormatProperties fmtSrc, fmtDst;
         image->getFormatProperties(fmtSrc);
         image->getFormatProperties(fmtDst);
 
         getImageFormat(fmtSrc, fmtDst, image_isOnGPU, umatConvertCode, glFormat, glDatatype);
 
+
+
         // generate power-of-two sizes
-        m_pow2Width = 1;
-        while ( m_pow2Width < (unsigned)image->width() )
-            m_pow2Width <<= 1;
 
-        m_pow2Height = 1;
-        while ( m_pow2Height < (unsigned)image->height() )
-            m_pow2Height <<= 1;
+// @note disabled pow2 textures for now...
+//        m_textureWidth = 1;
+//        while ( m_textureWidth < (unsigned)image->width() )
+//            m_textureWidth <<= 1;
+//
+//        m_textureHeight = 1;
+//        while ( m_textureHeight < (unsigned)image->height() )
+//            m_textureHeight <<= 1;
 
-        m_texture = tex_id;
+        m_textureWidth = (unsigned)image->width();
+        m_textureHeight = (unsigned)image->height();
+
+
+        if (!image_isOnGPU) {
+            // make sure everything is clean
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+            // generate pbo
+            GLuint pbo_id;
+            glGenBuffers( 1, &(pbo_id) );
+            m_pbo = pbo_id;
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo);
+            unsigned int num_bytes = m_textureWidth * m_textureHeight * fmtDst.channels * getBytesForGLDatatype(glDatatype);
+            glBufferData(GL_PIXEL_UNPACK_BUFFER, num_bytes, NULL, GL_STREAM_DRAW);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        }
 
         glBindTexture( GL_TEXTURE_2D, m_texture );
 
@@ -188,8 +244,8 @@ void TextureUpdate::initializeTexture(const Measurement::ImageMeasurement& image
         glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
 
         // load empty texture image (defines texture size)
-        glTexImage2D( GL_TEXTURE_2D, 0, fmtDst.channels, m_pow2Width, m_pow2Height, 0, glFormat, glDatatype, 0 );
-        LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_pow2Width << ", height=" << m_pow2Height << " ): " << glGetError() );
+        glTexImage2D( GL_TEXTURE_2D, 0, fmtDst.channels, m_textureWidth, m_textureHeight, 0, glFormat, glDatatype, 0 );
+        LOG4CPP_DEBUG( logger, "glTexImage2D( width=" << m_textureWidth << ", height=" << m_textureHeight << " ): " << glGetError() );
         LOG4CPP_INFO( logger, "initalized texture ( " << glFormat << " ) OnGPU: " << image_isOnGPU);
 
 
@@ -232,6 +288,7 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
     // if OpenCL is enabled and image is on GPU, then use OCL codepath
     bool image_isOnGPU = oclManager.isInitialized() & image->isOnGPU();
 
+
     if ( m_bTextureInitialized )
     {
         // check if received image fits into the allocated texture
@@ -240,7 +297,6 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
         int umatConvertCode = -1;
         GLenum glFormat = GL_LUMINANCE;
         GLenum glDatatype = GL_UNSIGNED_BYTE;
-        int numOfChannels = 1;
         Image::ImageFormatProperties fmtSrc, fmtDst;
         image->getFormatProperties(fmtSrc);
         image->getFormatProperties(fmtDst);
@@ -299,12 +355,19 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
 #endif // HAVE_OPENCL
         } else {
             // load image from CPU buffer into texture
-            glBindTexture( GL_TEXTURE_2D, m_texture );
-            glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(),
-                    glFormat, glDatatype, image->Mat().data );
 
+            if ((image->height() == m_textureHeight) && (image->width() == m_textureWidth)) {
+                glBindTexture( GL_TEXTURE_2D, m_texture );
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, m_pbo);
+                unsigned int num_bytes = image->width() * image->height() * fmtDst.channels * getBytesForGLDatatype(glDatatype);
+                glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, num_bytes, image->Mat().data);
+                glTexImage2D( GL_TEXTURE_2D, 0, fmtDst.channels, m_textureWidth, m_textureHeight, 0, glFormat, glDatatype, 0 );
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+            } else {
+                LOG4CPP_ERROR( logger, "image size changed size initialization - this is not supported");
+            }
         }
-
     }
 #endif // HAVE_OPENCV
 }

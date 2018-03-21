@@ -128,7 +128,7 @@ public:
 		return m_coeffs;
 	}
 	
-	/** returns the intrinsic matrix */
+	/** returns the camera model - should be renamed .. */
 	const intrinsics_type& getIntrinsics() const
 	{
 		return m_intrinsics;
