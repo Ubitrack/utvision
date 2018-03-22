@@ -1,7 +1,7 @@
 /*
  * Ubitrack - Library for Ubiquitous Tracking
  * Copyright 2006, Technische Universitaet Muenchen, and individual
- * contributors as indicated by the @authors tag. See the 
+ * contributors as indicated by the @authors tag. See the
  * copyright.txt in the distribution for a full listing of individual
  * contributors.
  *
@@ -21,27 +21,29 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-/**
- * @file
- * Common definitions of the ubitrack vision library
- *
- * @author Daniel Pustka <daniel.pustka@in.tum.de>
- */
+#ifndef _OPENGLWRAPPER_H_
+#define _OPENGLWRAPPER_H_
 
-#ifndef __UTVISION_H_INCLUDED__
-#define __UTVISION_H_INCLUDED__
-
-#ifdef _WIN32
-#	ifdef UTVISION_DLL
-#		define UTVISION_EXPORT __declspec( dllexport )
-#	else
-#		define UTVISION_EXPORT __declspec( dllimport )
-#	endif
-#else // _WIN32
-#	define UTVISION_EXPORT
+#ifdef HAVE_GLAD
+  #include <glad/glad.h>
+#else
+  #ifdef HAVE_GLEW
+    #include <GL/glew.h>
+  #endif
+  #ifdef _WIN32
+	#include <utUtil/CleanWindows.h>
+	#include <GL/gl.h>
+	#include <GL/glu.h>
+	#include <GL/glext.h>
+  #elif __APPLE__
+	#include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+  #else
+	#include <GL/gl.h>
+	#include <GL/glext.h>
+	#include <GL/glu.h>
+	#include <GL/glx.h>
+  #endif
 #endif
 
-#include <utVision/Config.h>
-
-#endif
-
+#endif // _OPENGLWRAPPER_H_

@@ -12,7 +12,10 @@ class UbitrackCoreConan(ConanFile):
     short_paths = True
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
-    options = {"shared": [True, False]}
+    options = {
+        "shared": [True, False],
+        "use_glad": [True, False],
+    }
     requires = (
         "opencv/[>=3.2.0]@camposs/stable", 
         "ubitrack_core/%s@ubitrack/stable" % version,
@@ -21,6 +24,7 @@ class UbitrackCoreConan(ConanFile):
 
     default_options = (
         "shared=True",
+        "use_glad=False",
         )
 
     # all sources are deployed with the package
@@ -32,6 +36,12 @@ class UbitrackCoreConan(ConanFile):
             self.options['ubitrack_core'].shared = True
 
 
+    def requirements(self):
+        if self.options.use_glad:
+            self.requires("glad/0.1.16a0@bincrafters/stable")
+        else:
+            self.requires("glew/2.1.0@camposs/stable")
+
     # add linux requirement: ubuntu "ocl-icd-opencl-dev"
 
     def imports(self):
@@ -42,6 +52,7 @@ class UbitrackCoreConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions['BUILD_SHARED_LIBS'] = self.options.shared
         cmake.definitions['ENABLE_UNITTESTS'] = not self.options['ubitrack_core'].without_tests
+        cmake.definitions['HAVE_GLAD'] = self.options.use_glad
         cmake.configure()
         cmake.build()
         cmake.install()

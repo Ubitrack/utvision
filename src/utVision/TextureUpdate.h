@@ -11,8 +11,7 @@
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
 
-// GLAD
-#include <glad/glad.h>
+#include <utVision/OpenGLPlatform.h>
 
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
