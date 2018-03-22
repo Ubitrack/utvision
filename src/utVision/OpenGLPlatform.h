@@ -24,6 +24,8 @@
 #ifndef _OPENGLWRAPPER_H_
 #define _OPENGLWRAPPER_H_
 
+#include <utVision.h>
+
 #ifdef HAVE_GLAD
   #include <glad/glad.h>
 #else
