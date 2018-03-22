@@ -47,6 +47,10 @@
 #cmakedefine HAVE_OPENGL
 #endif
 
+#ifndef HAVE_OPENCL
+#cmakedefine HAVE_OPENCL
+#endif
+
 #ifndef HAVE_LAPACK 
 #cmakedefine HAVE_LAPACK
 #endif

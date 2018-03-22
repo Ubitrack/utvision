@@ -50,7 +50,8 @@ class UbitrackCoreConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions['BUILD_SHARED_LIBS'] = self.options.shared
         cmake.definitions['ENABLE_UNITTESTS'] = not self.options['ubitrack_core'].without_tests
-        cmake.definitions['HAVE_GLAD'] = self.options.use_glad
+        cmake.definitions['HAVE_GLAD'] = self.options.opengl_extension_wrapper == 'glad'
+        cmake.definitions['HAVE_GLEW'] = self.options.opengl_extension_wrapper == 'glew'
         cmake.configure()
         cmake.build()
         cmake.install()
