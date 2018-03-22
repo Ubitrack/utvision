@@ -39,6 +39,10 @@
 #cmakedefine HAVE_GLEW
 #endif
 
+#if defined(HAVE_GLEW) && defined(HAVE_GLAD)
+#error cannot use GLEW and GLAD at the same time.
+#endif
+
 #ifndef HAVE_OPENGL
 #cmakedefine HAVE_OPENGL
 #endif
