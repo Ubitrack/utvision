@@ -16,6 +16,7 @@ class UbitrackCoreConan(ConanFile):
     requires = (
         "opencv/[>=3.2.0]@camposs/stable", 
         "ubitrack_core/%s@ubitrack/stable" % version,
+        "glad/0.1.16a0@bincrafters/stable",
         )
 
     default_options = (

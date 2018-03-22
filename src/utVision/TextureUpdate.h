@@ -20,9 +20,12 @@
 #else
 #include "CL/cl.h"
 #include "CL/cl_gl.h"
-#include "GL/gl.h"
 #endif
 #endif
+
+// GLAD
+#include <glad/glad.h>
+
 
 namespace Ubitrack {
 namespace Vision {

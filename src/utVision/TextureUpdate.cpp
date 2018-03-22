@@ -13,19 +13,21 @@
 
 #include <log4cpp/Category.hh>
 
+// include glad
+#include <glad/glad.h>
 
-#ifdef _WIN32
-    #include <GL/gl.h>
-    #include <GL/glu.h>
-    #include <utUtil/CleanWindows.h>
-#elif __APPLE__
-    #include <OpenGL/OpenGL.h>
-    #include <OpenGL/glu.h>
-#else
-    #include <GL/gl.h>
-    #include <GL/glu.h>
-    #include <GL/glx.h>
-#endif
+// #ifdef _WIN32
+//     #include <GL/gl.h>
+//     #include <GL/glu.h>
+//     #include <utUtil/CleanWindows.h>
+// #elif __APPLE__
+//     #include <OpenGL/OpenGL.h>
+//     #include <OpenGL/glu.h>
+// #else
+//     #include <GL/gl.h>
+//     #include <GL/glu.h>
+//     #include <GL/glx.h>
+// #endif
 
 
 // get a logger
@@ -106,12 +108,12 @@ bool TextureUpdate::getImageFormat(const Image::ImageFormatProperties& fmtSrc,
 #ifndef GL_BGR_EXT
     case Image::BGR:
         fmtDst.channels = use_gpu ? 4 : 3;
-        glFormat = image_isOnGPU ? GL_RGBA : GL_RGB;
+        glFormat = use_gpu ? GL_RGBA : GL_RGB;
         fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGR;
         umatConvertCode = cv::COLOR_BGR2RGBA;
         break;
     case Image::BGRA:
-        fmt.channels = 4;
+        fmtDst.channels = 4;
         glFormat = use_gpu ? GL_RGBA : GL_BGRA;
         fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGRA;
         umatConvertCode = cv::COLOR_BGRA2RGBA;
