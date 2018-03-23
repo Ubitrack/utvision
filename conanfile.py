@@ -16,6 +16,7 @@ class UbitrackCoreConan(ConanFile):
         "shared": [True, False],
         "opengl_extension_wrapper": ["glew", "glad"],
     }
+
     requires = (
         "opencv/[>=3.2.0]@camposs/stable", 
         "ubitrack_core/%s@ubitrack/stable" % version,
@@ -37,8 +38,14 @@ class UbitrackCoreConan(ConanFile):
     def requirements(self):
         if self.options.opengl_extension_wrapper == 'glad':
             self.requires("glad/0.1.16a0@bincrafters/stable")
+            if self.options.shared:
+                self.options['glad'].shared = True
         elif self.options.opengl_extension_wrapper == 'glew':
             self.requires("glew/2.1.0@camposs/stable")
+            if self.options.shared:
+                self.options['glew'].shared = True
+
+
 
     # add linux requirement: ubuntu "ocl-icd-opencl-dev"
 
