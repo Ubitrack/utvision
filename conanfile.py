@@ -37,7 +37,7 @@ class UbitrackCoreConan(ConanFile):
 
     def requirements(self):
         if self.options.opengl_extension_wrapper == 'glad':
-            self.requires("glad/0.1.16a0@bincrafters/stable")
+            self.requires("glad/0.1.18a0@bincrafters/stable")
             if self.options.shared:
                 self.options['glad'].shared = True
         elif self.options.opengl_extension_wrapper == 'glew':
