@@ -41,6 +41,7 @@ namespace Vision {
 
 static boost::scoped_ptr<OpenCLManager> g_pOpenCLManager;
 
+#ifdef HAVE_OPENCL
 const char *getOpenCLErrorString(cl_int error)
 {
 switch(error){
@@ -117,7 +118,7 @@ switch(error){
     default: return "Unknown OpenCL error";
     }
 }
-
+#endif // HAVE_OPENCL
 
 
 OpenCLManager& OpenCLManager::singleton()

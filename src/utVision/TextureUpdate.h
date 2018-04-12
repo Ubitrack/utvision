@@ -11,6 +11,8 @@
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
 
+#include <utVision/OpenGLPlatform.h>
+
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
 #ifdef __APPLE__
@@ -23,8 +25,6 @@
 #endif
 #endif
 
-// GLAD
-#include <glad/glad.h>
 
 
 namespace Ubitrack {

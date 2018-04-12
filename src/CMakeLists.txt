@@ -1,6 +1,9 @@
 set(UBITRACK_LIBRARY_NAME utvision)
 
 
+# writes config file into binary_dir, so sourcetree will not be cluttered
+configure_file(utVision/Config_cmake.hh ${CMAKE_CURRENT_SOURCE_DIR}/utVision/Config.h)
+
 # Source and Header Files
 
 # All cpp files for UTCORE
@@ -34,6 +37,10 @@ target_include_directories(${UBITRACK_LIBRARY_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>
   PRIVATE src)
+
+if(HAVE_GLAD)
+    set(UBITRACK_COMPILE_DEFINITIONS ${UBITRACK_COMPILE_DEFINITIONS} "HAVE_GLAD")
+endif(HAVE_GLAD)
 
 if(WIN32)
   IF(BUILD_SHARED_LIBS)

@@ -23,25 +23,38 @@
 
 /**
  * @file
- * Common definitions of the ubitrack vision library
+ * Core definitions of the ubitrack vision library
  *
- * @author Daniel Pustka <daniel.pustka@in.tum.de>
+ * @author Ulrich Eck <ulrich.eck@tum.de>
  */
 
-#ifndef __UTVISION_H_INCLUDED__
-#define __UTVISION_H_INCLUDED__
+ #ifndef __UBITRACK_VISION_CONFIG_H_INCLUDED__
+#define __UBITRACK_VISION_CONFIG_H_INCLUDED__
 
-#ifdef _WIN32
-#	ifdef UTVISION_DLL
-#		define UTVISION_EXPORT __declspec( dllexport )
-#	else
-#		define UTVISION_EXPORT __declspec( dllimport )
-#	endif
-#else // _WIN32
-#	define UTVISION_EXPORT
+#ifndef HAVE_GLAD
+#cmakedefine HAVE_GLAD
 #endif
 
-#include <utVision/Config.h>
-
+#ifndef HAVE_GLEW
+#cmakedefine HAVE_GLEW
 #endif
 
+#if defined(HAVE_GLEW) && defined(HAVE_GLAD)
+#error cannot use GLEW and GLAD at the same time.
+#endif
+
+#ifndef HAVE_OPENGL
+#cmakedefine HAVE_OPENGL
+#endif
+
+#ifndef HAVE_OPENCL
+#cmakedefine HAVE_OPENCL
+#endif
+
+#ifndef HAVE_LAPACK 
+#cmakedefine HAVE_LAPACK
+#endif
+#ifndef HAVE_OPENCV 
+#cmakedefine HAVE_OPENCV
+#endif
+#endif

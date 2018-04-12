@@ -31,6 +31,8 @@
 #ifndef __Ubitrack_OPENCL_MANAGER_INCLUDED__
 #define __Ubitrack_OPENCL_MANAGER_INCLUDED__
 
+#include <utVision.h>
+
 //opencl context
 #ifdef HAVE_OPENCL
 
@@ -46,7 +48,6 @@
 #include <functional>
 #include <boost/thread/mutex.hpp>
 #include <boost/utility.hpp>
-#include <utVision.h>
 
 #ifdef WIN32
 #include <d3d11.h>
@@ -55,9 +56,9 @@
 
 namespace Ubitrack { namespace Vision {
 
-
+#ifdef HAVE_OPENCL
 const char *getOpenCLErrorString(cl_int error);
-
+#endif
 
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
@@ -116,7 +117,6 @@ private:
 
 #ifdef HAVE_OPENCL
     cl_context m_clContext;
-
 	cl_command_queue m_clCommandQueue;
 #endif
 

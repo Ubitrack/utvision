@@ -12,15 +12,19 @@ class UbitrackCoreConan(ConanFile):
     short_paths = True
     settings = "os", "compiler", "build_type", "arch"
     generators = "cmake"
-    options = {"shared": [True, False]}
+    options = {
+        "shared": [True, False],
+        "opengl_extension_wrapper": ["glew", "glad"],
+    }
+
     requires = (
         "opencv/[>=3.2.0]@camposs/stable", 
         "ubitrack_core/%s@ubitrack/stable" % version,
-        "glad/0.1.16a0@bincrafters/stable",
         )
 
     default_options = (
         "shared=True",
+        "opengl_extension_wrapper=glad",
         )
 
     # all sources are deployed with the package
@@ -30,6 +34,17 @@ class UbitrackCoreConan(ConanFile):
         if self.options.shared:
             self.options['opencv'].shared = True
             self.options['ubitrack_core'].shared = True
+
+    def requirements(self):
+        if self.options.opengl_extension_wrapper == 'glad':
+            self.requires("glad/0.1.18.0+master.20180404@camposs/stable")
+            if self.options.shared:
+                self.options['glad'].shared = True
+        elif self.options.opengl_extension_wrapper == 'glew':
+            self.requires("glew/2.1.0@camposs/stable")
+            if self.options.shared:
+                self.options['glew'].shared = True
+
 
 
     # add linux requirement: ubuntu "ocl-icd-opencl-dev"
@@ -42,6 +57,8 @@ class UbitrackCoreConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions['BUILD_SHARED_LIBS'] = self.options.shared
         cmake.definitions['ENABLE_UNITTESTS'] = not self.options['ubitrack_core'].without_tests
+        cmake.definitions['HAVE_GLAD'] = self.options.opengl_extension_wrapper == 'glad'
+        cmake.definitions['HAVE_GLEW'] = self.options.opengl_extension_wrapper == 'glew'
         cmake.configure()
         cmake.build()
         cmake.install()
