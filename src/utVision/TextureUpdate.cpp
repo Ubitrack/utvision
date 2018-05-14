@@ -91,7 +91,7 @@ bool TextureUpdate::getImageFormat(const Image::ImageFormatProperties& fmtSrc,
 #ifndef GL_BGR_EXT
     case Image::BGR:
         fmtDst.channels = use_gpu ? 4 : 3;
-        glFormat = use_gpu ? GL_RGBA : GL_RGB;
+        glFormat = use_gpu ? GL_RGBA : GL_BGR;
         fmtDst.imageFormat = use_gpu ? Image::RGBA : Image::BGR;
         umatConvertCode = cv::COLOR_BGR2RGBA;
         break;
