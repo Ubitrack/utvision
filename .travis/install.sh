@@ -29,6 +29,8 @@ if [[ "$(uname -s)" == 'Linux' ]]; then
 
     # opengl dependencies
     sudo apt-get install -y xorg-dev libglu1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+    # opencl dependencies
+    sudo apt-get install -y ocl-icd-libopencl1 opencl-headers
 fi
 
 pip install conan --upgrade
