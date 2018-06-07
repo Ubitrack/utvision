@@ -26,6 +26,9 @@ if [[ "$(uname -s)" == 'Linux' ]]; then
     sudo apt-add-repository -y ppa:lttng/ppa
     sudo apt-get update -qq
     sudo apt-get install -y lttng-tools lttng-modules-dkms babeltrace liblttng-ust-dev
+
+    # opengl dependencies
+    sudo apt-get install -y xorg-dev libglu1-mesa-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
 fi
 
 pip install conan --upgrade
