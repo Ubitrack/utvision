@@ -512,9 +512,9 @@ Image::Ptr Image::CvtColor( int nCode, int nChannels, int nDepth ) const
 
 	switch(nCode) {
 	case CV_BGR2GRAY:
-	case CV_RGB2GRAY:
+	case cvScalar2GRAY:
 	case CV_BGRA2GRAY:
-	case CV_RGBA2GRAY:
+	case cvScalarA2GRAY:
 		fmt.imageFormat = LUMINANCE;
 		fmt.bitsPerPixel = fmt.bitsPerPixel / fmt.channels;
 		fmt.channels = 1;
@@ -635,7 +635,7 @@ bool Image::isGrayscale() const
 Image::Ptr Image::getGrayscale( void ) const
 {
     if ( !isGrayscale() ) {
-        return CvtColor( CV_RGB2GRAY, 1, depth());
+        return CvtColor( cvScalar2GRAY, 1, depth());
     } else {
         return Clone();
     }
@@ -669,7 +669,7 @@ Image::Ptr Image::getGrayscale( void ) const
 //	{
 //		//GRAY = cvCreateImage(cvGetSize(this),this->depth,1);
 //		GRAY = cvCreateImage(cvGetSize(m_cpuImage), this->depth(), 1);
-//		cvCvtColor(m_cpuImage,GRAY,CV_RGB2GRAY);
+//		cvCvtColor(m_cpuImage,GRAY,cvScalar2GRAY);
 //	}
 //	else
 //	{

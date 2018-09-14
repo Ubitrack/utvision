@@ -278,7 +278,7 @@ public:
 	 * Convert color space.
 	 * Wraps \c cvCvtColor, but keeps the origin flag intact.
 	 *
-	 * @param nCode conversion Code (see OpenCV docs of \c cvCvtColor, e.g. CV_RGB2GRAY)
+	 * @param nCode conversion Code (see OpenCV docs of \c cvCvtColor, e.g. cvScalar2GRAY)
 	 * @param nChannels number of channels (1=grey, 3=rgb)
 	 * @param nDepth information about pixel representation (see OpenCV docs)
 	 */

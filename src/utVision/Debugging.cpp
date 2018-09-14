@@ -3,7 +3,7 @@
 #include <utVision/Colors.h>
 
 #include <boost/numeric/ublas/operations.hpp>
-#include <opencv2/core/core_c.h> // CV_RGB
+#include <opencv2/core/core_c.h> // cvScalar
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgproc/imgproc_c.h>
 #include <utVision/Colors.h>
@@ -46,21 +46,21 @@ void drawPoseCube( cv::Mat& img, const Math::Pose& pose, const Math::Matrix< flo
 	for ( int i = 0; i < 4; i++ )
 			line( img, cvPoint( cvRound( p2D[ i ][ 0 ] * fac ), cvRound( p2D[ i ][ 1 ] * fac ) ),
 			cvPoint( cvRound( p2D[ i + 4 ][ 0 ] * fac ), cvRound( p2D[ i + 4 ][ 1 ] * fac ) ),
-			i == 0 ? CV_RGB( 0, 0, 0 ) : color, 1, CV_AA, 4 );
+			i == 0 ? cvScalar( 0, 0, 0 ) : color, 1, CV_AA, 4 );
 
 	if ( paintCoordSystem ) {
 
 		line( img, cvPoint( cvRound( p2D[ 8 ][ 0 ] * fac ), cvRound( p2D[ 8 ][ 1 ] * fac ) ),
 			cvPoint( cvRound( p2D[ 9 ][ 0 ] * fac ), cvRound( p2D[ 9 ][ 1 ] * fac ) ),
-			CV_RGB( 255, 0, 0 ), 4, CV_AA, 4 );
+			cvScalar( 255, 0, 0 ), 4, CV_AA, 4 );
 
 		line( img, cvPoint( cvRound( p2D[ 8 ][ 0 ] * fac ), cvRound( p2D[ 8 ][ 1 ] * fac ) ),
 			cvPoint( cvRound( p2D[ 10 ][ 0 ] * fac ), cvRound( p2D[ 10 ][ 1 ] * fac ) ),
-			CV_RGB( 0, 255, 0 ), 4, CV_AA, 4 );
+			cvScalar( 0, 255, 0 ), 4, CV_AA, 4 );
 
 		line( img, cvPoint( cvRound( p2D[ 8 ][ 0 ] * fac ), cvRound( p2D[ 8 ][ 1 ] * fac ) ),
 			cvPoint( cvRound( p2D[ 11 ][ 0 ] * fac ), cvRound( p2D[ 11 ][ 1 ] * fac ) ),
-			CV_RGB( 0, 0, 255 ), 4, CV_AA, 4 );
+			cvScalar( 0, 0, 255 ), 4, CV_AA, 4 );
 	}
 }
 
@@ -92,7 +92,7 @@ void drawPose ( cv::Mat & dbgImage, const Math::Pose& pose, const Math::Matrix< 
 		p2D[ i] = projectPoint ( pose * ( Math::Vector< float, 3 >( points3D[ i ] ) * 0.07), projection, dbgImage.rows);
 	}
 
-	CvScalar colors[3] = {CV_RGB(255, 0, 0), CV_RGB(0, 255, 0), CV_RGB(0, 0, 255)};
+	CvScalar colors[3] = {cvScalar(255, 0, 0), cvScalar(0, 255, 0), cvScalar(0, 0, 255)};
 
 	// draw some lines
 	for ( int i = 1; i < 4; i++ ) {

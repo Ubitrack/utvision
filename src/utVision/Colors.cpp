@@ -30,7 +30,7 @@ CvScalar getGradientRampColor(double v,double vmin,double vmax)
 		c[2] = 0;
 	}
 
-	return CV_RGB(255 * c[0], 255 * c[1], 255 * c[2]);
+	return cvScalar(255 * c[0], 255 * c[1], 255 * c[2]);
 }
 
 }}
