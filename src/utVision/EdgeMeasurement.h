@@ -291,11 +291,11 @@ protected:
 				cvLine( &dbgImg,
 					cvPoint( cvRound( p1( 0 ) * 16 ), cvRound( p1( 1 ) * 16 ) ), 
 					cvPoint( cvRound( p2( 0 ) * 16 ), cvRound( p2( 1 ) * 16 ) ), 
-					cv:Scalar( 128, 128, 0 ), 1, CV_AA, 4 );
+					cv::Scalar( 128, 128, 0 ), 1, CV_AA, 4 );
 				cvCircle( &dbgImg,
 					cvPoint( cvRound( m_edgePoints[ i ]( 0 ) * 16 ), cvRound( m_edgePoints[ i ]( 1 ) * 16 ) ),
 					cvRound( m_pDebugImage->width() / 1600.0 * 16 ),
-					m_intensities[ i ] >= g_minEdgeIntensity ? cv:Scalar( 0, 255, 0 ) : cv:Scalar( 255, 0, 0 ), 
+					m_intensities[ i ] >= g_minEdgeIntensity ? cv::Scalar( 0, 255, 0 ) : cv::Scalar( 255, 0, 0 ), 
 					-1, CV_AA, 4 );
 			}
 		}

@@ -31,12 +31,12 @@
 
 // OpenCV
 #include <opencv2/core/core.hpp> // cv::Mat
-#include <opencv2/core/types_c.h> // cv:Scalar
+#include <opencv2/core/types_c.h> // cv::Scalar
 
 
 namespace Ubitrack { namespace Vision {
 
-UTVISION_EXPORT void drawPoseCube( cv::Mat& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double scale, cv:Scalar color, bool paintCoordSystem = false );
+UTVISION_EXPORT void drawPoseCube( cv::Mat& img, const Math::Pose& pose, const Math::Matrix< float, 3, 3 >& K, double scale, cv::Scalar color, bool paintCoordSystem = false );
 UTVISION_EXPORT Math::Vector< double, 3 > projectPoint ( const Math::Vector < double, 3 > &pt, const Math::Matrix< double, 3, 3 > &projection, int imageHeight);
 UTVISION_EXPORT void drawPose ( cv::Mat& dbgImage, const Math::Pose& pose, const Math::Matrix< double, 3, 3 > &projection, double error );
 UTVISION_EXPORT void drawPosition ( cv::Mat& dbgImage, const Math::Vector< double, 3 > &position, const Math::Matrix< double, 3, 3 > &projection, double error );

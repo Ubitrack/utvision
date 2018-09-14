@@ -323,7 +323,7 @@ namespace Ubitrack { namespace Vision {
 					p1.x = width - int(xErrorBuf.size()) - 50 + i ;
 					p2.x = width - int(xErrorBuf.size()) - 50 + i ;
 					int color = std::min( int(xErrorBuf[i]) + 50, 255 );
-					cvLine(pDebugImg,p1,p2,cv:Scalar(0,0,color),10,CV_AA,0);
+					cvLine(pDebugImg,p1,p2,cv::Scalar(0,0,color),10,CV_AA,0);
 				}
 
 				p1.x = width -10;
@@ -334,7 +334,7 @@ namespace Ubitrack { namespace Vision {
 					p1.y = i + 50;
 					p2.y = i + 50;
 					int color = std::min( int(yErrorBuf[i]) + 50, 255 );
-					cvLine(pDebugImg,p1,p2,cv:Scalar(0,0,color),10,CV_AA,0);
+					cvLine(pDebugImg,p1,p2,cv::Scalar(0,0,color),10,CV_AA,0);
 				}
 			}
 		}
