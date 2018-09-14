@@ -15,7 +15,7 @@ namespace Ubitrack { namespace Vision {
 	the range [vmin,vmax]
 	*/
 
-UTVISION_EXPORT CvScalar getGradientRampColor(double v,double vmin,double vmax);
+UTVISION_EXPORT cv:Scalar getGradientRampColor(double v,double vmin,double vmax);
 
 }}
 
