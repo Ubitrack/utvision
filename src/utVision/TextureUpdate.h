@@ -5,13 +5,14 @@
 #ifndef UBITRACK_VISION_TEXTUREUPDATE_H
 #define UBITRACK_VISION_TEXTUREUPDATE_H
 
+#include <utVision/OpenGLPlatform.h>
+
 #include <boost/utility.hpp>
 
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
 #include <utVision/Image.h>
 
-#include <utVision/OpenGLPlatform.h>
 
 #ifdef HAVE_OPENCL
 #include <opencv2/core/ocl.hpp>
