@@ -42,6 +42,7 @@ class UbitrackCoreConan(ConanFile):
                 self.options['glad'].shared = True
         elif self.options.opengl_extension_wrapper == 'glew':
             self.requires("glew/2.1.0@camposs/stable")
+            self.requires("glext/1.3@camposs/stable")
             if self.options.shared:
                 self.options['glew'].shared = True
 
