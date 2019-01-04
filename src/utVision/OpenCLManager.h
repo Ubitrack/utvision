@@ -55,8 +55,9 @@
 namespace Ubitrack { namespace Vision {
 
 
+#ifdef HAVE_OPENCL
 const char *getOpenCLErrorString(cl_int error);
-
+#endif
 
 class UTVISION_EXPORT OpenCLManager
 	: private boost::noncopyable
