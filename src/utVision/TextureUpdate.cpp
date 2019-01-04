@@ -2,7 +2,6 @@
 // Created by Ulrich Eck on 20/07/16.
 //
 
-#ifdef HAVE_OPENCL
 #ifdef WIN32
 #include <utUtil/CleanWindows.h>
 #endif
@@ -359,4 +358,3 @@ void TextureUpdate::updateTexture(const Measurement::ImageMeasurement& image) {
 }
 
 }} // Ubitrack::Vision
-#endif //HAVE_OPENCL

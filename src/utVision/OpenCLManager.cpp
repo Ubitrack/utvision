@@ -16,9 +16,7 @@
     #include "GL/gl.h"
     #include "CL/cl_gl.h"
     #ifdef WIN32
-// DirectX support is disabled for now
-// specifically, because it requires NVIDIA OpenCL
-//        #include <CL/cl_d3d11_ext.h>
+       #include <CL/cl_d3d11_ext.h>
     #else
         #include "GL/glx.h"
     #endif
