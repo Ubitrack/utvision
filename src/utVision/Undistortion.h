@@ -66,6 +66,7 @@ class UTVISION_EXPORT Undistortion
 	
 	/// intrinsic camera matrix
 	Math::Matrix< double, 3, 3 > m_intrinsicMatrix;
+	Math::Matrix< double, 3, 3 > m_newIntrinsics;
 	
 	// undistortion maps
 	boost::scoped_ptr< Image > m_pMapX;
@@ -119,7 +120,8 @@ public:
 	/** returns the intrinsic matrix */
 	const Math::Matrix< double, 3, 3 >& getMatrix() const
 	{
-		return m_intrinsicMatrix;
+		//return m_intrinsicMatrix;
+		return m_newIntrinsics;
 	}
 	
 	/** returns the radial distortion coefficients */
@@ -131,7 +133,7 @@ public:
 	/** returns the camera model - should be renamed .. */
 	const intrinsics_type& getIntrinsics() const
 	{
-		return m_intrinsics;
+		return m_intrinsics;		
 	}
 
 protected:
@@ -141,6 +143,8 @@ protected:
 
 	/// overloaded function to reset undistortion maps using data from connected components
 	bool resetMapping( const Vision::Image& image );	
+
+	
 };
 
 } } // namespace Ubitrack::Vision

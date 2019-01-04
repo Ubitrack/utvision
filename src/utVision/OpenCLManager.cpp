@@ -197,158 +197,158 @@ void OpenCLManager::notifyInitComplete() {
     m_initCallbacks.clear();
 }
 
-// DirectX support is disabled for now
-// specifically, because it requires NVIDIA OpenCL
-// #ifdef HAVE_OPENCL
-// #ifdef WIN32
-// void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
-// {
+#ifdef HAVE_OPENCL
+#ifdef WIN32
+void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
+{
+	LOG4CPP_INFO(logger, "Trying to initialize OpenCLManager DirectX. Current State:" << m_isInitialized);
 
-//     if(m_isInitialized){
-//         return;
-//     }
-//     //Get all Platforms and select a GPU one
-//     cl_uint numPlatforms;
-//     clGetPlatformIDs (65536, NULL, &numPlatforms);
-//     LOG4CPP_INFO( logger, "DX: Platforms detected: " << numPlatforms );
-
-
-//     std::vector<cl_platform_id> platforms(numPlatforms);
-
-//     cl_int err = clGetPlatformIDs(numPlatforms, platforms.data(), NULL);
-//     if(err != CL_SUCCESS)
-//     {
-//         LOG4CPP_INFO( logger, "DX: error at clGetPlatformIDs :" << getOpenCLErrorString(err) );
-//         m_isInitialized = false;
-//     }
-
-//     int found = -1;
-//     cl_device_id device = NULL;
-//     cl_uint numDevices = 0;
-//     cl_context context = NULL;
-
-//     clGetDeviceIDsFromD3D11NV_fn clGetDeviceIDsFromD3D11NV = (clGetDeviceIDsFromD3D11NV_fn)
-//                 clGetExtensionFunctionAddress("clGetDeviceIDsFromD3D11NV");
-//      for (int i = 0; i < (int)numPlatforms; i++)
-//     {
-//         if (!clGetDeviceIDsFromD3D11NV)
-//             break;
-
-//         device = NULL;
-//         numDevices = 0;
-//         err = clGetDeviceIDsFromD3D11NV(platforms[i], CL_D3D11_DEVICE_NV, pD3D11Device,
-//                 CL_PREFERRED_DEVICES_FOR_D3D11_NV, 1, &device, &numDevices);
-//         if (err != CL_SUCCESS)
-//             continue;
-
-//         if (numDevices > 0)
-//         {
-//             cl_context_properties properties[] = {
-//                     CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
-//                     CL_CONTEXT_D3D11_DEVICE_NV, (cl_context_properties)(pD3D11Device),
-//                     NULL, NULL
-//             };
-//             m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
-//             if(!m_clContext || err!= CL_SUCCESS)
-//             {
-//                 LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
-//             }
-//             else
-//             {
-//                 found = i;
-//                 break;
-//             }
-//         }
-//     }
-//      if (found < 0)
-//     {
-//         LOG4CPP_ERROR(logger, "OpenCL: no preferred D3D11_NV device found. Trying"
-//             << "now all devices context for DirectX interop");
-//         // try with CL_ALL_DEVICES_FOR_D3D11_KHR
-//         for (int i = 0; i < (int)numPlatforms; i++)
-//         {
-//             if (!clGetDeviceIDsFromD3D11NV)
-//                 continue;
-
-//             device = NULL;
-//             numDevices = 0;
-//             err = clGetDeviceIDsFromD3D11NV(platforms[i], CL_D3D11_DEVICE_NV, pD3D11Device,
-//                     CL_ALL_DEVICES_FOR_D3D11_NV, 1, &device, &numDevices);
-//             if (err != CL_SUCCESS)
-//                 continue;
-
-//             if (numDevices > 0)
-//             {
-//                 cl_context_properties properties[] = {
-//                         CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
-//                         CL_CONTEXT_D3D11_DEVICE_NV, (cl_context_properties)(pD3D11Device),
-//                         NULL, NULL
-//                 };
-
-//                 m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
-//                    if(!m_clContext || err != CL_SUCCESS)
-//                 {
-//                     LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
-//                 }
-//                 else
-//                 {
-//                     found = i;
-//                     break;
-//                 }
-//             }
-//         }
-//         if (found < 0){
-//             LOG4CPP_ERROR(logger, "OpenCL: Can't create context for DirectX interop");
-//             m_isInitialized = false;
-//             return;
-//         }
-//     }
+    if(m_isInitialized){
+        return;
+    }
+    //Get all Platforms and select a GPU one
+    cl_uint numPlatforms;
+    clGetPlatformIDs (65536, NULL, &numPlatforms);
+    LOG4CPP_INFO( logger, "DX: Platforms detected: " << numPlatforms );
 
 
-//     cl_device_id selectedDeviceID;
-//     //Select a GPU device
-//     err = clGetDeviceIDs(platforms[found], CL_DEVICE_TYPE_GPU, 1, &selectedDeviceID, NULL);
-//     if(err != CL_SUCCESS)
-//     {
-//         LOG4CPP_INFO( logger, "DX: error at clGetDeviceIDs :" << getOpenCLErrorString(err) );
-//         return;
-//     }
+    std::vector<cl_platform_id> platforms(numPlatforms);
 
-//     char cDeviceNameBuffer[1024];
-//     clGetDeviceInfo (selectedDeviceID, CL_DEVICE_NAME, sizeof(char) *  1024, cDeviceNameBuffer, NULL);
-//     LOG4CPP_INFO( logger, ": DX: Device Name: "		<< cDeviceNameBuffer );
+    cl_int err = clGetPlatformIDs(numPlatforms, platforms.data(), NULL);
+    if(err != CL_SUCCESS)
+    {
+        LOG4CPP_INFO( logger, "DX: error at clGetPlatformIDs :" << getOpenCLErrorString(err) );
+        m_isInitialized = false;
+    }
+
+    int found = -1;
+    cl_device_id device = NULL;
+    cl_uint numDevices = 0;
+    cl_context context = NULL;
+
+    clGetDeviceIDsFromD3D11NV_fn clGetDeviceIDsFromD3D11NV = (clGetDeviceIDsFromD3D11NV_fn)
+                clGetExtensionFunctionAddress("clGetDeviceIDsFromD3D11NV");
+     for (int i = 0; i < (int)numPlatforms; i++)
+    {
+        if (!clGetDeviceIDsFromD3D11NV)
+            break;
+
+        device = NULL;
+        numDevices = 0;
+        err = clGetDeviceIDsFromD3D11NV(platforms[i], CL_D3D11_DEVICE_NV, pD3D11Device,
+                CL_PREFERRED_DEVICES_FOR_D3D11_NV, 1, &device, &numDevices);
+        if (err != CL_SUCCESS)
+            continue;
+
+        if (numDevices > 0)
+        {
+            cl_context_properties properties[] = {
+                    CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                    CL_CONTEXT_D3D11_DEVICE_NV, (cl_context_properties)(pD3D11Device),
+                    NULL, NULL
+            };
+            m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
+            if(!m_clContext || err!= CL_SUCCESS)
+            {
+                LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
+            }
+            else
+            {
+                found = i;
+                break;
+            }
+        }
+    }
+     if (found < 0)
+    {
+        LOG4CPP_ERROR(logger, "OpenCL: no preferred D3D11_NV device found. Trying"
+            << "now all devices context for DirectX interop");
+        // try with CL_ALL_DEVICES_FOR_D3D11_KHR
+        for (int i = 0; i < (int)numPlatforms; i++)
+        {
+            if (!clGetDeviceIDsFromD3D11NV)
+                continue;
+
+            device = NULL;
+            numDevices = 0;
+            err = clGetDeviceIDsFromD3D11NV(platforms[i], CL_D3D11_DEVICE_NV, pD3D11Device,
+                    CL_ALL_DEVICES_FOR_D3D11_NV, 1, &device, &numDevices);
+            if (err != CL_SUCCESS)
+                continue;
+
+            if (numDevices > 0)
+            {
+                cl_context_properties properties[] = {
+                        CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                        CL_CONTEXT_D3D11_DEVICE_NV, (cl_context_properties)(pD3D11Device),
+                        NULL, NULL
+                };
+
+                m_clContext = clCreateContext(properties, 1, &device, NULL, NULL, &err);
+                   if(!m_clContext || err != CL_SUCCESS)
+                {
+                    LOG4CPP_INFO( logger,  "error at clCreateContext :" << getOpenCLErrorString(err) );
+                }
+                else
+                {
+                    found = i;
+                    break;
+                }
+            }
+        }
+        if (found < 0){
+            LOG4CPP_ERROR(logger, "OpenCL: Can't create context for DirectX interop");
+            m_isInitialized = false;
+            return;
+        }
+    }
 
 
-// 	char cPlatformNameBuffer[1024];
-// 	clGetPlatformInfo(platforms[found], CL_PLATFORM_NAME, sizeof(char) * 1024, cPlatformNameBuffer, NULL);
-// 	std::string platform_name(cPlatformNameBuffer);
+    cl_device_id selectedDeviceID;
+    //Select a GPU device
+    err = clGetDeviceIDs(platforms[found], CL_DEVICE_TYPE_GPU, 1, &selectedDeviceID, NULL);
+    if(err != CL_SUCCESS)
+    {
+        LOG4CPP_INFO( logger, "DX: error at clGetDeviceIDs :" << getOpenCLErrorString(err) );
+        return;
+    }
+
+    char cDeviceNameBuffer[1024];
+    clGetDeviceInfo (selectedDeviceID, CL_DEVICE_NAME, sizeof(char) *  1024, cDeviceNameBuffer, NULL);
+    LOG4CPP_INFO( logger, ": DX: Device Name: "		<< cDeviceNameBuffer );
 
 
-//     m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
-//     if(!m_clCommandQueue || err!= CL_SUCCESS)
-//     {
-//         LOG4CPP_INFO( logger, "DX: error at clCreateCommandQueue :" << getOpenCLErrorString(err) );
-//         return;
-//     }
+	char cPlatformNameBuffer[1024];
+	clGetPlatformInfo(platforms[found], CL_PLATFORM_NAME, sizeof(char) * 1024, cPlatformNameBuffer, NULL);
+	std::string platform_name(cPlatformNameBuffer);
 
 
-// 	cv::ocl::attachContext(platform_name, platforms[found], m_clContext, selectedDeviceID);
-// 	if (cv::ocl::useOpenCL()) {
-// 		LOG4CPP_INFO(logger, "OpenCV+OpenCL works OK!");
-// 	}
-// 	else {
-// 		LOG4CPP_INFO(logger, "Can't init OpenCV with OpenCL TAPI");
-// 	}
+    m_clCommandQueue = clCreateCommandQueue(m_clContext, selectedDeviceID, 0, &err);
+    if(!m_clCommandQueue || err!= CL_SUCCESS)
+    {
+        LOG4CPP_INFO( logger, "DX: error at clCreateCommandQueue :" << getOpenCLErrorString(err) );
+        return;
+    }
 
-//     m_isInitialized = true;
-// 	notifyInitComplete();
-//     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
-// }
-// #endif // WIN32
-// #endif
+
+	cv::ocl::attachContext(platform_name, platforms[found], m_clContext, selectedDeviceID);
+	if (cv::ocl::useOpenCL()) {
+		LOG4CPP_INFO(logger, "OpenCV+OpenCL works OK!");
+	}
+	else {
+		LOG4CPP_INFO(logger, "Can't init OpenCV with OpenCL TAPI");
+	}
+
+    m_isInitialized = true;
+	notifyInitComplete();
+    LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
+}
+#endif // WIN32
+#endif
 
 void OpenCLManager::initializeOpenGL()
 {
+	LOG4CPP_INFO(logger, "Trying to initialize OpenCLManager OpenGL. Current State:" << m_isInitialized);
     // prevent initialize to be executed multiple times
     boost::mutex::scoped_lock lock(m_mutex);
 
@@ -541,10 +541,11 @@ void OpenCLManager::initializeOpenGL()
             clGetDeviceInfo(selectedDeviceID, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(temp), &temp, &sz)==CL_SUCCESS &&
                     sz==sizeof(temp) ? temp!=0 : false;
     LOG4CPP_INFO(logger, "Host Unified Memory: " << unifiedmemory);
+
+	m_isInitialized = true;
 #else // HAVE_OPENCL
     LOG4CPP_WARN( logger, "OpenCL is DISABLED!");
 #endif
-    m_isInitialized = true;
     notifyInitComplete();
     LOG4CPP_INFO( logger, "initialized OpenCL: " << isInitialized());
 }

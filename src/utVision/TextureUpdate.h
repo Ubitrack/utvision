@@ -2,6 +2,7 @@
 // Created by Ulrich Eck on 20/07/16.
 //
 
+#ifdef HAVE_OPENCL
 #ifndef UBITRACK_VISION_TEXTUREUPDATE_H
 #define UBITRACK_VISION_TEXTUREUPDATE_H
 
@@ -104,3 +105,4 @@ private:
 
 }} // Ubitrack::Vision
 #endif //UBITRACK_TEXTUREUPDATE_H
+#endif //HAVE_OPENCL

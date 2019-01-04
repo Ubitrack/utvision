@@ -161,6 +161,8 @@ void Undistortion::reset( const std::string& intrinsicMatrixFile, const std::str
 		m_intrinsicMatrix( 2, 0 ) = 0;
 		m_intrinsicMatrix( 2, 1 ) = 0;
 		m_intrinsicMatrix( 2, 2 ) = -1;
+
+		m_newIntrinsics = m_intrinsicMatrix;
 	}
 	
 	
@@ -205,31 +207,136 @@ void Undistortion::reset( const std::string& intrinsicMatrixFile, const std::str
 }
 
 /// resets the mapping to the provided image parameters
-bool Undistortion::resetMapping( const int width, const int height, const intrinsics_type& intrinsics )
+bool Undistortion::resetMapping(const int width, const int height, const intrinsics_type& intrinsics)
 {
-	LOG4CPP_INFO( logger, "initialize undistortion mapping with intrinsics:\n" << intrinsics );
+	LOG4CPP_INFO(logger, "initialize undistortion mapping with intrinsics:\n" << intrinsics);
 	
 	// reset the map images
-	m_pMapX.reset( new Image( width, height, 1, CV_32F ) );
-	m_pMapY.reset( new Image( width, height, 1, CV_32F ) );
-	
+	m_pMapX.reset(new Image(width, height, 1, CV_32F));
+	m_pMapY.reset(new Image(width, height, 1, CV_32F));
+
+	/*
 	// copy the values to the corresponding opencv data-structures
 	// CvMat cvIntrinsics;
 	// CvMat cvCoeffs;
-	CvMat* cvCoeffs =  cvCreateMat( 1, intrinsics.radial_size + 2, CV_32FC1 );
-	CvMat* cvIntrinsics = cvCreateMat( 3, 3, CV_32FC1 );
-	
-	Util::cv1::assign( intrinsics, *cvCoeffs, *cvIntrinsics );
-	
+	CvMat* cvCoeffs = cvCreateMat(1, intrinsics.radial_size + 2, CV_32FC1);
+	CvMat* cvIntrinsics = cvCreateMat(3, 3, CV_32FC1);
+
+	Util::cv1::assign(intrinsics, *cvCoeffs, *cvIntrinsics);
+
 	// set values to the mapping
 	// @todo should be upgraded to modern opencv
 	CvMat pX = m_pMapX->Mat();
 	CvMat pY = m_pMapY->Mat();
-	cvInitUndistortMap( cvIntrinsics, cvCoeffs, &pX, &pY );
 	
+	cvInitUndistortMap( cvIntrinsics, cvCoeffs, &pX, &pY );
+
 	// explicitly release the allocated memory
 	cvReleaseMat( &cvCoeffs );
 	cvReleaseMat( &cvIntrinsics );
+
+	*/
+	
+	
+	// PaF: new opencv, 
+	cv::Size imageSize(width, height);
+	Math::Matrix3x3d intr = intrinsics.matrix;
+
+	cv::Mat intrMat(3, 3, CV_32FC1);
+	intrMat.at<float>(0, 0) = (float)intr(0, 0);
+	intrMat.at<float>(0, 1) = (float)intr(0, 1);
+	intrMat.at<float>(0, 2) = (float)intr(0, 2);
+	intrMat.at<float>(1, 0) = (float)intr(1, 0);
+	intrMat.at<float>(1, 1) = (float)intr(1, 1);
+	intrMat.at<float>(1, 2) = (float)intr(1, 2);
+	intrMat.at<float>(2, 0) = (float)intr(2, 0);
+	intrMat.at<float>(2, 1) = (float)intr(2, 1);
+	intrMat.at<float>(2, 2) = (float)intr(2, 2);
+
+	
+
+	cv::Mat distCoeffs = cv::Mat::zeros(intrinsics.radial_size+2, 1, CV_32FC1);
+	Math::Vector< double, 6 > radDis = intrinsics.radial_params;
+	Math::Vector< double, 2 > tanDis = intrinsics.tangential_params;
+
+
+	distCoeffs.at<float>(0) = (float)radDis[0];
+	distCoeffs.at<float>(1) = (float)radDis[1];
+	
+
+	distCoeffs.at<float>(2) = (float)tanDis[0];
+	distCoeffs.at<float>(3) = (float)tanDis(1);
+
+	if (intrinsics.radial_size > 2) {
+		distCoeffs.at<float>(4) = (float)radDis(2);
+	}
+	if (intrinsics.radial_size > 3) {
+		distCoeffs.at<float>(5) = (float)radDis(3);
+	}
+	if (intrinsics.radial_size > 4) {
+		distCoeffs.at<float>(6) = (float)radDis(4);
+	}
+	if (intrinsics.radial_size > 5) {
+		distCoeffs.at<float>(7) = (float)radDis(5);
+	}
+
+	
+	cv::Mat newIntrinsics;
+	if (intrinsics.dimension[0] != 0 &&  intrinsics.dimension[1] != 0){
+		newIntrinsics = cv::getOptimalNewCameraMatrix(intrMat, distCoeffs, imageSize, 0, imageSize, 0, true);
+		if (newIntrinsics.at<float>(0, 0) > intrMat.at<float>(0, 0)) {
+			// new intrinsic would reduce fov so keep old
+			m_newIntrinsics = intrinsics.matrix;
+			m_newIntrinsics(0, 2) = -m_newIntrinsics(0, 2);
+			m_newIntrinsics(1, 2) = -(intrinsics.dimension[1] - 1 - m_newIntrinsics(1, 2));
+			m_newIntrinsics(2, 2) = -m_newIntrinsics(2, 2);
+			newIntrinsics = intrMat;
+		}
+		else {
+			m_newIntrinsics(0, 0) = newIntrinsics.at<float>(0, 0);
+			m_newIntrinsics(0, 1) = newIntrinsics.at<float>(0, 1);
+			m_newIntrinsics(0, 2) = -newIntrinsics.at<float>(0, 2);
+			m_newIntrinsics(1, 0) = newIntrinsics.at<float>(1, 0);
+			m_newIntrinsics(1, 1) = newIntrinsics.at<float>(1, 1);
+			m_newIntrinsics(1, 2) = -(intrinsics.dimension[1] - 1 - newIntrinsics.at<float>(1, 2));						
+			m_newIntrinsics(2, 0) = newIntrinsics.at<float>(2, 0);
+			m_newIntrinsics(2, 1) = newIntrinsics.at<float>(2, 1);
+			m_newIntrinsics(2, 2) = -newIntrinsics.at<float>(2, 2);
+		}
+		
+		//m_newIntrinsics = intrinsics.matrix;
+		//m_newIntrinsics(0, 2) = -m_newIntrinsics(0, 2);
+		//m_newIntrinsics(1, 2) = -(intrinsics.dimension[1] - 1 - m_newIntrinsics(1, 2));		
+		//m_newIntrinsics(2, 2) = -m_newIntrinsics(2, 2);
+		//newIntrinsics = intrMat;
+		
+		
+		
+		Math::CameraIntrinsics<double> tmpIntr = Math::CameraIntrinsics<double>(m_newIntrinsics, Math::Vector2d(), Math::Vector2d(), intrinsics.dimension[0], intrinsics.dimension[1]);
+
+		LOG4CPP_WARN(logger, "intrinsics changed for better undistortion result :\n" << tmpIntr);
+	}
+	else {
+		m_newIntrinsics = intrinsics.matrix;
+		m_newIntrinsics(0, 2) = -m_newIntrinsics(0, 2);
+		m_newIntrinsics(1, 2) = -(intrinsics.dimension[1] - 1 -m_newIntrinsics(1, 2));
+		m_newIntrinsics(2, 2) = -m_newIntrinsics(2, 2);
+		newIntrinsics = intrMat;
+		
+		LOG4CPP_INFO(logger, "keep intrinsics");
+	}
+	
+
+	
+
+	
+	
+	
+	
+	
+
+	initUndistortRectifyMap(intrMat, distCoeffs, cv::Mat(), newIntrinsics, imageSize, CV_16SC2, m_pMapX->Mat(), m_pMapY->Mat());
+	
 	
 	// alternative undistortion using special fisheye calibration 8 camera should be really fishy, seems buggy in 2.4.11 (CW@2015-03-24)
 	//cv::fisheye::initUndistortRectifyMap( cv::Mat( pCvIntrinsics ), cv::Mat( pCvCoeffs ), cv::Mat::eye( 3, 3, CV_32F ), cv::Mat::eye( 3, 3, CV_32F ), cv::Size( width, height ), CV_32FC1, cv::Mat( *m_pMapX ), cv::Mat( *m_pMapY ) );
@@ -290,6 +397,8 @@ bool Undistortion::isValid( const Vision::Image& image ) const
 {
 	if ( !m_pMapX || !m_pMapY )
 		return false;
+
+	if (m_intrinsics.dimension[0] != 0 && m_intrinsics.dimension[1] == 0)
 	
 	if( m_pMapX->width() != image.width() || m_pMapX->height() != image.height() )
 		return false;
