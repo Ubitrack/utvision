@@ -133,6 +133,7 @@ public:
 	/** returns the camera model - should be renamed .. */
 	const intrinsics_type& getIntrinsics() const
 	{
+		// @todo this method returns the original camera model, but should return contain the optimized intrinsics matrix
 		return m_intrinsics;		
 	}
 
