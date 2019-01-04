@@ -199,6 +199,7 @@ void OpenCLManager::notifyInitComplete() {
 #ifdef WIN32
 void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 {
+	LOG4CPP_INFO(logger, "Trying to initialize OpenCLManager DirectX. Current State:" << m_isInitialized);
 
     if(m_isInitialized){
         return;
@@ -345,6 +346,7 @@ void OpenCLManager::initializeDirectX(ID3D11Device* pD3D11Device)
 
 void OpenCLManager::initializeOpenGL()
 {
+	LOG4CPP_INFO(logger, "Trying to initialize OpenCLManager OpenGL. Current State:" << m_isInitialized);
     // prevent initialize to be executed multiple times
     boost::mutex::scoped_lock lock(m_mutex);
 
