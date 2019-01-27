@@ -442,7 +442,7 @@ void Image::guessFormat(ImageFormatProperties& result, int channels, int depth, 
     //         << " depth: " << result.depth
     //         << " bitsPerPixel: " << result.bitsPerPixel
     //         << " channels: " << result.channels
-    )
+    // )
 }
 
 void Image::guessFormat(ImageFormatProperties& result, cv::Mat m) {
