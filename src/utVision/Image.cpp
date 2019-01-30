@@ -435,14 +435,14 @@ void Image::guessFormat(ImageFormatProperties& result, int channels, int depth, 
 		}
 	}
 
-    LOG4CPP_TRACE(imageLogger, "Guessed Format: "
-            << " imageFormat: " << result.imageFormat
-            << " matType: " << result.matType
-            << " origin: " << result.origin
-            << " depth: " << result.depth
-            << " bitsPerPixel: " << result.bitsPerPixel
-            << " channels: " << result.channels
-    )
+    // LOG4CPP_TRACE(imageLogger, "Guessed Format: "
+    //         << " imageFormat: " << result.imageFormat
+    //         << " matType: " << result.matType
+    //         << " origin: " << result.origin
+    //         << " depth: " << result.depth
+    //         << " bitsPerPixel: " << result.bitsPerPixel
+    //         << " channels: " << result.channels
+    // )
 }
 
 void Image::guessFormat(ImageFormatProperties& result, cv::Mat m) {
