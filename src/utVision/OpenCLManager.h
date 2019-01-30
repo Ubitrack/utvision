@@ -40,9 +40,26 @@
 #pragma OPENCL EXTENSION CL_APPLE_gl_sharing : enable
     #include "OpenCL/opencl.h"
 #else
-    #include "CL/cl.h"
+
+// on linux systems with NVIDIA OpenCL1.2/2.0 is not properly supported
+// to avoid problems we restrict ourselves to OpenCL1.1 for now
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+
+#ifdef OPENCL_ICD_LOADER_IS_OLD
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
+#include <CL/cl.h>
+#ifdef CL_VERSION_1_2
+#undef CL_VERSION_1_2
+#endif //CL_VERSION_1_2
+#endif //OPENCL_ICD_LOADER_IS_OLD
+
 #endif
+
+#include <CL/cl.hpp>
+
 #endif // HAVE_OPENCL
+
 
 #include <vector>
 #include <functional>

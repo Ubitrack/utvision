@@ -54,7 +54,14 @@
 #ifndef HAVE_LAPACK 
 #cmakedefine HAVE_LAPACK
 #endif
+
 #ifndef HAVE_OPENCV 
 #cmakedefine HAVE_OPENCV
 #endif
+
+#ifndef OPENCL_ICD_LOADER_IS_OLD
+#cmakedefine OPENCL_ICD_LOADER_IS_OLD
 #endif
+
+#endif
+
