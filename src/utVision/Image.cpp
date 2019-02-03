@@ -73,21 +73,8 @@ Image::Image( int nWidth, int nHeight, ImageFormatProperties& fmt, ImageUploadSt
 		, m_bitsPerPixel(fmt.bitsPerPixel)
 		, m_depth(fmt.depth)
 {
-	if (isOnGPU()) {
 
-#ifdef ENABLE_EVENT_TRACING
-		TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
-#endif
-		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels));
-	} else if (isOnCPU()) {
-
-#ifdef ENABLE_EVENT_TRACING
-		TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
-#endif
-		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(m_depth, m_channels));
-	} else {
-		LOG4CPP_ERROR( imageLogger, "Trying to allocate CPU and GPU buffer at the same time !!!");
-	}
+	allocateBuffer(nWidth, nHeight, m_channels, m_depth);
 }
 
 
@@ -125,21 +112,7 @@ Image::Image( int nWidth, int nHeight, int nChannels, int nDepth, int nOrigin, I
 	m_format = fmt.imageFormat;
 	m_bitsPerPixel = fmt.bitsPerPixel;
 
-	if (isOnGPU()) {
-
-#ifdef ENABLE_EVENT_TRACING
-		TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
-#endif
-		m_gpuImage = cv::UMat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
-	} else if (isOnCPU()) {
-
-#ifdef ENABLE_EVENT_TRACING
-		TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
-#endif
-		m_cpuImage =  cv::Mat(height(), width(), cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
-	} else {
-		LOG4CPP_ERROR( imageLogger, "Trying to allocate CPU and GPU buffer at the same time !!!");
-	}
+	allocateBuffer(nWidth, nHeight, nChannels, nDepth);
 }
 
 
@@ -234,6 +207,26 @@ Image::~Image()
 	//destroy the buffers
 
 	// @todo image destruction should be traced as well !!!
+}
+
+
+void Image::allocateBuffer(int nWidth, int nHeight, int nChannels, int nDepth) {
+	if (isOnGPU()) {
+
+#ifdef ENABLE_EVENT_TRACING
+		TRACEPOINT_VISION_ALLOCATE_GPU(nWidth*nHeight*nChannels)
+#endif
+		m_gpuImage = cv::UMat(nHeight, nWidth, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
+	} else if (isOnCPU()) {
+
+#ifdef ENABLE_EVENT_TRACING
+		TRACEPOINT_VISION_ALLOCATE_CPU(nWidth*nHeight*nChannels)
+#endif
+		m_cpuImage =  cv::Mat(nHeight, nWidth, cv::Mat::MAGIC_VAL + CV_MAKE_TYPE(nDepth, nChannels));
+	} else {
+		LOG4CPP_ERROR( imageLogger, "Trying to allocate CPU and GPU buffer at the same time !!!");
+	}
+
 }
 
 
@@ -565,14 +558,14 @@ Image::Ptr Image::Clone() const
 	if (isOnGPU())
 	{
 #ifdef ENABLE_EVENT_TRACING
-        TRACEPOINT_VISION_ALLOCATE_GPU(m_width*m_height*m_channels)
+        TRACEPOINT_VISION_CLONE_GPU(m_width*m_height*m_channels)
 #endif
 		cv::UMat m = m_gpuImage.clone();
 		Ptr ptr = Image::Ptr(new Image( m, fmt ));
 		return ptr;
 	} else {
 #ifdef ENABLE_EVENT_TRACING
-        TRACEPOINT_VISION_ALLOCATE_CPU(m_width*m_height*m_channels)
+        TRACEPOINT_VISION_CLONE_CPU(m_width*m_height*m_channels)
 #endif
 		cv::Mat m = m_cpuImage.clone();
 		Ptr ptr = Image::Ptr(new Image( m, fmt ));

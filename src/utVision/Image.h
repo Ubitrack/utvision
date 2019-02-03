@@ -447,6 +447,9 @@ public:
 
 private:
 
+    // allocate new image
+    void allocateBuffer(int nWidth, int nHeight, int nChannels, int nDepth);
+
 	// ensure that image is on CPU (copy if needed)
 	void checkOnCPU();
 
