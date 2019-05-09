@@ -26,6 +26,9 @@
 
 #include <utVision.h>
 
+// only include opengl and wrappers if not already loaded
+#if !(defined(__gl_h_) || defined(__GL_H__))
+
 #ifdef HAVE_GLAD
   #include <glad/glad.h>
 #else
@@ -46,6 +49,8 @@
 	#include <GL/glu.h>
 	#include <GL/glx.h>
   #endif
+#endif
+
 #endif
 
 #endif // _OPENGLWRAPPER_H_
