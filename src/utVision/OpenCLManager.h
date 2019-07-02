@@ -54,9 +54,9 @@
 #endif //CL_VERSION_1_2
 #endif //OPENCL_ICD_LOADER_IS_OLD
 
-#endif
-
 #include <CL/cl.hpp>
+
+#endif
 
 #endif // HAVE_OPENCL
 
