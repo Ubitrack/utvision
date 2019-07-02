@@ -14,28 +14,34 @@ class UbitrackCoreConan(ConanFile):
     generators = "cmake"
     options = {
         "shared": [True, False],
+        "workspaceBuild" : [True, False],
         "opengl_extension_wrapper": ["glew", "glad"],
     }
 
-    requires = (
-        "opencv/[>=3.2.0]@camposs/stable", 
-        "ubitrack_core/%s@ubitrack/stable" % version,
-        )
-
-    default_options = (
-        "shared=True",
-        "opengl_extension_wrapper=glad",
-        )
+    default_options = {
+        "shared" :True,
+        "workspaceBuild" : False,
+        "opengl_extension_wrapper": "glad"
+        }
 
     # all sources are deployed with the package
     exports_sources = "cmake/*", "doc/*", "src/*", "tests/*", "CMakeLists.txt", "utvisionConfig.cmake"
+
 
     def configure(self):
         if self.options.shared:
             self.options['opencv'].shared = True
             self.options['ubitrack_core'].shared = True
+        if self.settings.os == "Linux":
+            self.options["opencv"].with_gtk = True
 
     def requirements(self):
+        userChannel = "ubitrack/stable"
+        if self.options.workspaceBuild:
+            userChannel = "user/testing"
+        self.requires("ubitrack_core/%s@%s" % (self.version, userChannel))
+        self.requires("opencv/[>=3.2.0]@camposs/stable" )
+
         if self.options.opengl_extension_wrapper == 'glad':
             self.requires("glad/[>=0.1.27]@camposs/stable")
             if self.options.shared:

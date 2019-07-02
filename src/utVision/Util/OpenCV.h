@@ -49,6 +49,7 @@
 
 namespace Ubitrack { namespace Vision { namespace Util {
 
+
 	/// forward declaration to to type that contains information for data-type mapping
 	template< typename UbitrackType >
 	struct TypeMapping;	
@@ -345,6 +346,79 @@ namespace cv2 {
 		intrinsics ( 0, 2 ) *= -1;
 		intrinsics ( 1, 2 ) *= -1;
 		intrinsics ( 2, 2 ) *= -1;
+	}
+
+	
+
+	template< typename PrecisionType >
+	void assignIntrinsicAndConvertToOpenCV( const Math::CameraIntrinsics< PrecisionType >& camIn, cv::Mat& intrinsics  )
+	{
+		cv::Matx< PrecisionType, 3, 3 > tmp ( camIn.matrix.content() );
+		tmp = tmp.t();
+		flipHandiness(tmp);
+		intrinsics = cv::Mat(tmp);
+	}
+
+	template< typename PrecisionType >
+	void assignDistortionAndConvertToOpenCV( const Math::CameraIntrinsics< PrecisionType >& camIn, cv::Mat& distortion  )
+	{
+		
+		switch(camIn.radial_size) {
+			case 6:
+				distortion = cv::Mat(8, 1, CV_64F);
+				break;
+			case 5:
+				distortion = cv::Mat(7, 1, CV_64F); 
+				break;
+			case 4:
+				distortion = cv::Mat(6, 1, CV_64F);
+				break;
+			case 3:
+				distortion = cv::Mat(5, 1, CV_64F);
+				break;
+			default:  
+				distortion = cv::Mat(4, 1, CV_64F);
+		}
+		
+
+		distortion.at<double>( 0 ) = static_cast< double >( camIn.radial_params( 0 ) );
+		distortion.at<double>( 1 ) = static_cast< double >( camIn.radial_params( 1 ) );
+		distortion.at<double>( 2 ) = static_cast< double >( camIn.tangential_params( 0 ) );
+		distortion.at<double>( 3 ) = static_cast< double >( camIn.tangential_params( 1 ) );
+		
+		for( std::size_t i =  4; i < camIn.radial_size+2u ; ++i )
+			distortion.at<double>( i ) = static_cast< double >( camIn.radial_params( i-2 ) );
+	}
+
+	template< typename PrecisionType >
+	void assignAndConvertToOpenCV( const Math::CameraIntrinsics< PrecisionType >& camIn, cv::Mat& dist, cv::Mat& intrinsics  )
+	{
+		assignDistortionAndConvertToOpenCV( camIn, dist );
+		assignIntrinsicAndConvertToOpenCV( camIn, intrinsics );
+	}
+
+
+	/// corrects the Ubitrack intrinsics parameters if the image is flipped upside-down
+	template< typename PrecisionType >	
+	Ubitrack::Math::CameraIntrinsics< PrecisionType > inline correctForOrigin( const int origin, const Ubitrack::Math::CameraIntrinsics< PrecisionType >& intrinsics )
+	{
+		Ubitrack::Math::CameraIntrinsics< PrecisionType > result(intrinsics);
+		if ( origin == 0 ) // compensate if origin==0, ubitrack default is origin 1
+		{	
+			
+			result.matrix( 1, 2 ) = -(intrinsics.dimension(1) - 1 + intrinsics.matrix( 1, 2 ));
+			result.tangential_params( 1 ) *= -1.0;
+			
+			result.reset(); // recalculate the inverse
+		}
+		return result;
+	}
+
+	/// corrects the Ubitrack intrinsics parameters if the image is flipped upside-down
+	template< typename PrecisionType >	
+	Ubitrack::Math::CameraIntrinsics< PrecisionType > inline correctForOrigin( const Ubitrack::Vision::Image& image, const Ubitrack::Math::CameraIntrinsics< PrecisionType >& intrinsics )
+	{
+		return correctForOrigin(image.origin(), intrinsics);
 	}
 }	// namespace ::cv2
 
