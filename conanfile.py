@@ -38,7 +38,7 @@ class UbitrackCoreConan(ConanFile):
     def requirements(self):
         userChannel = "ubitrack/stable"
         if self.options.workspaceBuild:
-            userChannel = "user/testing"
+            userChannel = "local/dev"
         self.requires("ubitrack_core/%s@%s" % (self.version, userChannel))
         self.requires("opencv/[>=3.2.0]@camposs/stable" )
 
