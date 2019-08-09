@@ -556,7 +556,7 @@ typedef Measurement< Ubitrack::Vision::ConstImage > ConstImageMeasurement;
 
 namespace Traits {
 
-    // button
+    // Image
     template<>
     struct MeasurementTypeToEnumTraits< Ubitrack::Measurement::ImageMeasurement >
     {
@@ -566,6 +566,14 @@ namespace Traits {
         MeasurementType getMeasurementType() const
         { return MeasurementType ::Image; }
     };
+
+    // Pose
+    template<>
+    struct MeasurementEnumToTypeTraits<MeasurementType::Image, false>
+    {
+        typedef Ubitrack::Measurement::ImageMeasurement value_type;
+    };
+
 
 }
 
