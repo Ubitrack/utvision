@@ -41,6 +41,7 @@
 #include <opencv/cxcore.h>
 #include <utVision.h>
 #include <utMeasurement/Measurement.h>
+#include <utMeasurement/MeasurementTraits.h>
 
 #include <opencv2/opencv.hpp>
 #include <log4cpp/Category.hh>
@@ -552,6 +553,22 @@ namespace Measurement {
 /** define a shortcut for image measurements */
 typedef Measurement< Ubitrack::Vision::Image > ImageMeasurement;
 typedef Measurement< Ubitrack::Vision::ConstImage > ConstImageMeasurement;
+
+namespace Traits {
+
+    // button
+    template<>
+    struct MeasurementTypeToEnumTraits< Ubitrack::Measurement::ImageMeasurement >
+    {
+        bool isFixedType() const
+        { return true; }
+
+        MeasurementType getMeasurementType() const
+        { return MeasurementType ::Image; }
+    };
+
+}
+
 } // namespace Measurement
 } // namespace Ubitrack
 
