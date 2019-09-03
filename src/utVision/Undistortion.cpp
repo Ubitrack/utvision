@@ -282,6 +282,7 @@ bool Undistortion::resetMapping(const int width, const int height, const intrins
 
 	
 	cv::Mat newIntrinsics;
+
 	if (intrinsics.dimension[0] != 0 &&  intrinsics.dimension[1] != 0){
 		newIntrinsics = cv::getOptimalNewCameraMatrix(intrMat, distCoeffs, imageSize, 0, imageSize, 0, true);
 		if (newIntrinsics.at<float>(0, 0) > intrMat.at<float>(0, 0)) {
@@ -399,6 +400,10 @@ bool Undistortion::isValid( const Vision::Image& image ) const
 		return false;
 
 	if (m_intrinsics.dimension[0] != 0 && m_intrinsics.dimension[1] == 0)
+		return false;
+	
+	if (m_intrinsics.dimension[0] == 0 && m_intrinsics.dimension[1] != 0)
+		return false;
 	
 	if( m_pMapX->width() != image.width() || m_pMapX->height() != image.height() )
 		return false;
