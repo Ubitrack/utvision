@@ -109,7 +109,8 @@ public:
 	  YUV411,
 	  RAW,
 	  DEPTH,
-	  FLOAT
+	  FLOAT,
+	  MJPEG
 	};
 
     /* Enum to relect memory location of image buffer */

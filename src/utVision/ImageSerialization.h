@@ -37,6 +37,7 @@
 
 
 #include <msgpack.hpp>
+#include "zstd.h"
 
 namespace Ubitrack {
 namespace Serialization {
@@ -64,9 +65,22 @@ struct MsgpackSerializationFormat<Ubitrack::Measurement::ImageMeasurement> {
       pac.pack_int(fmt.matType);
       pac.pack_int(fmt.bitsPerPixel);
       pac.pack_int(fmt.origin);
-      std::size_t bsize = t->Mat().total()*t->Mat().elemSize();
-      pac.pack_bin(bsize);
-      pac.pack_bin_body((const char*)(t->Mat().data), bsize);
+      // compress all image buffers with zstd level 2 if not of type MJPEG
+      if (fmt.imageFormat == Ubitrack::Vision::Image::PixelFormat ::MJPEG) {
+          std::size_t bsize = t->Mat().total()*t->Mat().elemSize();
+          pac.pack_bin(bsize);
+          pac.pack_bin_body(reinterpret_cast<const char*>(t->Mat().data), bsize);
+      } else {
+          std::size_t bsize = t->Mat().total()*t->Mat().elemSize();
+          // *2, because according to zstd documentation, increasing the size of the output buffer above a
+          // bound should speed up the compression.
+          int compressionLevel = 2; // fixed for now ...
+          int cBuffSize = ZSTD_compressBound(bsize) * 2;
+          std::vector<char> compressedBuffer(cBuffSize);
+          int cSize = ZSTD_compress(compressedBuffer.data(), cBuffSize, reinterpret_cast<const char*>(t->Mat().data), bsize, compressionLevel);
+          pac.pack_bin(cSize);
+          pac.pack_bin_body(&compressedBuffer[0], bsize);
+      }
   }
 
   template<typename Stream>
@@ -107,13 +121,25 @@ struct MsgpackSerializationFormat<Ubitrack::Measurement::ImageMeasurement> {
       if (pac.next(oh)) {
 		  msgpack::adaptor::convert<int>()(oh.get(), fmt.origin);
       } else { invalid = true; }
-      boost::shared_ptr<Ubitrack::Vision::Image> img(new Ubitrack::Vision::Image(width, height, fmt));
+      // all images are compressed with zstd level=2 if not mjpeg
+      boost::shared_ptr<Ubitrack::Vision::Image> img;
       if (pac.next(oh)) {
           msgpack::object obj = oh.get();
-          std::size_t bsize = obj.via.bin.size;
-          if (bsize == img->Mat().total()*img->Mat().elemSize()) {
-              memcpy(img->Mat().data, obj.via.bin.ptr, bsize);
-          } else { invalid = true; }
+          if (fmt.imageFormat == Ubitrack::Vision::Image::PixelFormat::MJPEG) {
+              cv::Mat rawData(1,obj.via.bin.size,CV_8SC1,const_cast<void*>(static_cast<const void*>(obj.via.bin.ptr)));
+              cv::Mat decompressedImage = cv::imdecode(rawData,-CV_LOAD_IMAGE_COLOR);
+              fmt.imageFormat = Ubitrack::Vision::Image::PixelFormat ::BGR;
+              width = decompressedImage.cols;
+              height = decompressedImage.rows;
+              img.reset(new Ubitrack::Vision::Image(decompressedImage, fmt));
+          } else {
+              std::size_t bsize = ZSTD_getDecompressedSize(obj.via.bin.ptr, obj.via.bin.size);
+              img.reset(new Ubitrack::Vision::Image(width, height, fmt));
+              std::size_t unpacked_bytes = ZSTD_decompress(img->Mat().data, img->Mat().total()*img->Mat().elemSize(), obj.via.bin.ptr, obj.via.bin.size);
+              if (unpacked_bytes != img->Mat().total()*img->Mat().elemSize()) {
+                  invalid = true;
+              }
+          }
       } else { invalid = true; }
       if (!invalid) {
           t = Ubitrack::Measurement::ImageMeasurement(ts, img);

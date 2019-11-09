@@ -36,6 +36,7 @@ endif(HAVE_GLAD)
 target_link_libraries(${UBITRACK_LIBRARY_NAME} 
   CONAN_PKG::ubitrack_core
   CONAN_PKG::opencv
+  CONAN_PKG::zstd
   ${GLWRAPPER_TARGET}
   OpenGL::GL
   OpenGL::GLU
