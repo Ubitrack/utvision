@@ -35,7 +35,6 @@
 #include "utSerialization/Serialization.h"
 #include "utVision/Image.h"
 
-#ifdef HAVE_MSGPACK
 
 #include <msgpack.hpp>
 
@@ -135,6 +134,5 @@ struct MsgpackSerializationFormat<Ubitrack::Measurement::ImageMeasurement> {
 } // Ubitrack
 
 
-#endif // HAVE_MSGPACK
 
 #endif //UBITRACK_IMAGE_SERIALIZATION_H
