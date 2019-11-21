@@ -33,15 +33,20 @@ elseif(HAVE_GLEW)
   set(GLWRAPPER_TARGET CONAN_PKG::glew CONAN_PKG::glext)
 endif(HAVE_GLAD)
 
-target_link_libraries(${UBITRACK_LIBRARY_NAME} 
+target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
   CONAN_PKG::ubitrack_core
   CONAN_PKG::opencv
   CONAN_PKG::zstd
   ${GLWRAPPER_TARGET}
   OpenGL::GL
   OpenGL::GLU
-  OpenCL::OpenCL
   )
+
+if(HAVE_OPENCL)
+  target_link_libraries(${UBITRACK_LIBRARY_NAME} PUBLIC
+    OpenCL::OpenCL
+  )
+endif()
 
 target_include_directories(${UBITRACK_LIBRARY_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

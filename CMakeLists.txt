@@ -9,6 +9,7 @@ conan_basic_setup(TARGETS)
 
 include(cmake/UbitrackConfig)
 
+option(WITH_OPENCL "Enable OpenCL support" ON)
 
 # External Libraries (could this be solved with conan dependencies ??)
 
@@ -21,23 +22,24 @@ IF(OpenGL_FOUND)
 ENDIF(OpenGL_FOUND)
 
 # OpenCL
-SET(HAVE_OPENCL 0)
-find_package(OpenCL)
-IF(OpenCL_FOUND)
-  include_directories(${OpenCL_INCLUDE_DIR})
-  SET(HAVE_OPENCL 1)
-  MESSAGE(STATUS "Found OpenCL: ${OpenCL_INCLUDE_DIR} - ${OpenCL_LIBRARY}")
+if(WITH_OPENCL)
+  SET(HAVE_OPENCL 0)
+  find_package(OpenCL)
+  IF(OpenCL_FOUND)
+    include_directories(${OpenCL_INCLUDE_DIR})
+    SET(HAVE_OPENCL 1)
+    MESSAGE(STATUS "Found OpenCL: ${OpenCL_INCLUDE_DIR} - ${OpenCL_LIBRARY}")
 
-  if(UNIX AND NOT APPLE)
-    include(CheckOpenCLICDLoader)
-    if(OpenCL_C_WORKS AND NOT OpenCL_CXX_WORKS)
-      set(OPENCL_ICD_LOADER_IS_OLD 1)
-      message(WARNING "Your libOpenCL.so is incompatible with CL/cl.h. Install ocl-icd-opencl-dev to update libOpenCL.so?")
+    if(UNIX AND NOT APPLE)
+      include(CheckOpenCLICDLoader)
+      if(OpenCL_C_WORKS AND NOT OpenCL_CXX_WORKS)
+        set(OPENCL_ICD_LOADER_IS_OLD 1)
+        message(WARNING "Your libOpenCL.so is incompatible with CL/cl.h. Install ocl-icd-opencl-dev to update libOpenCL.so?")
+      endif()
     endif()
-  endif()
 
-ENDIF(OpenCL_FOUND)
-
+  ENDIF(OpenCL_FOUND)
+endif()
 # we can safely assume that these libraries are available.
 SET(HAVE_OPENCV 1)
 SET(HAVE_LAPACK 1)

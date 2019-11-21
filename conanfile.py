@@ -16,12 +16,14 @@ class UbitrackCoreConan(ConanFile):
         "shared": [True, False],
         "workspaceBuild" : [True, False],
         "opengl_extension_wrapper": ["glew", "glad"],
+        "with_opencl": [True, False],
     }
 
     default_options = {
         "shared" :True,
         "workspaceBuild" : False,
-        "opengl_extension_wrapper": "glad"
+        "opengl_extension_wrapper": "glad",
+        "with_opencl": True,
         }
 
     # all sources are deployed with the package
@@ -67,6 +69,7 @@ class UbitrackCoreConan(ConanFile):
         cmake.definitions['ENABLE_UNITTESTS'] = not self.options['ubitrack_core'].without_tests
         cmake.definitions['HAVE_GLAD'] = self.options.opengl_extension_wrapper == 'glad'
         cmake.definitions['HAVE_GLEW'] = self.options.opengl_extension_wrapper == 'glew'
+        cmake.definitions['WITH_OPENCL'] = self.options.with_opencl
         cmake.configure()
         cmake.build()
         cmake.install()
