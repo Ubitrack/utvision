@@ -42,7 +42,7 @@ class UbitrackCoreConan(ConanFile):
         if self.options.workspaceBuild:
             userChannel = "local/dev"
         self.requires("ubitrack_core/%s@%s" % (self.version, userChannel))
-        self.requires("opencv/[>=3.2.0]@camposs/stable" )
+        self.requires("opencv/[>=3.2.0 < 4.0.0]@camposs/stable" )
         self.requires("zstd/1.4.3")
 
         if self.options.opengl_extension_wrapper == 'glad':
